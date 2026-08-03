@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Calories — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12161B;
+    --surface: #1B2128;
+    --surface-2: #222A32;
+    --text: #F2F0EA;
+    --text-muted: #8A93A0;
+    --line: #2A323B;
+
+    --lime: #D4F252;
+    --lime-dim: #3A4420;
+    --flame: #FF7A59;
+    --flame-dim: #3D2620;
+    --volt: #6FA8FF;
+    --volt-dim: #202B3D;
+    --grape: #C892FF;
+    --grape-dim: #2E2440;
+  }
+
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0;
+    background:#0A0C0F;
+    font-family:'Inter', sans-serif;
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+  }
+  body{
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    padding: 32px 12px;
+  }
+
+  .device{
+    width: 390px; height: 844px;
+    background: var(--bg);
+    border-radius: 44px;
+    border: 1px solid #262d35;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.6), 0 0 0 8px #05070a;
+    overflow: hidden;
+    position: relative;
+    display:flex; flex-direction: column;
+  }
+
+  .statusbar{
+    display:flex; justify-content:space-between; align-items:center;
+    padding: 18px 28px 6px;
+    font-size: 14px; font-weight:600; color: var(--text);
+    flex-shrink:0;
+  }
+  .statusbar .dots{ display:flex; gap:5px; align-items:center; }
+  .statusbar .dots span{ width:4px; height:4px; border-radius:50%; background: var(--text); display:inline-block; }
+
+  .content{
+    flex:1; overflow-y:auto; padding: 4px 24px 130px;
+  }
+  .content::-webkit-scrollbar{ display:none; }
+
+  /* header */
+  .page-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin: 12px 0 18px;
+  }
+  .page-title{ font-family:'Unbounded'; font-weight:700; font-size:22px; }
+  .page-header .date{ font-size:12px; color:var(--text-muted); margin-top:2px; }
+  .goal-btn{
+    width:38px; height:38px; border-radius:13px;
+    background: var(--surface); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center;
+  }
+
+  /* grand anneau calories */
+  .ring-card{
+    background: linear-gradient(165deg, var(--surface) 0%, #171C22 100%);
+    border: 1px solid var(--line);
+    border-radius: 28px;
+    padding: 26px 20px;
+    display:flex; flex-direction:column; align-items:center;
+    margin-bottom: 18px;
+  }
+  .big-ring{ position:relative; width:180px; height:180px; margin-bottom:14px; }
+  .big-ring svg{ transform: rotate(-90deg); }
+  .big-ring .bg{ fill:none; stroke:#2A323B; stroke-width:14; }
+  .big-ring .fg{
+    fill:none; stroke: var(--flame); stroke-width:14; stroke-linecap:round;
+    stroke-dasharray: 502; stroke-dashoffset: 178;
+    filter: drop-shadow(0 0 8px rgba(255,122,89,0.4));
+  }
+  .big-ring-center{
+    position:absolute; inset:0; display:flex; flex-direction:column;
+    align-items:center; justify-content:center;
+  }
+  .big-ring-center .num{ font-family:'Unbounded'; font-weight:800; font-size:30px; }
+  .big-ring-center .lbl{ font-size:11.5px; color:var(--text-muted); margin-top:4px; text-align:center; }
+
+  .ring-footer{ display:flex; gap:26px; }
+  .ring-footer .item{ text-align:center; }
+  .ring-footer .item .v{ font-weight:700; font-size:14px; }
+  .ring-footer .item .k{ font-size:10.5px; color:var(--text-muted); margin-top:2px; }
+  .ring-footer .sep{ width:1px; background:var(--line); }
+
+  /* macros */
+  .section-title{
+    font-size: 12px; letter-spacing:0.1em; text-transform:uppercase;
+    color: var(--text-muted); font-weight:700; margin: 6px 0 12px;
+  }
+  .macro-row{ display:flex; gap:10px; margin-bottom:8px; }
+  .macro-card{
+    flex:1; background: var(--surface); border:1px solid var(--line);
+    border-radius:18px; padding:14px 12px; text-align:center;
+  }
+  .macro-ring{ position:relative; width:52px; height:52px; margin:0 auto 8px; }
+  .macro-ring svg{ transform: rotate(-90deg); }
+  .macro-ring .bg{ fill:none; stroke:#2A323B; stroke-width:6; }
+  .macro-ring .fg{ fill:none; stroke-width:6; stroke-linecap:round; }
+  .macro-card.p .fg{ stroke: var(--volt); }
+  .macro-card.g .fg{ stroke: var(--lime); }
+  .macro-card.l .fg{ stroke: var(--grape); }
+  .macro-ring .val{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700;
+  }
+  .macro-name{ font-size:11.5px; color:var(--text-muted); }
+  .macro-amt{ font-size:12.5px; font-weight:600; margin-top:1px; }
+
+  /* repas */
+  .meal-group{ margin-bottom: 6px; }
+  .meal-group-header{
+    display:flex; align-items:center; justify-content:space-between;
+    margin: 18px 0 10px;
+  }
+  .meal-group-title{ font-weight:700; font-size:14.5px; }
+  .meal-group-kcal{ font-size:12px; color:var(--text-muted); }
+
+  .food-item{
+    display:flex; align-items:center; gap:12px;
+    background: var(--surface); border:1px solid var(--line);
+    border-radius:18px; padding:12px 14px; margin-bottom:8px;
+  }
+  .food-icon{
+    width:38px; height:38px; border-radius:12px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:18px;
+  }
+  .food-icon.a{ background: var(--flame-dim); }
+  .food-icon.b{ background: var(--lime-dim); }
+  .food-icon.c{ background: var(--grape-dim); }
+  .food-meta{ flex:1; }
+  .food-name{ font-weight:600; font-size:13.5px; }
+  .food-detail{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
+  .food-kcal{ font-weight:700; font-size:13.5px; color: var(--text); white-space:nowrap; }
+
+  .add-meal-btn{
+    width:100%; border:1.5px dashed var(--line); border-radius:18px;
+    background: transparent; color: var(--text-muted);
+    padding: 13px; font-size:13px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    margin-top: 4px; font-family:'Inter';
+  }
+
+  /* bottom nav (identique) */
+  .navbar{
+    position:absolute; left:0; right:0; bottom:0; height:108px;
+    background: linear-gradient(180deg, rgba(18,22,27,0) 0%, var(--bg) 30%);
+    display:flex; align-items:flex-end; justify-content:center; padding-bottom:26px;
+  }
+  .nav-pill{
+    width:300px; height:66px;
+    background: rgba(27,33,40,0.9); backdrop-filter: blur(14px);
+    border:1px solid var(--line); border-radius:33px;
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 0 22px; position:relative;
+  }
+  .nav-item{
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    color: var(--text-muted); width:44px; position:relative;
+  }
+  .nav-item .lbl{ font-size:10px; font-weight:600; }
+  .nav-item.cal{ color: var(--flame); }
+  .nav-item.sport{ color: var(--volt); }
+  .nav-item.active .chip{
+    position:absolute; top:-8px; left:50%; transform:translateX(-50%);
+    width:34px; height:34px; border-radius:11px; z-index:-1;
+  }
+  .nav-item.cal.active .chip{ background: var(--flame-dim); }
+
+  .nav-home{
+    position:absolute; left:50%; top:-26px; transform:translateX(-50%);
+    width:64px; height:64px; border-radius:50%;
+    background: var(--lime);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 8px 24px rgba(212,242,82,0.2), 0 0 0 6px var(--bg);
+  }
+  .nav-home-label{
+    position:absolute; left:50%; transform:translateX(-50%);
+    top:40px; font-size:10px; font-weight:700; color: var(--text-muted);
+    white-space:nowrap;
+  }
+</style>
+</head>
+<body>
+
+<div class="device">
+
+  <div class="statusbar">
+    <span>9:41</span>
+    <div class="dots"><span></span><span></span><span></span></div>
+  </div>
+
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Calories</div>
+        <div class="date">Mardi 3 août</div>
+      </div>
+      <div class="goal-btn">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F2F0EA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.36.14.64.4 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </div>
+    </div>
+
+    <div class="ring-card">
+      <div class="big-ring">
+        <svg width="180" height="180" viewBox="0 0 180 180">
+          <circle class="bg" cx="90" cy="90" r="80"></circle>
+          <circle class="fg" cx="90" cy="90" r="80"></circle>
+        </svg>
+        <div class="big-ring-center">
+          <div class="num">1 160</div>
+          <div class="lbl">kcal restantes<br>sur 2 400</div>
+        </div>
+      </div>
+      <div class="ring-footer">
+        <div class="item">
+          <div class="v">2 400</div>
+          <div class="k">Objectif</div>
+        </div>
+        <div class="sep"></div>
+        <div class="item">
+          <div class="v">1 240</div>
+          <div class="k">Consommées</div>
+        </div>
+        <div class="sep"></div>
+        <div class="item">
+          <div class="v">180</div>
+          <div class="k">Brûlées</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="section-title">Macronutriments</div>
+    <div class="macro-row">
+      <div class="macro-card p">
+        <div class="macro-ring">
+          <svg width="52" height="52" viewBox="0 0 52 52">
+            <circle class="bg" cx="26" cy="26" r="21"></circle>
+            <circle class="fg" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="45"></circle>
+          </svg>
+          <div class="val">66%</div>
+        </div>
+        <div class="macro-name">Protéines</div>
+        <div class="macro-amt">78 / 120 g</div>
+      </div>
+      <div class="macro-card g">
+        <div class="macro-ring">
+          <svg width="52" height="52" viewBox="0 0 52 52">
+            <circle class="bg" cx="26" cy="26" r="21"></circle>
+            <circle class="fg" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="20"></circle>
+          </svg>
+          <div class="val">85%</div>
+        </div>
+        <div class="macro-name">Glucides</div>
+        <div class="macro-amt">136 / 160 g</div>
+      </div>
+      <div class="macro-card l">
+        <div class="macro-ring">
+          <svg width="52" height="52" viewBox="0 0 52 52">
+            <circle class="bg" cx="26" cy="26" r="21"></circle>
+            <circle class="fg" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="79"></circle>
+          </svg>
+          <div class="val">40%</div>
+        </div>
+        <div class="macro-name">Lipides</div>
+        <div class="macro-amt">28 / 70 g</div>
+      </div>
+    </div>
+
+    <div class="meal-group">
+      <div class="meal-group-header">
+        <div class="meal-group-title">🌅 Petit-déjeuner</div>
+        <div class="meal-group-kcal">410 kcal</div>
+      </div>
+      <div class="food-item">
+        <div class="food-icon a">🥣</div>
+        <div class="food-meta">
+          <div class="food-name">Flocons d'avoine & fruits rouges</div>
+          <div class="food-detail">1 bol · 8h12</div>
+        </div>
+        <div class="food-kcal">320 kcal</div>
+      </div>
+      <div class="food-item">
+        <div class="food-icon b">☕</div>
+        <div class="food-meta">
+          <div class="food-name">Café au lait</div>
+          <div class="food-detail">1 tasse · 8h15</div>
+        </div>
+        <div class="food-kcal">90 kcal</div>
+      </div>
+    </div>
+
+    <div class="meal-group">
+      <div class="meal-group-header">
+        <div class="meal-group-title">☀️ Déjeuner</div>
+        <div class="meal-group-kcal">610 kcal</div>
+      </div>
+      <div class="food-item">
+        <div class="food-icon c">🍗</div>
+        <div class="food-meta">
+          <div class="food-name">Poulet, riz complet & légumes</div>
+          <div class="food-detail">1 assiette · 12h40</div>
+        </div>
+        <div class="food-kcal">610 kcal</div>
+      </div>
+    </div>
+
+    <div class="meal-group">
+      <div class="meal-group-header">
+        <div class="meal-group-title">🌙 Dîner</div>
+        <div class="meal-group-kcal">Pas encore ajouté</div>
+      </div>
+      <button class="add-meal-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Ajouter un aliment
+      </button>
+    </div>
+
+  </div>
+
+  <div class="navbar">
+    <div class="nav-pill">
+      <div class="nav-item cal active">
+        <div class="chip"></div>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+        <span class="lbl">Calories</span>
+      </div>
+
+      <div style="width:64px;"></div>
+
+      <div class="nav-item sport">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg>
+        <span class="lbl">Sport</span>
+      </div>
+    </div>
+
+    <div class="nav-home">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </div>
+    <div class="nav-home-label">Accueil</div>
+  </div>
+
+</div>
+
+</body>
+</html>
