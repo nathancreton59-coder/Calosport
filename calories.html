@@ -156,6 +156,13 @@
   .food-name{ font-weight:600; font-size:13.5px; }
   .food-detail{ font-size:11.5px; color:var(--text-muted); margin-top:2px; }
   .food-kcal{ font-weight:700; font-size:13.5px; color: var(--text); white-space:nowrap; }
+  .food-delete{
+    width:26px; height:26px; border-radius:8px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background: transparent; border:none; cursor:pointer;
+    color: var(--text-muted);
+  }
+  .food-delete:hover{ color: var(--flame); background: var(--flame-dim); }
 
   .add-meal-btn{
     width:100%; border:1.5px dashed var(--line); border-radius:18px;
@@ -433,6 +440,13 @@
     loadCalories();
   }
 
+  async function deleteMeal(mealId){
+    if (!confirm("Supprimer cet aliment ?")) return;
+    const { error } = await supabaseClient.from("meals").delete().eq("id", mealId);
+    if (error){ alert("Erreur : " + error.message); return; }
+    loadCalories();
+  }
+
   function renderMeals(meals){
     const container = document.getElementById("meals-container");
     container.innerHTML = "";
@@ -458,7 +472,10 @@
             <div class="food-name">${m.name}</div>
             <div class="food-detail">${time}</div>
           </div>
-          <div class="food-kcal">${m.calories} kcal</div>`;
+          <div class="food-kcal">${m.calories} kcal</div>
+          <button class="food-delete" onclick="deleteMeal('${m.id}')" title="Supprimer">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+          </button>`;
         groupEl.appendChild(foodEl);
       });
 
