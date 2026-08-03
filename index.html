@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg: #12161B;
@@ -241,23 +242,30 @@
   </div>
 
   <div class="content">
-    <div class="greeting-eyebrow">Mardi 3 août</div>
-    <div class="greeting">Bonjour, Léa <span>👋</span></div>
+    <div style="display:flex; align-items:flex-start; justify-content:space-between;">
+      <div>
+        <div class="greeting-eyebrow" id="today-date">—</div>
+        <div class="greeting">Bonjour, <span id="greet-name">👋</span></div>
+      </div>
+      <div onclick="logout()" title="Se déconnecter" style="width:34px;height:34px;border-radius:11px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;margin-top:2px;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      </div>
+    </div>
 
     <div class="today-card">
       <div class="ring-wrap">
         <svg width="112" height="112" viewBox="0 0 112 112">
           <circle class="ring-bg" cx="56" cy="56" r="50"></circle>
-          <circle class="ring-fg" cx="56" cy="56" r="50"></circle>
+          <circle class="ring-fg" id="ring-fg" cx="56" cy="56" r="50"></circle>
         </svg>
         <div class="ring-center">
-          <div class="num">65%</div>
+          <div class="num" id="ring-pct">—</div>
           <div class="lbl">de l'objectif</div>
         </div>
       </div>
       <div class="today-info">
         <div class="title">Ton énergie du jour</div>
-        <div class="sub"><b>1 240</b> / 2 400 kcal consommées.<br>Il te reste <b>1 160 kcal</b> avant ce soir.</div>
+        <div class="sub" id="today-sub">Chargement…</div>
       </div>
     </div>
 
@@ -267,32 +275,32 @@
         <div class="stat-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF7A59" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
         </div>
-        <div class="stat-value">1 240 kcal</div>
+        <div class="stat-value" id="cal-value">— kcal</div>
         <div class="stat-label">Calories consommées</div>
-        <div class="stat-bar"><i></i></div>
+        <div class="stat-bar"><i id="cal-bar" style="width:0%"></i></div>
       </div>
       <div class="stat-card sport">
         <div class="stat-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3zM9 4l1.5-1.5M15 20l1.5-1.5M4 20l1.5-1.5M20 4l-1.5 1.5"/></svg>
         </div>
-        <div class="stat-value">32 min</div>
+        <div class="stat-value" id="active-value">— min</div>
         <div class="stat-label">Activité physique</div>
-        <div class="stat-bar"><i></i></div>
+        <div class="stat-bar"><i id="active-bar" style="width:0%"></i></div>
       </div>
     </div>
 
     <div class="section-title">Prochaine séance</div>
-    <div class="workout-card">
+    <div class="workout-card" id="next-workout-card">
       <div class="workout-thumb">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg>
       </div>
       <div class="workout-meta">
-        <div class="t">Haut du corps — Force</div>
-        <div class="m">18h30 · 45 min · 6 exercices</div>
+        <div class="t" id="next-workout-title">Chargement…</div>
+        <div class="m" id="next-workout-meta"></div>
       </div>
-      <div class="workout-cta">
+      <a class="workout-cta" href="sport.html">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </div>
+      </a>
     </div>
   </div>
 
@@ -319,5 +327,79 @@
 
 </div>
 
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  const RING_CIRCUMFERENCE = 314; // 2 * PI * 50
+
+  function setRing(pct){
+    const clamped = Math.max(0, Math.min(1, pct));
+    const offset = RING_CIRCUMFERENCE * (1 - clamped);
+    document.getElementById("ring-fg").style.strokeDashoffset = offset;
+    document.getElementById("ring-pct").textContent = Math.round(clamped * 100) + "%";
+  }
+
+  async function loadHome(){
+    const user = await requireAuth();
+    if (!user) return;
+
+    document.getElementById("today-date").textContent =
+      new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+    const firstName = (user.user_metadata && user.user_metadata.full_name) ? user.user_metadata.full_name.split(" ")[0] : "";
+    document.getElementById("greet-name").textContent = (firstName ? firstName + " " : "") + "👋";
+
+    // Profil (objectifs)
+    const { data: profile } = await supabaseClient
+      .from("profiles").select("*").eq("id", user.id).single();
+    const calorieGoal = profile?.calorie_goal ?? 2400;
+
+    // Repas du jour
+    const { data: meals } = await supabaseClient
+      .from("meals").select("calories")
+      .eq("user_id", user.id)
+      .gte("logged_at", startOfToday().toISOString())
+      .lte("logged_at", endOfToday().toISOString());
+
+    const consumed = (meals || []).reduce((s, m) => s + (m.calories || 0), 0);
+    const remaining = Math.max(0, calorieGoal - consumed);
+    setRing(consumed / calorieGoal);
+    document.getElementById("today-sub").innerHTML =
+      `<b>${consumed.toLocaleString("fr-FR")}</b> / ${calorieGoal.toLocaleString("fr-FR")} kcal consommées.<br>Il te reste <b>${remaining.toLocaleString("fr-FR")} kcal</b> avant ce soir.`;
+    document.getElementById("cal-value").textContent = consumed.toLocaleString("fr-FR") + " kcal";
+    document.getElementById("cal-bar").style.width = Math.min(100, (consumed / calorieGoal) * 100) + "%";
+
+    // Séances du jour (durée d'activité déjà faite)
+    const { data: todaysWorkouts } = await supabaseClient
+      .from("workouts").select("duration_min, completed")
+      .eq("user_id", user.id)
+      .gte("scheduled_at", startOfToday().toISOString())
+      .lte("scheduled_at", endOfToday().toISOString());
+
+    const activeMin = (todaysWorkouts || []).filter(w => w.completed).reduce((s, w) => s + (w.duration_min || 0), 0);
+    document.getElementById("active-value").textContent = activeMin + " min";
+    document.getElementById("active-bar").style.width = Math.min(100, (activeMin / 60) * 100) + "%";
+
+    // Prochaine séance non terminée
+    const { data: next } = await supabaseClient
+      .from("workouts").select("*")
+      .eq("user_id", user.id)
+      .eq("completed", false)
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (next){
+      document.getElementById("next-workout-title").textContent = next.name;
+      const when = next.scheduled_at ? new Date(next.scheduled_at).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "Non planifiée";
+      document.getElementById("next-workout-meta").textContent = `${when} · ${next.duration_min || "?"} min`;
+    } else {
+      document.getElementById("next-workout-title").textContent = "Aucune séance planifiée";
+      document.getElementById("next-workout-meta").textContent = "Ajoute-en une depuis l'onglet Sport";
+    }
+  }
+
+  loadHome();
+</script>
 </body>
 </html>

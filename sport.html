@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg: #12161B;
@@ -227,27 +228,19 @@
     <div class="page-header">
       <div>
         <div class="page-title">Sport</div>
-        <div class="date">Mardi 3 août</div>
+        <div class="date" id="sport-date">—</div>
       </div>
-      <div class="goal-btn">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F2F0EA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      <div class="goal-btn" onclick="logout()" title="Se déconnecter" style="cursor:pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
       </div>
     </div>
 
     <div class="week-card">
       <div class="week-top">
         <div class="t">Activité de la semaine</div>
-        <div class="v">3h 40 min</div>
+        <div class="v" id="week-total">—</div>
       </div>
-      <div class="bars">
-        <div class="bar-col"><div class="bar-track"><div class="bar-fill" style="height:45%"></div></div><div class="d">L</div></div>
-        <div class="bar-col"><div class="bar-track"><div class="bar-fill" style="height:70%"></div></div><div class="d">M</div></div>
-        <div class="bar-col today"><div class="bar-track"><div class="bar-fill" style="height:38%"></div></div><div class="d">M</div></div>
-        <div class="bar-col"><div class="bar-track"><div class="bar-fill" style="height:0%"></div></div><div class="d">J</div></div>
-        <div class="bar-col"><div class="bar-track"><div class="bar-fill" style="height:0%"></div></div><div class="d">V</div></div>
-        <div class="bar-col"><div class="bar-track"><div class="bar-fill" style="height:0%"></div></div><div class="d">S</div></div>
-        <div class="bar-col"><div class="bar-track"><div class="bar-fill" style="height:0%"></div></div><div class="d">D</div></div>
-      </div>
+      <div class="bars" id="week-bars"></div>
     </div>
 
     <div class="section-title">Cette semaine</div>
@@ -256,97 +249,27 @@
         <div class="stat-icon">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg>
         </div>
-        <div class="stat-value">4</div>
+        <div class="stat-value" id="completed-count">—</div>
         <div class="stat-label">Séances complétées</div>
       </div>
       <div class="stat-card">
         <div class="stat-icon">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
         </div>
-        <div class="stat-value">1 480</div>
+        <div class="stat-value" id="burned-total">—</div>
         <div class="stat-label">Kcal brûlées</div>
       </div>
     </div>
 
     <div class="section-title">Séance du jour</div>
-    <div class="workout-hero">
-      <div class="eyebrow">Force · Haut du corps</div>
-      <div class="title">Push day — épaules & triceps</div>
-      <div class="meta">18h30 · 45 min · 6 exercices</div>
-      <button class="start-btn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="#12161B"><path d="M8 5v14l11-7z"/></svg>
-        Démarrer la séance
-      </button>
+    <div id="workout-hero-container">
+      <div class="workout-hero"><div class="title">Chargement…</div></div>
     </div>
 
-    <div style="margin-top:16px;">
-      <div class="exo-item">
-        <div class="exo-num">01</div>
-        <div class="exo-meta">
-          <div class="exo-name">Développé épaules haltères</div>
-          <div class="exo-detail">4 séries × 10 reps</div>
-        </div>
-        <div class="exo-check done">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-        </div>
-      </div>
-      <div class="exo-item">
-        <div class="exo-num">02</div>
-        <div class="exo-meta">
-          <div class="exo-name">Élévations latérales</div>
-          <div class="exo-detail">3 séries × 12 reps</div>
-        </div>
-        <div class="exo-check"></div>
-      </div>
-      <div class="exo-item">
-        <div class="exo-num">03</div>
-        <div class="exo-meta">
-          <div class="exo-name">Extensions triceps poulie</div>
-          <div class="exo-detail">4 séries × 12 reps</div>
-        </div>
-        <div class="exo-check"></div>
-      </div>
-      <div class="exo-item">
-        <div class="exo-num">04</div>
-        <div class="exo-meta">
-          <div class="exo-name">Dips lestés</div>
-          <div class="exo-detail">3 séries × 8 reps</div>
-        </div>
-        <div class="exo-check"></div>
-      </div>
-    </div>
+    <div style="margin-top:16px;" id="exo-list"></div>
 
     <div class="section-title">Historique récent</div>
-    <div class="history-item">
-      <div class="history-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg>
-      </div>
-      <div class="history-meta">
-        <div class="history-name">Jambes & fessiers</div>
-        <div class="history-date">Lundi</div>
-      </div>
-      <div class="history-dur">50 min</div>
-    </div>
-    <div class="history-item">
-      <div class="history-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg>
-      </div>
-      <div class="history-meta">
-        <div class="history-name">Course à pied</div>
-        <div class="history-date">Dimanche</div>
-      </div>
-      <div class="history-dur">28 min</div>
-    </div>
-    <div class="history-item">
-      <div class="history-icon">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg>
-      </div>
-      <div class="history-meta">
-        <div class="history-name">Dos & biceps</div>
-        <div class="history-date">Samedi</div>
-      </div>
-      <div class="history-dur">42 min</div>
-    </div>
+    <div id="history-list"><div class="history-item"><div class="history-meta"><div class="history-name">Chargement…</div></div></div></div>
 
   </div>
 
@@ -374,5 +297,168 @@
 
 </div>
 
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
+  let activeWorkoutId = null;
+
+  function endOfWeek(){
+    const d = startOfWeek();
+    d.setDate(d.getDate() + 7);
+    d.setMilliseconds(-1);
+    return d;
+  }
+
+  async function toggleExercise(exoId, currentlyDone){
+    await supabaseClient.from("exercises").update({ done: !currentlyDone }).eq("id", exoId);
+    loadSport();
+  }
+
+  async function startWorkout(workoutId){
+    await supabaseClient.from("workouts").update({ completed: true }).eq("id", workoutId);
+    loadSport();
+  }
+
+  function renderWeekBars(workouts){
+    const weekStart = startOfWeek();
+    const totals = [0,0,0,0,0,0,0]; // minutes par jour, lundi -> dimanche
+    workouts.forEach(w => {
+      if (!w.completed || !w.scheduled_at) return;
+      const d = new Date(w.scheduled_at);
+      const dayIdx = Math.floor((d - weekStart) / 86400000);
+      if (dayIdx >= 0 && dayIdx < 7) totals[dayIdx] += (w.duration_min || 0);
+    });
+
+    const max = Math.max(60, ...totals);
+    const todayIdx = Math.floor((new Date() - weekStart) / 86400000);
+    const container = document.getElementById("week-bars");
+    container.innerHTML = "";
+    totals.forEach((min, i) => {
+      const isToday = i === todayIdx;
+      const pct = Math.min(100, (min / max) * 100);
+      const col = document.createElement("div");
+      col.className = "bar-col" + (isToday ? " today" : "");
+      col.innerHTML = `<div class="bar-track"><div class="bar-fill" style="height:${pct}%"></div></div><div class="d">${DAY_LABELS[i]}</div>`;
+      container.appendChild(col);
+    });
+
+    const totalMin = totals.reduce((s, m) => s + m, 0);
+    document.getElementById("week-total").textContent = `${Math.floor(totalMin / 60)}h ${totalMin % 60} min`;
+  }
+
+  function renderHistory(workouts){
+    const completed = workouts
+      .filter(w => w.completed)
+      .sort((a, b) => new Date(b.scheduled_at || b.created_at) - new Date(a.scheduled_at || a.created_at))
+      .slice(0, 5);
+
+    const container = document.getElementById("history-list");
+    if (!completed.length){
+      container.innerHTML = `<div class="history-item"><div class="history-meta"><div class="history-name">Pas encore de séance terminée</div></div></div>`;
+      return;
+    }
+    container.innerHTML = "";
+    completed.forEach(w => {
+      const date = w.scheduled_at ? new Date(w.scheduled_at).toLocaleDateString("fr-FR", { weekday: "long" }) : "";
+      const el = document.createElement("div");
+      el.className = "history-item";
+      el.innerHTML = `
+        <div class="history-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg></div>
+        <div class="history-meta">
+          <div class="history-name">${w.name}</div>
+          <div class="history-date">${date}</div>
+        </div>
+        <div class="history-dur">${w.duration_min || "?"} min</div>`;
+      container.appendChild(el);
+    });
+  }
+
+  async function renderTodayWorkout(user){
+    const { data: todays } = await supabaseClient
+      .from("workouts").select("*")
+      .eq("user_id", user.id)
+      .eq("completed", false)
+      .gte("scheduled_at", startOfToday().toISOString())
+      .lte("scheduled_at", endOfToday().toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const heroContainer = document.getElementById("workout-hero-container");
+    const exoContainer = document.getElementById("exo-list");
+
+    if (!todays){
+      heroContainer.innerHTML = `
+        <div class="workout-hero">
+          <div class="eyebrow">Aujourd'hui</div>
+          <div class="title">Aucune séance planifiée</div>
+          <div class="meta">Ajoute une séance pour aujourd'hui depuis Supabase ou ton futur écran de création.</div>
+        </div>`;
+      exoContainer.innerHTML = "";
+      return;
+    }
+
+    activeWorkoutId = todays.id;
+    const time = todays.scheduled_at ? new Date(todays.scheduled_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+
+    const { data: exercises } = await supabaseClient
+      .from("exercises").select("*")
+      .eq("workout_id", todays.id)
+      .order("position", { ascending: true });
+
+    heroContainer.innerHTML = `
+      <div class="workout-hero">
+        <div class="eyebrow">${todays.workout_type || "Séance"}</div>
+        <div class="title">${todays.name}</div>
+        <div class="meta">${time} · ${todays.duration_min || "?"} min · ${(exercises || []).length} exercices</div>
+        <button class="start-btn" onclick="startWorkout('${todays.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#12161B"><path d="M8 5v14l11-7z"/></svg>
+          Marquer la séance comme terminée
+        </button>
+      </div>`;
+
+    exoContainer.innerHTML = "";
+    (exercises || []).forEach((ex, i) => {
+      const el = document.createElement("div");
+      el.className = "exo-item";
+      el.innerHTML = `
+        <div class="exo-num">${String(i + 1).padStart(2, "0")}</div>
+        <div class="exo-meta">
+          <div class="exo-name">${ex.name}</div>
+          <div class="exo-detail">${ex.sets || "?"} séries × ${ex.reps || "?"} reps</div>
+        </div>
+        <div class="exo-check ${ex.done ? "done" : ""}" onclick="toggleExercise('${ex.id}', ${ex.done})">
+          ${ex.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ""}
+        </div>`;
+      exoContainer.appendChild(el);
+    });
+  }
+
+  async function loadSport(){
+    const user = await requireAuth();
+    if (!user) return;
+
+    document.getElementById("sport-date").textContent =
+      new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+    const { data: weekWorkouts } = await supabaseClient
+      .from("workouts").select("*")
+      .eq("user_id", user.id)
+      .gte("scheduled_at", startOfWeek().toISOString())
+      .lte("scheduled_at", endOfWeek().toISOString());
+
+    const list = weekWorkouts || [];
+    renderWeekBars(list);
+    document.getElementById("completed-count").textContent = list.filter(w => w.completed).length;
+    document.getElementById("burned-total").textContent =
+      list.filter(w => w.completed).reduce((s, w) => s + (w.calories_burned || 0), 0).toLocaleString("fr-FR");
+    renderHistory(list);
+
+    await renderTodayWorkout(user);
+  }
+
+  loadSport();
+</script>
 </body>
 </html>

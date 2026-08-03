@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Connexion — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #12161B; --surface: #1B2128; --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+    --lime: #D4F252; --flame: #FF7A59;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+  body{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 12px; }
+
+  .device{
+    width:390px; min-height:844px; background:var(--bg);
+    border-radius:44px; border:1px solid #262d35;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.6), 0 0 0 8px #05070a;
+    overflow:hidden; position:relative; display:flex; flex-direction:column;
+    padding: 70px 28px 40px;
+  }
+
+  .brand{ text-align:center; margin-bottom: 46px; }
+  .brand-mark{
+    width:56px; height:56px; border-radius:18px; background:var(--lime);
+    display:flex; align-items:center; justify-content:center; margin: 0 auto 18px;
+  }
+  .brand h1{ font-family:'Unbounded'; font-size:20px; font-weight:700; margin:0 0 6px; }
+  .brand p{ font-size:13px; color:var(--text-muted); margin:0; }
+
+  .tabs{ display:flex; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:4px; margin-bottom:24px; }
+  .tab{ flex:1; text-align:center; padding:10px; font-size:13.5px; font-weight:600; color:var(--text-muted); border-radius:12px; cursor:pointer; }
+  .tab.active{ background:var(--lime); color:#12161B; }
+
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; color:var(--text-muted); margin-bottom:7px; font-weight:600; }
+  .field input{
+    width:100%; background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:14px; font-size:14px; color:var(--text); font-family:'Inter';
+  }
+  .field input:focus{ outline:none; border-color:var(--lime); }
+
+  .submit-btn{
+    width:100%; border:none; border-radius:16px; background:var(--lime); color:#12161B;
+    font-family:'Inter'; font-weight:700; font-size:14.5px; padding:15px; margin-top:10px;
+  }
+  .submit-btn:disabled{ opacity:0.6; }
+
+  .msg{ font-size:12.5px; margin-top:14px; text-align:center; min-height:16px; }
+  .msg.error{ color: var(--flame); }
+  .msg.ok{ color: var(--lime); }
+</style>
+</head>
+<body>
+
+<div class="device">
+  <div class="brand">
+    <div class="brand-mark">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </div>
+    <h1>Bienvenue</h1>
+    <p>Suivi calories & séances de sport</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-login" onclick="switchTab('login')">Se connecter</div>
+    <div class="tab" id="tab-signup" onclick="switchTab('signup')">Créer un compte</div>
+  </div>
+
+  <form id="auth-form" onsubmit="handleSubmit(event)">
+    <div class="field" id="name-field" style="display:none;">
+      <label>Prénom</label>
+      <input type="text" id="full_name" placeholder="Léa">
+    </div>
+    <div class="field">
+      <label>Email</label>
+      <input type="email" id="email" placeholder="toi@exemple.com" required>
+    </div>
+    <div class="field">
+      <label>Mot de passe</label>
+      <input type="password" id="password" placeholder="••••••••" minlength="6" required>
+    </div>
+    <button class="submit-btn" id="submit-btn" type="submit">Se connecter</button>
+    <div class="msg" id="msg"></div>
+  </form>
+</div>
+
+<script src="config.js"></script>
+<script>
+  let mode = "login";
+
+  function switchTab(m){
+    mode = m;
+    document.getElementById("tab-login").classList.toggle("active", m === "login");
+    document.getElementById("tab-signup").classList.toggle("active", m === "signup");
+    document.getElementById("name-field").style.display = m === "signup" ? "block" : "none";
+    document.getElementById("submit-btn").textContent = m === "signup" ? "Créer mon compte" : "Se connecter";
+    document.getElementById("msg").textContent = "";
+  }
+
+  async function handleSubmit(e){
+    e.preventDefault();
+    const btn = document.getElementById("submit-btn");
+    const msg = document.getElementById("msg");
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    msg.textContent = ""; msg.className = "msg";
+    btn.disabled = true;
+
+    try{
+      if (mode === "signup"){
+        const full_name = document.getElementById("full_name").value.trim();
+        const { error } = await supabaseClient.auth.signUp({
+          email, password,
+          options: { data: { full_name } }
+        });
+        if (error) throw error;
+        msg.textContent = "Compte créé ! Vérifie ta boîte mail si une confirmation est demandée, puis connecte-toi.";
+        msg.className = "msg ok";
+        switchTab("login");
+      } else {
+        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        window.location.href = "index.html";
+      }
+    } catch(err){
+      msg.textContent = err.message || "Une erreur est survenue.";
+      msg.className = "msg error";
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  // Si déjà connecté, on saute direct à l'accueil
+  (async () => {
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) window.location.href = "index.html";
+  })();
+</script>
+</body>
+</html>

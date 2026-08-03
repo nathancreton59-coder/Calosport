@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root{
     --bg: #12161B;
@@ -203,6 +204,32 @@
     top:40px; font-size:10px; font-weight:700; color: var(--text-muted);
     white-space:nowrap;
   }
+
+  /* modale ajout d'aliment */
+  .modal-overlay{
+    position:absolute; inset:0; background:rgba(6,8,10,0.72);
+    display:none; align-items:flex-end; z-index:50;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-sheet{
+    width:100%; background: var(--bg); border-top:1px solid var(--line);
+    border-radius: 28px 28px 0 0; padding: 22px 22px 28px; max-height:80%; overflow-y:auto;
+  }
+  .modal-title{ font-family:'Unbounded'; font-weight:700; font-size:17px; margin-bottom:16px; }
+  .modal-field{ margin-bottom:12px; }
+  .modal-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:6px; font-weight:600; }
+  .modal-field input, .modal-field select{
+    width:100%; background: var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:12px; font-size:13.5px; color:var(--text); font-family:'Inter';
+  }
+  .modal-row{ display:flex; gap:10px; }
+  .modal-row .modal-field{ flex:1; }
+  .modal-actions{ display:flex; gap:10px; margin-top:16px; }
+  .modal-btn{
+    flex:1; border:none; border-radius:14px; padding:13px; font-weight:700; font-size:13.5px; font-family:'Inter';
+  }
+  .modal-btn.cancel{ background: var(--surface); color: var(--text-muted); border:1px solid var(--line); }
+  .modal-btn.save{ background: var(--lime); color:#12161B; }
 </style>
 </head>
 <body>
@@ -218,10 +245,10 @@
     <div class="page-header">
       <div>
         <div class="page-title">Calories</div>
-        <div class="date">Mardi 3 août</div>
+        <div class="date" id="cal-date">—</div>
       </div>
-      <div class="goal-btn">
-        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#F2F0EA" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9c.36.14.64.4 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <div class="goal-btn" onclick="logout()" title="Se déconnecter" style="cursor:pointer;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
       </div>
     </div>
 
@@ -229,26 +256,26 @@
       <div class="big-ring">
         <svg width="180" height="180" viewBox="0 0 180 180">
           <circle class="bg" cx="90" cy="90" r="80"></circle>
-          <circle class="fg" cx="90" cy="90" r="80"></circle>
+          <circle class="fg" id="big-ring-fg" cx="90" cy="90" r="80"></circle>
         </svg>
         <div class="big-ring-center">
-          <div class="num">1 160</div>
-          <div class="lbl">kcal restantes<br>sur 2 400</div>
+          <div class="num" id="remaining-num">—</div>
+          <div class="lbl" id="remaining-lbl">kcal restantes</div>
         </div>
       </div>
       <div class="ring-footer">
         <div class="item">
-          <div class="v">2 400</div>
+          <div class="v" id="goal-v">—</div>
           <div class="k">Objectif</div>
         </div>
         <div class="sep"></div>
         <div class="item">
-          <div class="v">1 240</div>
+          <div class="v" id="consumed-v">—</div>
           <div class="k">Consommées</div>
         </div>
         <div class="sep"></div>
         <div class="item">
-          <div class="v">180</div>
+          <div class="v" id="burned-v">0</div>
           <div class="k">Brûlées</div>
         </div>
       </div>
@@ -260,86 +287,84 @@
         <div class="macro-ring">
           <svg width="52" height="52" viewBox="0 0 52 52">
             <circle class="bg" cx="26" cy="26" r="21"></circle>
-            <circle class="fg" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="45"></circle>
+            <circle class="fg" id="protein-ring" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="132"></circle>
           </svg>
-          <div class="val">66%</div>
+          <div class="val" id="protein-pct">0%</div>
         </div>
         <div class="macro-name">Protéines</div>
-        <div class="macro-amt">78 / 120 g</div>
+        <div class="macro-amt" id="protein-amt">0 / 0 g</div>
       </div>
       <div class="macro-card g">
         <div class="macro-ring">
           <svg width="52" height="52" viewBox="0 0 52 52">
             <circle class="bg" cx="26" cy="26" r="21"></circle>
-            <circle class="fg" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="20"></circle>
+            <circle class="fg" id="carbs-ring" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="132"></circle>
           </svg>
-          <div class="val">85%</div>
+          <div class="val" id="carbs-pct">0%</div>
         </div>
         <div class="macro-name">Glucides</div>
-        <div class="macro-amt">136 / 160 g</div>
+        <div class="macro-amt" id="carbs-amt">0 / 0 g</div>
       </div>
       <div class="macro-card l">
         <div class="macro-ring">
           <svg width="52" height="52" viewBox="0 0 52 52">
             <circle class="bg" cx="26" cy="26" r="21"></circle>
-            <circle class="fg" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="79"></circle>
+            <circle class="fg" id="fat-ring" cx="26" cy="26" r="21" stroke-dasharray="132" stroke-dashoffset="132"></circle>
           </svg>
-          <div class="val">40%</div>
+          <div class="val" id="fat-pct">0%</div>
         </div>
         <div class="macro-name">Lipides</div>
-        <div class="macro-amt">28 / 70 g</div>
+        <div class="macro-amt" id="fat-amt">0 / 0 g</div>
       </div>
     </div>
 
-    <div class="meal-group">
-      <div class="meal-group-header">
-        <div class="meal-group-title">🌅 Petit-déjeuner</div>
-        <div class="meal-group-kcal">410 kcal</div>
-      </div>
-      <div class="food-item">
-        <div class="food-icon a">🥣</div>
-        <div class="food-meta">
-          <div class="food-name">Flocons d'avoine & fruits rouges</div>
-          <div class="food-detail">1 bol · 8h12</div>
+    <div id="meals-container"><div class="section-title">Chargement des repas…</div></div>
+
+  </div>
+
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">Ajouter un aliment</div>
+      <form onsubmit="submitMeal(event)">
+        <div class="modal-field">
+          <label>Nom de l'aliment</label>
+          <input type="text" id="m-name" placeholder="Ex. Salade de poulet" required>
         </div>
-        <div class="food-kcal">320 kcal</div>
-      </div>
-      <div class="food-item">
-        <div class="food-icon b">☕</div>
-        <div class="food-meta">
-          <div class="food-name">Café au lait</div>
-          <div class="food-detail">1 tasse · 8h15</div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Repas</label>
+            <select id="m-type">
+              <option value="petit-dejeuner">Petit-déjeuner</option>
+              <option value="dejeuner">Déjeuner</option>
+              <option value="diner">Dîner</option>
+              <option value="collation">Collation</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label>Calories (kcal)</label>
+            <input type="number" id="m-cal" placeholder="350" min="0" required>
+          </div>
         </div>
-        <div class="food-kcal">90 kcal</div>
-      </div>
-    </div>
-
-    <div class="meal-group">
-      <div class="meal-group-header">
-        <div class="meal-group-title">☀️ Déjeuner</div>
-        <div class="meal-group-kcal">610 kcal</div>
-      </div>
-      <div class="food-item">
-        <div class="food-icon c">🍗</div>
-        <div class="food-meta">
-          <div class="food-name">Poulet, riz complet & légumes</div>
-          <div class="food-detail">1 assiette · 12h40</div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Protéines (g)</label>
+            <input type="number" id="m-protein" placeholder="0" min="0" step="0.1">
+          </div>
+          <div class="modal-field">
+            <label>Glucides (g)</label>
+            <input type="number" id="m-carbs" placeholder="0" min="0" step="0.1">
+          </div>
+          <div class="modal-field">
+            <label>Lipides (g)</label>
+            <input type="number" id="m-fat" placeholder="0" min="0" step="0.1">
+          </div>
         </div>
-        <div class="food-kcal">610 kcal</div>
-      </div>
+        <div class="modal-actions">
+          <button type="button" class="modal-btn cancel" onclick="closeModal()">Annuler</button>
+          <button type="submit" class="modal-btn save">Ajouter</button>
+        </div>
+      </form>
     </div>
-
-    <div class="meal-group">
-      <div class="meal-group-header">
-        <div class="meal-group-title">🌙 Dîner</div>
-        <div class="meal-group-kcal">Pas encore ajouté</div>
-      </div>
-      <button class="add-meal-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Ajouter un aliment
-      </button>
-    </div>
-
   </div>
 
   <div class="navbar">
@@ -366,5 +391,136 @@
 
 </div>
 
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  const BIG_RING_CIRC = 502;   // 2 * PI * 80
+  const MACRO_RING_CIRC = 132; // 2 * PI * 21
+
+  const MEAL_GROUPS = [
+    { key: "petit-dejeuner", label: "🌅 Petit-déjeuner" },
+    { key: "dejeuner", label: "☀️ Déjeuner" },
+    { key: "diner", label: "🌙 Dîner" },
+    { key: "collation", label: "🍎 Collation" },
+  ];
+
+  function openModal(prefType){
+    document.getElementById("modal-overlay").classList.add("open");
+    if (prefType) document.getElementById("m-type").value = prefType;
+  }
+  function closeModal(){
+    document.getElementById("modal-overlay").classList.remove("open");
+    document.getElementById("m-name").value = "";
+    document.getElementById("m-cal").value = "";
+    document.getElementById("m-protein").value = "";
+    document.getElementById("m-carbs").value = "";
+    document.getElementById("m-fat").value = "";
+  }
+
+  async function submitMeal(e){
+    e.preventDefault();
+    const { error } = await supabaseClient.from("meals").insert({
+      user_id: currentUser.id,
+      name: document.getElementById("m-name").value.trim(),
+      meal_type: document.getElementById("m-type").value,
+      calories: parseInt(document.getElementById("m-cal").value) || 0,
+      protein_g: parseFloat(document.getElementById("m-protein").value) || 0,
+      carbs_g: parseFloat(document.getElementById("m-carbs").value) || 0,
+      fat_g: parseFloat(document.getElementById("m-fat").value) || 0,
+    });
+    if (error){ alert("Erreur : " + error.message); return; }
+    closeModal();
+    loadCalories();
+  }
+
+  function renderMeals(meals){
+    const container = document.getElementById("meals-container");
+    container.innerHTML = "";
+    MEAL_GROUPS.forEach(group => {
+      const items = meals.filter(m => m.meal_type === group.key);
+      const totalKcal = items.reduce((s, m) => s + (m.calories || 0), 0);
+
+      const groupEl = document.createElement("div");
+      groupEl.className = "meal-group";
+
+      const header = document.createElement("div");
+      header.className = "meal-group-header";
+      header.innerHTML = `<div class="meal-group-title">${group.label}</div><div class="meal-group-kcal">${items.length ? totalKcal.toLocaleString("fr-FR") + " kcal" : "Pas encore ajouté"}</div>`;
+      groupEl.appendChild(header);
+
+      items.forEach(m => {
+        const time = new Date(m.logged_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+        const foodEl = document.createElement("div");
+        foodEl.className = "food-item";
+        foodEl.innerHTML = `
+          <div class="food-icon a">🍽️</div>
+          <div class="food-meta">
+            <div class="food-name">${m.name}</div>
+            <div class="food-detail">${time}</div>
+          </div>
+          <div class="food-kcal">${m.calories} kcal</div>`;
+        groupEl.appendChild(foodEl);
+      });
+
+      const addBtn = document.createElement("button");
+      addBtn.className = "add-meal-btn";
+      addBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg> Ajouter un aliment`;
+      addBtn.onclick = () => openModal(group.key);
+      groupEl.appendChild(addBtn);
+
+      container.appendChild(groupEl);
+    });
+  }
+
+  function setMacro(prefix, current, goal){
+    const pct = goal > 0 ? Math.min(1, current / goal) : 0;
+    document.getElementById(prefix + "-ring").style.strokeDashoffset = MACRO_RING_CIRC * (1 - pct);
+    document.getElementById(prefix + "-pct").textContent = Math.round(pct * 100) + "%";
+    document.getElementById(prefix + "-amt").textContent = `${Math.round(current)} / ${goal} g`;
+  }
+
+  async function loadCalories(){
+    const user = await requireAuth();
+    if (!user) return;
+
+    document.getElementById("cal-date").textContent =
+      new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+    const { data: profile } = await supabaseClient
+      .from("profiles").select("*").eq("id", user.id).single();
+    const calorieGoal = profile?.calorie_goal ?? 2400;
+    const proteinGoal = profile?.protein_goal_g ?? 120;
+    const carbsGoal = profile?.carbs_goal_g ?? 160;
+    const fatGoal = profile?.fat_goal_g ?? 70;
+
+    const { data: meals } = await supabaseClient
+      .from("meals").select("*")
+      .eq("user_id", user.id)
+      .gte("logged_at", startOfToday().toISOString())
+      .lte("logged_at", endOfToday().toISOString())
+      .order("logged_at", { ascending: true });
+
+    const list = meals || [];
+    const consumed = list.reduce((s, m) => s + (m.calories || 0), 0);
+    const protein = list.reduce((s, m) => s + (Number(m.protein_g) || 0), 0);
+    const carbs = list.reduce((s, m) => s + (Number(m.carbs_g) || 0), 0);
+    const fat = list.reduce((s, m) => s + (Number(m.fat_g) || 0), 0);
+    const remaining = Math.max(0, calorieGoal - consumed);
+
+    document.getElementById("big-ring-fg").style.strokeDashoffset = BIG_RING_CIRC * (1 - Math.min(1, consumed / calorieGoal));
+    document.getElementById("remaining-num").textContent = remaining.toLocaleString("fr-FR");
+    document.getElementById("remaining-lbl").innerHTML = `kcal restantes<br>sur ${calorieGoal.toLocaleString("fr-FR")}`;
+    document.getElementById("goal-v").textContent = calorieGoal.toLocaleString("fr-FR");
+    document.getElementById("consumed-v").textContent = consumed.toLocaleString("fr-FR");
+
+    setMacro("protein", protein, proteinGoal);
+    setMacro("carbs", carbs, carbsGoal);
+    setMacro("fat", fat, fatGoal);
+
+    renderMeals(list);
+  }
+
+  loadCalories();
+</script>
 </body>
 </html>
