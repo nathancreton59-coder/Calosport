@@ -213,6 +213,145 @@
     top:40px; font-size:10px; font-weight:700; color: var(--text-muted);
     white-space:nowrap;
   }
+
+  /* bouton flottant nouvelle seance */
+  .fab{
+    position:absolute; right:22px; bottom:150px; z-index:20;
+    width:52px; height:52px; border-radius:50%;
+    background: var(--volt); color:#12161B;
+    display:flex; align-items:center; justify-content:center;
+    border:none; box-shadow: 0 10px 24px rgba(111,168,255,0.4);
+    cursor:pointer;
+  }
+
+  /* modale creation de seance */
+  .modal-overlay{
+    position:absolute; inset:0; background:rgba(6,8,10,0.72);
+    display:none; align-items:flex-end; z-index:50;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-sheet{
+    width:100%; background: var(--bg); border-top:1px solid var(--line);
+    border-radius: 28px 28px 0 0; padding: 22px 22px 28px; max-height:82%; overflow-y:auto;
+  }
+  .modal-title{ font-family:'Unbounded'; font-weight:700; font-size:17px; margin-bottom:16px; }
+  .modal-field{ margin-bottom:12px; }
+  .modal-field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:6px; font-weight:600; }
+  .modal-field input, .modal-field select{
+    width:100%; background: var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:12px; font-size:13.5px; color:var(--text); font-family:'Inter';
+  }
+  .modal-row{ display:flex; gap:10px; }
+  .modal-row .modal-field{ flex:1; }
+  .modal-actions{ display:flex; gap:10px; margin-top:16px; }
+  .modal-btn{
+    flex:1; border:none; border-radius:14px; padding:13px; font-weight:700; font-size:13.5px; font-family:'Inter';
+  }
+  .modal-btn.cancel{ background: var(--surface); color: var(--text-muted); border:1px solid var(--line); }
+  .modal-btn.save{ background: var(--volt); color:#12161B; }
+
+  .exo-row{
+    display:flex; flex-direction:column; gap:8px;
+    background: var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px; margin-bottom:8px;
+  }
+  .exo-row-top{ display:flex; gap:8px; align-items:center; }
+  .exo-row-bottom{ display:flex; gap:8px; align-items:center; }
+  .exo-row input{
+    background: var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:9px; font-size:12.5px; color:var(--text); font-family:'Inter';
+  }
+  .exo-row select.exo-select{
+    flex:1; min-width:0; background: var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:9px; font-size:12.5px; color:var(--text); font-family:'Inter';
+  }
+  .exo-row .exo-custom-input{ flex:1; min-width:0; display:none; }
+  .exo-row .exo-sets-input, .exo-row .exo-reps-input, .exo-row .exo-rest-input{ width:100%; text-align:center; }
+  .exo-row .exo-mini{ flex:1; text-align:center; }
+  .exo-row .exo-mini .u{ font-size:9px; color:var(--text-muted); display:block; margin-bottom:3px; }
+  .exo-row .exo-remove{
+    background:none; border:none; color:var(--text-muted); cursor:pointer;
+    width:26px; height:26px; flex-shrink:0; display:flex; align-items:center; justify-content:center;
+  }
+  .add-exo-btn{
+    width:100%; border:1.5px dashed var(--line); border-radius:14px;
+    background: transparent; color: var(--text-muted); padding:11px; font-size:12.5px; font-weight:600;
+    display:flex; align-items:center; justify-content:center; gap:6px; font-family:'Inter'; margin-bottom:6px;
+  }
+
+  .exo-row.legacy .exo-custom-input{ flex:1; min-width:120px; display:none; }
+
+  /* ---------- mode live ---------- */
+  .live-overlay{
+    position:absolute; inset:0; background: var(--bg); z-index:80;
+    display:none; flex-direction:column;
+  }
+  .live-overlay.open{ display:flex; }
+  .live-top{
+    display:flex; align-items:center; justify-content:space-between;
+    padding: 20px 22px 10px;
+  }
+  .live-close{
+    width:34px; height:34px; border-radius:11px; background:var(--surface); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text-muted);
+  }
+  .live-progress-lbl{ font-size:12px; color:var(--text-muted); font-weight:600; }
+  .live-body{ flex:1; overflow-y:auto; padding: 6px 22px 24px; }
+
+  .live-exo-name{ font-family:'Unbounded'; font-weight:700; font-size:21px; margin: 6px 0 4px; }
+  .live-exo-meta{ font-size:12.5px; color:var(--text-muted); margin-bottom:20px; }
+
+  .set-row{
+    display:flex; align-items:center; gap:10px;
+    background: var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:12px 14px; margin-bottom:10px;
+  }
+  .set-row.done{ border-color: var(--volt); }
+  .set-num{
+    width:28px; height:28px; border-radius:9px; background: var(--volt-dim); color: var(--volt);
+    font-family:'Unbounded'; font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .set-input-group{ flex:1; display:flex; gap:8px; }
+  .set-input-group input{
+    width:100%; background: var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:9px; font-size:13px; color:var(--text); font-family:'Inter'; text-align:center;
+  }
+  .set-input-group .grp{ flex:1; }
+  .set-input-group .grp .u{ font-size:9.5px; color:var(--text-muted); display:block; text-align:center; margin-bottom:4px; }
+  .set-validate{
+    width:36px; height:36px; border-radius:50%; border:1.5px solid var(--line); background:transparent;
+    color: var(--text-muted); flex-shrink:0; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .set-validate.done{ background: var(--volt); border-color:var(--volt); color:#12161B; }
+
+  .rest-card{
+    margin-top: 6px; background: linear-gradient(165deg, var(--volt-dim) 0%, #171C22 100%);
+    border:1px solid var(--line); border-radius:22px; padding:26px 20px; text-align:center;
+  }
+  .rest-label{ font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--volt); font-weight:700; margin-bottom:10px; }
+  .rest-time{ font-family:'Unbounded'; font-weight:800; font-size:44px; margin-bottom:16px; }
+  .rest-bar-track{ height:6px; border-radius:3px; background:#2A323B; overflow:hidden; margin-bottom:16px; }
+  .rest-bar-fill{ height:100%; background: var(--volt); border-radius:3px; transition: width 1s linear; }
+  .rest-actions{ display:flex; gap:10px; }
+  .rest-btn{
+    flex:1; border:none; border-radius:12px; padding:11px; font-weight:700; font-size:12.5px; font-family:'Inter'; cursor:pointer;
+  }
+  .rest-btn.skip{ background: var(--surface); color: var(--text-muted); border:1px solid var(--line); }
+  .rest-btn.add{ background: var(--volt-dim); color: var(--volt); }
+
+  .live-footer{ padding: 12px 22px 26px; }
+  .live-next-btn{
+    width:100%; border:none; border-radius:16px; background: var(--lime); color:#12161B;
+    font-family:'Inter'; font-weight:700; font-size:14.5px; padding:15px;
+  }
+  .live-next-btn:disabled{ opacity:0.4; }
+
+  .live-summary{ text-align:center; padding-top: 20px; }
+  .live-summary .emoji{ font-size:44px; margin-bottom:12px; }
+  .live-summary h2{ font-family:'Unbounded'; font-size:20px; margin: 0 0 6px; }
+  .live-summary p{ font-size:13px; color:var(--text-muted); margin: 0 0 22px; }
+  .live-summary .modal-field{ text-align:left; margin-bottom:16px; }
 </style>
 </head>
 <body>
@@ -273,6 +412,60 @@
 
   </div>
 
+  <button class="fab" onclick="openWorkoutModal()" title="Nouvelle séance">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  </button>
+
+  <div class="modal-overlay" id="workout-modal-overlay">
+    <div class="modal-sheet">
+      <div class="modal-title">Nouvelle séance</div>
+      <form onsubmit="submitWorkout(event)">
+        <div class="modal-field">
+          <label>Nom de la séance</label>
+          <input type="text" id="w-name" placeholder="Ex. Push day — épaules & triceps" required>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Type</label>
+            <input type="text" id="w-type" placeholder="Force · Cardio…">
+          </div>
+          <div class="modal-field">
+            <label>Durée (min)</label>
+            <input type="number" id="w-duration" placeholder="45" min="0">
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Date</label>
+            <input type="date" id="w-date" required>
+          </div>
+          <div class="modal-field">
+            <label>Heure</label>
+            <input type="time" id="w-time" required>
+          </div>
+        </div>
+        <div class="modal-field">
+          <label>Kcal brûlées estimées</label>
+          <input type="number" id="w-calories" placeholder="300" min="0">
+        </div>
+
+        <div class="modal-field">
+          <label>Exercices</label>
+          <div id="exo-rows"></div>
+          <button type="button" class="add-exo-btn" onclick="addExoRow()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+            Ajouter un exercice
+          </button>
+        </div>
+
+        <div class="modal-actions">
+          <button type="button" class="modal-btn cancel" onclick="closeWorkoutModal()">Annuler</button>
+          <button type="submit" class="modal-btn save">Créer la séance</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <div class="navbar">
     <div class="nav-pill">
       <a class="nav-item cal" href="calories.html">
@@ -295,6 +488,18 @@
     <div class="nav-home-label">Accueil</div>
   </div>
 
+  <div class="live-overlay" id="live-overlay">
+    <div class="live-top">
+      <div class="live-close" onclick="confirmExitLive()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </div>
+      <div class="live-progress-lbl" id="live-progress-lbl">Exercice 1/1</div>
+      <div style="width:34px;"></div>
+    </div>
+    <div class="live-body" id="live-body"></div>
+    <div class="live-footer" id="live-footer"></div>
+  </div>
+
 </div>
 
 <script src="config.js"></script>
@@ -302,6 +507,152 @@
 <script>
   const DAY_LABELS = ["L", "M", "M", "J", "V", "S", "D"];
   let activeWorkoutId = null;
+  let exoRowCount = 0;
+  let EXERCISE_LIBRARY = [];
+
+  async function loadExerciseLibrary(){
+    const { data } = await supabaseClient
+      .from("exercise_library").select("*")
+      .order("muscle_group", { ascending: true })
+      .order("name", { ascending: true });
+    EXERCISE_LIBRARY = data || [];
+  }
+
+  function exerciseSelectOptionsHtml(){
+    const groups = {};
+    EXERCISE_LIBRARY.forEach(ex => {
+      const g = ex.muscle_group || "Autre";
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(ex);
+    });
+    let html = `<option value="" disabled selected>Choisir un exercice…</option>`;
+    Object.keys(groups).forEach(g => {
+      html += `<optgroup label="${g}">`;
+      groups[g].forEach(ex => { html += `<option value="${ex.id}">${ex.name}</option>`; });
+      html += `</optgroup>`;
+    });
+    html += `<option value="__custom__">➕ Créer un nouvel exercice…</option>`;
+    return html;
+  }
+
+  function openWorkoutModal(){
+    document.getElementById("workout-modal-overlay").classList.add("open");
+    const today = new Date();
+    document.getElementById("w-date").value = today.toISOString().slice(0,10);
+    document.getElementById("w-time").value = today.toTimeString().slice(0,5);
+    if (document.getElementById("exo-rows").children.length === 0){
+      addExoRow(); addExoRow();
+    }
+  }
+  function closeWorkoutModal(){
+    document.getElementById("workout-modal-overlay").classList.remove("open");
+    document.getElementById("w-name").value = "";
+    document.getElementById("w-type").value = "";
+    document.getElementById("w-duration").value = "";
+    document.getElementById("w-calories").value = "";
+    document.getElementById("exo-rows").innerHTML = "";
+    exoRowCount = 0;
+  }
+
+  function onExoSelectChange(selectEl){
+    const row = selectEl.closest(".exo-row");
+    const customInput = row.querySelector(".exo-custom-input");
+    customInput.style.display = selectEl.value === "__custom__" ? "block" : "none";
+  }
+
+  function addExoRow(){
+    const id = "exo-row-" + (exoRowCount++);
+    const row = document.createElement("div");
+    row.className = "exo-row";
+    row.id = id;
+    row.innerHTML = `
+      <div class="exo-row-top">
+        <select class="exo-select" onchange="onExoSelectChange(this)">${exerciseSelectOptionsHtml()}</select>
+        <input type="text" class="exo-custom-input" placeholder="Nom du nouvel exercice">
+        <button type="button" class="exo-remove" onclick="document.getElementById('${id}').remove()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="exo-row-bottom">
+        <div class="exo-mini"><span class="u">Séries</span><input type="number" class="exo-sets-input" placeholder="3" min="0"></div>
+        <div class="exo-mini"><span class="u">Reps</span><input type="number" class="exo-reps-input" placeholder="10" min="0"></div>
+        <div class="exo-mini"><span class="u">Repos (s)</span><input type="number" class="exo-rest-input" placeholder="90" min="0" step="5"></div>
+      </div>`;
+    document.getElementById("exo-rows").appendChild(row);
+  }
+
+  async function submitWorkout(e){
+    e.preventDefault();
+    const name = document.getElementById("w-name").value.trim();
+    const type = document.getElementById("w-type").value.trim();
+    const duration = parseInt(document.getElementById("w-duration").value) || null;
+    const calories = parseInt(document.getElementById("w-calories").value) || null;
+    const date = document.getElementById("w-date").value;
+    const time = document.getElementById("w-time").value;
+    const scheduledAt = new Date(`${date}T${time}`).toISOString();
+
+    const { data: workout, error } = await supabaseClient
+      .from("workouts")
+      .insert({
+        user_id: currentUser.id,
+        name, workout_type: type || null,
+        duration_min: duration, calories_burned: calories,
+        scheduled_at: scheduledAt, completed: false
+      })
+      .select().single();
+
+    if (error){ alert("Erreur : " + error.message); return; }
+
+    const exoRows = Array.from(document.querySelectorAll(".exo-row"));
+    const exercisesToInsert = [];
+
+    for (const row of exoRows){
+      const select = row.querySelector(".exo-select");
+      const customInput = row.querySelector(".exo-custom-input");
+      const sets = parseInt(row.querySelector(".exo-sets-input").value) || null;
+      const reps = parseInt(row.querySelector(".exo-reps-input").value) || null;
+      const rest = parseInt(row.querySelector(".exo-rest-input").value) || 90;
+
+      let libraryId = null;
+      let exName = "";
+
+      if (select.value === "__custom__"){
+        exName = customInput.value.trim();
+        if (!exName) continue;
+        const { data: newLib, error: libErr } = await supabaseClient
+          .from("exercise_library")
+          .insert({ user_id: currentUser.id, name: exName, muscle_group: "Perso" })
+          .select().single();
+        if (libErr){ alert("Erreur création exercice : " + libErr.message); continue; }
+        libraryId = newLib.id;
+        EXERCISE_LIBRARY.push(newLib);
+      } else if (select.value){
+        libraryId = select.value;
+        const found = EXERCISE_LIBRARY.find(e => e.id === libraryId);
+        exName = found ? found.name : "Exercice";
+      } else {
+        continue;
+      }
+
+      exercisesToInsert.push({
+        workout_id: workout.id,
+        exercise_library_id: libraryId,
+        name: exName,
+        sets, reps,
+        rest_seconds: rest,
+        position: exercisesToInsert.length,
+        done: false
+      });
+    }
+
+    if (exercisesToInsert.length){
+      const { error: exoError } = await supabaseClient.from("exercises").insert(exercisesToInsert);
+      if (exoError){ alert("Séance créée, mais erreur sur les exercices : " + exoError.message); }
+    }
+
+    closeWorkoutModal();
+    loadSport();
+  }
 
   function endOfWeek(){
     const d = startOfWeek();
@@ -310,14 +661,279 @@
     return d;
   }
 
-  async function toggleExercise(exoId, currentlyDone){
-    await supabaseClient.from("exercises").update({ done: !currentlyDone }).eq("id", exoId);
+  let currentWorkout = null;
+  let currentWorkoutExercises = [];
+
+  async function renderTodayWorkout(user){
+    const { data: todays } = await supabaseClient
+      .from("workouts").select("*")
+      .eq("user_id", user.id)
+      .eq("completed", false)
+      .gte("scheduled_at", startOfToday().toISOString())
+      .lte("scheduled_at", endOfToday().toISOString())
+      .order("scheduled_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    const heroContainer = document.getElementById("workout-hero-container");
+    const exoContainer = document.getElementById("exo-list");
+
+    if (!todays){
+      currentWorkout = null; currentWorkoutExercises = [];
+      heroContainer.innerHTML = `
+        <div class="workout-hero">
+          <div class="eyebrow">Aujourd'hui</div>
+          <div class="title">Aucune séance planifiée</div>
+          <div class="meta">Crée-en une avec le bouton + en bas de l'écran.</div>
+        </div>`;
+      exoContainer.innerHTML = "";
+      return;
+    }
+
+    const time = todays.scheduled_at ? new Date(todays.scheduled_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+
+    const { data: exercises } = await supabaseClient
+      .from("exercises").select("*")
+      .eq("workout_id", todays.id)
+      .order("position", { ascending: true });
+
+    currentWorkout = todays;
+    currentWorkoutExercises = exercises || [];
+
+    heroContainer.innerHTML = `
+      <div class="workout-hero">
+        <div class="eyebrow">${todays.workout_type || "Séance"}</div>
+        <div class="title">${todays.name}</div>
+        <div class="meta">${time} · ${todays.duration_min || "?"} min · ${currentWorkoutExercises.length} exercices</div>
+        <button class="start-btn" onclick="launchLiveSession()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="#12161B"><path d="M8 5v14l11-7z"/></svg>
+          Démarrer la séance
+        </button>
+      </div>`;
+
+    exoContainer.innerHTML = "";
+    currentWorkoutExercises.forEach((ex, i) => {
+      const el = document.createElement("div");
+      el.className = "exo-item";
+      el.innerHTML = `
+        <div class="exo-num">${String(i + 1).padStart(2, "0")}</div>
+        <div class="exo-meta">
+          <div class="exo-name">${ex.name}</div>
+          <div class="exo-detail">${ex.sets || "?"} séries × ${ex.reps || "?"} reps · ${ex.rest_seconds || 90}s repos</div>
+        </div>`;
+      exoContainer.appendChild(el);
+    });
+  }
+
+  // ---------- MODE LIVE ----------
+  let live = null;
+
+  function formatTime(sec){
+    sec = Math.max(0, Math.round(sec));
+    const m = Math.floor(sec / 60), s = sec % 60;
+    return `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  function launchLiveSession(){
+    if (!currentWorkoutExercises.length){
+      alert("Ajoute au moins un exercice à cette séance avant de la démarrer (modifie-la depuis Supabase pour l'instant, ou recrée-la avec des exercices).");
+      return;
+    }
+    live = {
+      workout: currentWorkout,
+      exercises: currentWorkoutExercises.map(ex => ({
+        id: ex.id, name: ex.name, rest_seconds: ex.rest_seconds || 90,
+        loggedSets: Array.from({ length: Math.max(ex.sets || 1, 1) }, (_, i) => ({
+          set_number: i + 1, weight_kg: null, reps: ex.reps || null, completed: false, dbId: null
+        }))
+      })),
+      currentExoIndex: 0,
+      phase: "log",
+      startTime: new Date(),
+      timer: null, restRemaining: 0, restTotal: 0
+    };
+    document.getElementById("live-overlay").classList.add("open");
+    renderLiveBody();
+  }
+
+  async function saveSet(exo, setIdx){
+    const s = exo.loggedSets[setIdx];
+    if (s.dbId){
+      await supabaseClient.from("workout_sets")
+        .update({ weight_kg: s.weight_kg, reps: s.reps, completed: true, completed_at: new Date().toISOString() })
+        .eq("id", s.dbId);
+    } else {
+      const { data } = await supabaseClient.from("workout_sets")
+        .insert({ exercise_id: exo.id, set_number: s.set_number, weight_kg: s.weight_kg, reps: s.reps, completed: true, completed_at: new Date().toISOString() })
+        .select().single();
+      if (data) s.dbId = data.id;
+    }
+  }
+
+  function validateSet(setIdx){
+    const exo = live.exercises[live.currentExoIndex];
+    const row = document.getElementById("set-row-" + setIdx);
+    const weight = parseFloat(row.querySelector(".set-weight").value) || null;
+    const reps = parseInt(row.querySelector(".set-reps").value) || null;
+    exo.loggedSets[setIdx].weight_kg = weight;
+    exo.loggedSets[setIdx].reps = reps;
+    exo.loggedSets[setIdx].completed = true;
+    saveSet(exo, setIdx);
+
+    const isLastSetOfLastExo =
+      (live.currentExoIndex === live.exercises.length - 1) &&
+      (setIdx === exo.loggedSets.length - 1);
+
+    if (isLastSetOfLastExo){
+      goToSummary();
+    } else {
+      startRest(exo.rest_seconds || 90, setIdx);
+    }
+  }
+
+  function startRest(seconds, justCompletedSetIdx){
+    live.phase = "rest";
+    live.restTotal = seconds;
+    live.restRemaining = seconds;
+    live.pendingSetIdx = justCompletedSetIdx;
+    renderLiveBody();
+    live.timer = setInterval(() => {
+      live.restRemaining--;
+      updateRestUI();
+      if (live.restRemaining <= 0){
+        clearInterval(live.timer);
+        finishRest();
+      }
+    }, 1000);
+  }
+
+  function updateRestUI(){
+    const disp = document.getElementById("rest-time-display");
+    const bar = document.getElementById("rest-bar-fill");
+    if (disp) disp.textContent = formatTime(live.restRemaining);
+    if (bar) bar.style.width = Math.max(0, (live.restRemaining / live.restTotal) * 100) + "%";
+  }
+
+  function addRestTime(sec){
+    live.restRemaining += sec; live.restTotal += sec;
+    updateRestUI();
+  }
+
+  function skipRest(){
+    clearInterval(live.timer);
+    finishRest();
+  }
+
+  function finishRest(){
+    const exo = live.exercises[live.currentExoIndex];
+    const nextSetIdx = live.pendingSetIdx + 1;
+    if (nextSetIdx < exo.loggedSets.length){
+      live.phase = "log";
+      renderLiveBody();
+    } else if (live.currentExoIndex < live.exercises.length - 1){
+      live.currentExoIndex++;
+      live.phase = "log";
+      renderLiveBody();
+    } else {
+      goToSummary();
+    }
+  }
+
+  function skipToNextExercise(){
+    if (live.currentExoIndex < live.exercises.length - 1){
+      live.currentExoIndex++;
+      live.phase = "log";
+      renderLiveBody();
+    } else {
+      goToSummary();
+    }
+  }
+
+  function goToSummary(){
+    if (live.timer) clearInterval(live.timer);
+    live.phase = "summary";
+    renderLiveBody();
+  }
+
+  function confirmExitLive(){
+    if (confirm("Quitter la séance ? Les séries déjà validées restent enregistrées.")){
+      if (live.timer) clearInterval(live.timer);
+      document.getElementById("live-overlay").classList.remove("open");
+      loadSport();
+    }
+  }
+
+  async function finishWorkout(){
+    const duration = parseInt(document.getElementById("summary-duration").value) || null;
+    const calories = parseInt(document.getElementById("summary-calories").value) || null;
+    await supabaseClient.from("workouts")
+      .update({ completed: true, duration_min: duration, calories_burned: calories })
+      .eq("id", live.workout.id);
+    document.getElementById("live-overlay").classList.remove("open");
     loadSport();
   }
 
-  async function startWorkout(workoutId){
-    await supabaseClient.from("workouts").update({ completed: true }).eq("id", workoutId);
-    loadSport();
+  function renderLiveBody(){
+    const progressLbl = document.getElementById("live-progress-lbl");
+    const body = document.getElementById("live-body");
+    const footer = document.getElementById("live-footer");
+
+    if (live.phase === "summary"){
+      progressLbl.textContent = "Résumé";
+      const elapsedMin = Math.max(1, Math.round((new Date() - live.startTime) / 60000));
+      body.innerHTML = `
+        <div class="live-summary">
+          <div class="emoji">🎉</div>
+          <h2>Séance terminée !</h2>
+          <p>Beau travail. Vérifie les derniers détails avant d'enregistrer.</p>
+          <div class="modal-field"><label>Durée (min)</label><input type="number" id="summary-duration" value="${elapsedMin}"></div>
+          <div class="modal-field"><label>Kcal brûlées (estimation)</label><input type="number" id="summary-calories" value="${live.workout.calories_burned || ""}" placeholder="300"></div>
+        </div>`;
+      footer.innerHTML = `<button class="live-next-btn" onclick="finishWorkout()">Enregistrer et terminer</button>`;
+      return;
+    }
+
+    const exo = live.exercises[live.currentExoIndex];
+    progressLbl.textContent = `Exercice ${live.currentExoIndex + 1}/${live.exercises.length}`;
+
+    if (live.phase === "rest"){
+      body.innerHTML = `
+        <div class="live-exo-name">${exo.name}</div>
+        <div class="live-exo-meta">Repos avant la série suivante</div>
+        <div class="rest-card">
+          <div class="rest-label">Temps de repos</div>
+          <div class="rest-time" id="rest-time-display">${formatTime(live.restRemaining)}</div>
+          <div class="rest-bar-track"><div class="rest-bar-fill" id="rest-bar-fill" style="width:${(live.restRemaining / live.restTotal) * 100}%"></div></div>
+          <div class="rest-actions">
+            <button class="rest-btn add" onclick="addRestTime(15)">+15s</button>
+            <button class="rest-btn skip" onclick="skipRest()">Passer le repos</button>
+          </div>
+        </div>`;
+      footer.innerHTML = "";
+      return;
+    }
+
+    const setsHtml = exo.loggedSets.map((s, i) => `
+      <div class="set-row ${s.completed ? "done" : ""}" id="set-row-${i}">
+        <div class="set-num">${i + 1}</div>
+        <div class="set-input-group">
+          <div class="grp"><span class="u">kg</span><input type="number" class="set-weight" step="0.5" value="${s.weight_kg ?? ""}" ${s.completed ? "disabled" : ""}></div>
+          <div class="grp"><span class="u">reps</span><input type="number" class="set-reps" value="${s.reps ?? ""}" ${s.completed ? "disabled" : ""}></div>
+        </div>
+        <button type="button" class="set-validate ${s.completed ? "done" : ""}" onclick="validateSet(${i})" ${s.completed ? "disabled" : ""}>
+          ${s.completed
+            ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
+            : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'}
+        </button>
+      </div>`).join("");
+
+    body.innerHTML = `
+      <div class="live-exo-name">${exo.name}</div>
+      <div class="live-exo-meta">${exo.loggedSets.length} séries cibles · ${exo.rest_seconds}s de repos</div>
+      ${setsHtml}`;
+
+    const isLast = live.currentExoIndex === live.exercises.length - 1;
+    footer.innerHTML = `<button class="live-next-btn" onclick="${isLast ? "goToSummary()" : "skipToNextExercise()"}">${isLast ? "Terminer la séance" : "Passer à l'exercice suivant"}</button>`;
   }
 
   function renderWeekBars(workouts){
@@ -374,67 +990,6 @@
     });
   }
 
-  async function renderTodayWorkout(user){
-    const { data: todays } = await supabaseClient
-      .from("workouts").select("*")
-      .eq("user_id", user.id)
-      .eq("completed", false)
-      .gte("scheduled_at", startOfToday().toISOString())
-      .lte("scheduled_at", endOfToday().toISOString())
-      .order("scheduled_at", { ascending: true })
-      .limit(1)
-      .maybeSingle();
-
-    const heroContainer = document.getElementById("workout-hero-container");
-    const exoContainer = document.getElementById("exo-list");
-
-    if (!todays){
-      heroContainer.innerHTML = `
-        <div class="workout-hero">
-          <div class="eyebrow">Aujourd'hui</div>
-          <div class="title">Aucune séance planifiée</div>
-          <div class="meta">Ajoute une séance pour aujourd'hui depuis Supabase ou ton futur écran de création.</div>
-        </div>`;
-      exoContainer.innerHTML = "";
-      return;
-    }
-
-    activeWorkoutId = todays.id;
-    const time = todays.scheduled_at ? new Date(todays.scheduled_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
-
-    const { data: exercises } = await supabaseClient
-      .from("exercises").select("*")
-      .eq("workout_id", todays.id)
-      .order("position", { ascending: true });
-
-    heroContainer.innerHTML = `
-      <div class="workout-hero">
-        <div class="eyebrow">${todays.workout_type || "Séance"}</div>
-        <div class="title">${todays.name}</div>
-        <div class="meta">${time} · ${todays.duration_min || "?"} min · ${(exercises || []).length} exercices</div>
-        <button class="start-btn" onclick="startWorkout('${todays.id}')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#12161B"><path d="M8 5v14l11-7z"/></svg>
-          Marquer la séance comme terminée
-        </button>
-      </div>`;
-
-    exoContainer.innerHTML = "";
-    (exercises || []).forEach((ex, i) => {
-      const el = document.createElement("div");
-      el.className = "exo-item";
-      el.innerHTML = `
-        <div class="exo-num">${String(i + 1).padStart(2, "0")}</div>
-        <div class="exo-meta">
-          <div class="exo-name">${ex.name}</div>
-          <div class="exo-detail">${ex.sets || "?"} séries × ${ex.reps || "?"} reps</div>
-        </div>
-        <div class="exo-check ${ex.done ? "done" : ""}" onclick="toggleExercise('${ex.id}', ${ex.done})">
-          ${ex.done ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>' : ""}
-        </div>`;
-      exoContainer.appendChild(el);
-    });
-  }
-
   async function loadSport(){
     const user = await requireAuth();
     if (!user) return;
@@ -458,7 +1013,10 @@
     await renderTodayWorkout(user);
   }
 
-  loadSport();
+  (async function init(){
+    await loadExerciseLibrary();
+    await loadSport();
+  })();
 </script>
 </body>
 </html>
