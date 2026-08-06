@@ -157,6 +157,18 @@
     background: var(--lime); border-color: var(--lime);
     display:flex; align-items:center; justify-content:center;
   }
+  .exo-delete, .history-delete, .hero-delete{
+    background:none; border:none; cursor:pointer; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    color: var(--text-muted);
+  }
+  .exo-delete, .history-delete{ width:26px; height:26px; border-radius:8px; }
+  .exo-delete:hover, .history-delete:hover{ color: var(--flame); background: var(--flame-dim); }
+  .hero-delete{
+    position:absolute; top:16px; right:16px; width:30px; height:30px; border-radius:10px;
+    background: rgba(0,0,0,0.25);
+  }
+  .hero-delete:hover{ color: var(--flame); background: var(--flame-dim); }
 
   /* historique */
   .history-item{
@@ -664,6 +676,20 @@
   let currentWorkout = null;
   let currentWorkoutExercises = [];
 
+  async function deleteWorkout(workoutId){
+    if (!confirm("Supprimer cette séance et tout ce qu'elle contient (exercices, séries loggées) ?")) return;
+    const { error } = await supabaseClient.from("workouts").delete().eq("id", workoutId);
+    if (error){ alert("Erreur : " + error.message); return; }
+    loadSport();
+  }
+
+  async function deleteExercise(exerciseId){
+    if (!confirm("Supprimer cet exercice de la séance ?")) return;
+    const { error } = await supabaseClient.from("exercises").delete().eq("id", exerciseId);
+    if (error){ alert("Erreur : " + error.message); return; }
+    loadSport();
+  }
+
   async function renderTodayWorkout(user){
     const { data: todays } = await supabaseClient
       .from("workouts").select("*")
@@ -702,6 +728,9 @@
 
     heroContainer.innerHTML = `
       <div class="workout-hero">
+        <button class="hero-delete" onclick="deleteWorkout('${todays.id}')" title="Supprimer la séance">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        </button>
         <div class="eyebrow">${todays.workout_type || "Séance"}</div>
         <div class="title">${todays.name}</div>
         <div class="meta">${time} · ${todays.duration_min || "?"} min · ${currentWorkoutExercises.length} exercices</div>
@@ -720,7 +749,10 @@
         <div class="exo-meta">
           <div class="exo-name">${ex.name}</div>
           <div class="exo-detail">${ex.sets || "?"} séries × ${ex.reps || "?"} reps · ${ex.rest_seconds || 90}s repos</div>
-        </div>`;
+        </div>
+        <button class="exo-delete" onclick="deleteExercise('${ex.id}')" title="Supprimer l'exercice">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        </button>`;
       exoContainer.appendChild(el);
     });
   }
@@ -985,7 +1017,10 @@
           <div class="history-name">${w.name}</div>
           <div class="history-date">${date}</div>
         </div>
-        <div class="history-dur">${w.duration_min || "?"} min</div>`;
+        <div class="history-dur">${w.duration_min || "?"} min</div>
+        <button class="history-delete" onclick="deleteWorkout('${w.id}')" title="Supprimer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        </button>`;
       container.appendChild(el);
     });
   }
