@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 <style>
   :root{
     --bg: #12161B;
@@ -228,6 +229,32 @@
   .cp-item{ flex:1; text-align:center; }
   .cp-v{ font-family:'Unbounded'; font-weight:700; font-size:15px; }
   .cp-k{ font-size:10.5px; color:var(--text-muted); margin-top:3px; }
+
+  .search-row{ display:flex; gap:8px; }
+  .search-row input{ flex:1; }
+  .scan-btn{
+    flex-shrink:0; width:46px; background: var(--volt-dim); border:1px solid var(--line);
+    border-radius:12px; color: var(--volt); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .scan-btn:hover{ border-color: var(--volt); }
+
+  .scanner-overlay{
+    position:fixed; inset:0; background:rgba(6,8,10,0.9);
+    display:none; align-items:center; justify-content:center; z-index:70; padding:24px;
+  }
+  .scanner-overlay.open{ display:flex; }
+  .scanner-box{
+    width:100%; max-width:420px; background: var(--bg); border:1px solid var(--line);
+    border-radius:24px; padding:20px; text-align:center;
+  }
+  .scanner-title{ font-weight:700; font-size:14.5px; margin-bottom:14px; }
+  #scanner-video{ border-radius:16px; overflow:hidden; background:#000; min-height:220px; }
+  .scanner-status{ font-size:12px; color:var(--text-muted); margin-top:12px; min-height:16px; }
+  .scanner-close{
+    margin-top:14px; width:100%; border:1px solid var(--line); background: var(--surface);
+    color: var(--text-muted); border-radius:14px; padding:12px; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .cf-barcode-msg{ font-size:11.5px; color: var(--volt); margin: -6px 0 12px; }
 </style>
 </head>
 <body>
@@ -359,8 +386,13 @@
 
       <div class="modal-field" id="search-field">
         <label>Aliment</label>
-        <input type="text" id="food-search" placeholder="Rechercher un aliment…" autocomplete="off"
-               oninput="onFoodSearchInput()" onfocus="onFoodSearchInput()">
+        <div class="search-row">
+          <input type="text" id="food-search" placeholder="Rechercher un aliment…" autocomplete="off"
+                 oninput="onFoodSearchInput()" onfocus="onFoodSearchInput()">
+          <button type="button" class="scan-btn" onclick="openScanner()" title="Scanner un code-barres">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 8v8M11 8v8M14 8v8M17 8v8"/></svg>
+          </button>
+        </div>
         <div id="food-results" class="food-results"></div>
       </div>
 
@@ -373,6 +405,7 @@
       </div>
 
       <div id="custom-food-fields" style="display:none;">
+        <div class="cf-barcode-msg" id="cf-barcode-msg"></div>
         <div class="modal-field">
           <label>Nom du nouvel aliment</label>
           <input type="text" id="cf-name" placeholder="Ex. Galette de riz">
@@ -432,6 +465,15 @@
   </div>
 </div>
 
+<div class="scanner-overlay" id="scanner-overlay">
+  <div class="scanner-box">
+    <div class="scanner-title">Scanne le code-barres du produit</div>
+    <div id="scanner-video"></div>
+    <div class="scanner-status" id="scanner-status">Vise le code-barres avec la caméra</div>
+    <button type="button" class="scanner-close" onclick="closeScanner()">Fermer</button>
+  </div>
+</div>
+
 <script src="config.js"></script>
 <script src="auth-guard.js"></script>
 <script>
@@ -447,11 +489,73 @@
 
   let FOOD_LIBRARY = [];
   let selectedFood = null; // { id, name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g }
+  let html5QrScanner = null;
+  let pendingBarcode = null;
 
   async function loadFoodLibrary(){
     const { data } = await supabaseClient
       .from("food_library").select("*").order("name", { ascending: true });
     FOOD_LIBRARY = data || [];
+  }
+
+  function openScanner(){
+    document.getElementById("scanner-overlay").classList.add("open");
+    document.getElementById("scanner-status").textContent = "Vise le code-barres avec la caméra";
+    html5QrScanner = new Html5Qrcode("scanner-video");
+    html5QrScanner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 260, height: 140 } },
+      (decodedText) => {
+        stopScanner();
+        document.getElementById("scanner-overlay").classList.remove("open");
+        handleBarcodeScanned(decodedText);
+      },
+      () => {} // erreurs de frame ignorées (aucun code détecté sur cette image)
+    ).catch(() => {
+      document.getElementById("scanner-status").textContent = "Impossible d'accéder à la caméra. Vérifie les autorisations du navigateur.";
+    });
+  }
+
+  function stopScanner(){
+    if (html5QrScanner){
+      html5QrScanner.stop().catch(() => {});
+      html5QrScanner = null;
+    }
+  }
+
+  function closeScanner(){
+    stopScanner();
+    document.getElementById("scanner-overlay").classList.remove("open");
+  }
+
+  async function handleBarcodeScanned(code){
+    const existing = FOOD_LIBRARY.find(f => f.barcode === code);
+    if (existing){
+      selectFood(existing);
+      return;
+    }
+
+    openCustomFoodFields("");
+    document.getElementById("cf-barcode-msg").textContent = "Recherche du produit…";
+    pendingBarcode = code;
+
+    try {
+      const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${code}.json?fields=product_name,nutriments`);
+      const data = await res.json();
+      if (data.status === 1 && data.product){
+        const n = data.product.nutriments || {};
+        document.getElementById("cf-name").value = data.product.product_name || "";
+        if (n["energy-kcal_100g"] != null) document.getElementById("cf-cal").value = Math.round(n["energy-kcal_100g"]);
+        if (n["proteins_100g"] != null) document.getElementById("cf-protein").value = n["proteins_100g"];
+        if (n["carbohydrates_100g"] != null) document.getElementById("cf-carbs").value = n["carbohydrates_100g"];
+        if (n["fat_100g"] != null) document.getElementById("cf-fat").value = n["fat_100g"];
+        document.getElementById("cf-barcode-msg").textContent = "Produit trouvé — vérifie les valeurs avant d'enregistrer.";
+      } else {
+        document.getElementById("cf-barcode-msg").textContent = "Produit introuvable dans Open Food Facts, renseigne-le manuellement.";
+      }
+    } catch (err){
+      document.getElementById("cf-barcode-msg").textContent = "Erreur réseau — renseigne le produit manuellement.";
+    }
   }
 
   function openModal(prefType){
@@ -468,7 +572,9 @@
     document.getElementById("cf-protein").value = "";
     document.getElementById("cf-carbs").value = "";
     document.getElementById("cf-fat").value = "";
+    document.getElementById("cf-barcode-msg").textContent = "";
     document.getElementById("custom-food-fields").style.display = "none";
+    pendingBarcode = null;
     clearSelectedFood();
   }
 
@@ -524,6 +630,8 @@
     document.getElementById("food-results").innerHTML = "";
     document.getElementById("custom-food-fields").style.display = "block";
     document.getElementById("cf-name").value = prefillName || "";
+    pendingBarcode = null;
+    document.getElementById("cf-barcode-msg").textContent = "";
   }
 
   async function saveCustomFood(){
@@ -540,10 +648,12 @@
       protein_per_100g: parseFloat(document.getElementById("cf-protein").value) || 0,
       carbs_per_100g: parseFloat(document.getElementById("cf-carbs").value) || 0,
       fat_per_100g: parseFloat(document.getElementById("cf-fat").value) || 0,
+      barcode: pendingBarcode || null,
     };
     const { data, error } = await supabaseClient.from("food_library").insert(payload).select().single();
     if (error){ alert("Erreur : " + error.message); return; }
     FOOD_LIBRARY.push(data);
+    pendingBarcode = null;
     document.getElementById("custom-food-fields").style.display = "none";
     selectFood(data);
   }
