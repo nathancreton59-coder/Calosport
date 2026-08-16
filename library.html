@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Bibliothèques — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #12161B; --surface: #1B2128; --surface-2: #222A32;
+    --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+    --lime: #D4F252; --lime-dim: #3A4420;
+    --flame: #FF7A59; --flame-dim: #3D2620;
+    --volt: #6FA8FF; --volt-dim: #202B3D;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+  body{ display:flex; min-height:100vh; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width: 264px; flex-shrink:0;
+    background: var(--bg); border-right:1px solid var(--line);
+    padding: 28px 18px; display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{ display:flex; align-items:center; gap:12px; padding: 6px 10px 30px; }
+  .brand-mark{
+    width:38px; height:38px; border-radius:12px; background:var(--lime);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-name{ font-family:'Unbounded'; font-weight:700; font-size:14.5px; line-height:1.25; }
+  .brand-name span{ display:block; font-family:'Inter'; font-weight:600; font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .sidebar-nav{ display:flex; flex-direction:column; gap:4px; }
+  .sidebar-link{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:13px;
+    color: var(--text-muted); text-decoration:none; font-weight:600; font-size:14px;
+  }
+  .sidebar-link .dot{ width:7px; height:7px; border-radius:50%; background: var(--text-muted); flex-shrink:0; }
+  .sidebar-link.active{ background: var(--surface); color: var(--text); }
+  .sidebar-link.home.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
+  .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
+  .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
+  .sidebar-link.library.active .dot{ background: var(--text); }
+
+  .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
+  .sidebar-logout{
+    width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:13px;
+    background:none; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .sidebar-logout:hover{ background: var(--surface); color: var(--flame); }
+
+  /* ---------- main ---------- */
+  .main{ flex:1; padding: 48px 56px 100px; min-width:0; }
+  .main-inner{ max-width: 900px; }
+  .page-title{ font-family:'Unbounded'; font-weight:700; font-size:32px; margin-bottom:8px; }
+  .page-sub{ font-size:13.5px; color:var(--text-muted); margin-bottom:28px; max-width:560px; }
+
+  .tabs{ display:flex; gap:8px; margin-bottom:24px; }
+  .tab{
+    padding:10px 18px; border-radius:12px; border:1px solid var(--line); background:var(--surface);
+    color:var(--text-muted); font-weight:700; font-size:13.5px; cursor:pointer;
+  }
+  .tab.active.cal{ background: var(--flame); border-color: var(--flame); color:#12161B; }
+  .tab.active.sport{ background: var(--volt); border-color: var(--volt); color:#12161B; }
+
+  .search-input{
+    width:100%; background: var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:13px 16px; font-size:13.5px; color:var(--text); font-family:'Inter'; margin-bottom:20px;
+  }
+  .search-input:focus{ outline:none; border-color: var(--text-muted); }
+
+  .lib-item{
+    display:flex; align-items:center; gap:14px;
+    background: var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:14px 16px; margin-bottom:10px;
+  }
+  .lib-main{ flex:1; min-width:0; }
+  .lib-name{ font-weight:700; font-size:13.5px; }
+  .lib-detail{ font-size:11.5px; color:var(--text-muted); margin-top:4px; }
+  .lib-actions{ display:flex; gap:6px; flex-shrink:0; }
+  .lib-btn{
+    width:32px; height:32px; border-radius:10px; border:1px solid var(--line); background: var(--surface-2);
+    color: var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .lib-btn.edit:hover{ color: var(--volt); border-color: var(--volt); }
+  .lib-btn.delete:hover{ color: var(--flame); border-color: var(--flame); }
+
+  .lib-edit-row{ display:flex; gap:8px; flex:1; flex-wrap:wrap; }
+  .lib-edit-row input{
+    background: var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:9px 10px; font-size:12.5px; color:var(--text); font-family:'Inter';
+  }
+  .lib-edit-row input.name-input{ flex:2; min-width:140px; }
+  .lib-edit-row input.num-input{ width:76px; }
+
+  .empty-state{ text-align:center; padding:48px 20px; color:var(--text-muted); font-size:13px; }
+  .global-note{ font-size:11.5px; color:var(--text-muted); margin: 24px 0 12px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-mark">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </div>
+    <div class="brand-name">Suivi Fitness<span>Calories & sport</span></div>
+  </div>
+
+  <div class="sidebar-nav">
+    <a class="sidebar-link home" href="index.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      Accueil
+    </a>
+    <a class="sidebar-link cal" href="calories.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+      Calories
+    </a>
+    <a class="sidebar-link sport" href="sport.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="2.3" height="6" rx="1"/><rect x="4.3" y="7" width="2" height="10" rx="1"/><line x1="7.3" y1="12" x2="16.7" y2="12"/><rect x="17.7" y="7" width="2" height="10" rx="1"/><rect x="20.2" y="9" width="2.3" height="6" rx="1"/></svg>
+      Sport
+    </a>
+    <a class="sidebar-link library active" href="library.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Bibliothèques
+    </a>
+    <a class="sidebar-link settings" href="settings.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+      Réglages
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-logout" onclick="logout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Déconnexion
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+    <div class="page-title">Bibliothèques</div>
+    <div class="page-sub">Retrouve, modifie ou supprime les aliments et exercices que tu as créés toi-même.</div>
+
+    <div class="tabs">
+      <div class="tab active cal" id="tab-food" onclick="switchTab('food')">🍽️ Aliments</div>
+      <div class="tab sport" id="tab-exo" onclick="switchTab('exo')">🏋️ Exercices</div>
+    </div>
+
+    <input type="text" class="search-input" id="lib-search" placeholder="Rechercher…" oninput="renderList()">
+
+    <div id="lib-list"></div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  let activeTab = "food";
+  let myFoods = [];
+  let myExercises = [];
+
+  function switchTab(tab){
+    activeTab = tab;
+    document.getElementById("tab-food").classList.toggle("active", tab === "food");
+    document.getElementById("tab-exo").classList.toggle("active", tab === "exo");
+    document.getElementById("lib-search").value = "";
+    renderList();
+  }
+
+  function renderList(){
+    const query = document.getElementById("lib-search").value.trim().toLowerCase();
+    const container = document.getElementById("lib-list");
+    container.innerHTML = "";
+
+    const items = (activeTab === "food" ? myFoods : myExercises)
+      .filter(i => i.name.toLowerCase().includes(query));
+
+    if (!items.length){
+      container.innerHTML = `<div class="empty-state">${query ? "Aucun résultat." : (activeTab === "food" ? "Tu n'as pas encore créé d'aliment personnalisé. Ils apparaîtront ici dès que tu en ajoutes un depuis la page Calories." : "Tu n'as pas encore créé d'exercice personnalisé. Ils apparaîtront ici dès que tu en ajoutes un depuis la création de séance.")}</div>`;
+      return;
+    }
+
+    items.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "lib-item";
+      row.id = "lib-row-" + item.id;
+
+      if (activeTab === "food"){
+        row.innerHTML = `
+          <div class="lib-main">
+            <div class="lib-name">${item.name}</div>
+            <div class="lib-detail">${item.calories_per_100g} kcal · ${item.protein_per_100g}g P · ${item.carbs_per_100g}g G · ${item.fat_per_100g}g L (/100g)${item.barcode ? " · scanné" : ""}</div>
+          </div>
+          <div class="lib-actions">
+            <button class="lib-btn edit" onclick="startEditFood('${item.id}')" title="Modifier">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="lib-btn delete" onclick="deleteFood('${item.id}')" title="Supprimer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+            </button>
+          </div>`;
+      } else {
+        row.innerHTML = `
+          <div class="lib-main">
+            <div class="lib-name">${item.name}</div>
+            <div class="lib-detail">${item.muscle_group || "Perso"}${item.equipment ? " · " + item.equipment : ""}</div>
+          </div>
+          <div class="lib-actions">
+            <button class="lib-btn edit" onclick="startEditExo('${item.id}')" title="Modifier">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+            </button>
+            <button class="lib-btn delete" onclick="deleteExo('${item.id}')" title="Supprimer">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+            </button>
+          </div>`;
+      }
+      container.appendChild(row);
+    });
+  }
+
+  function startEditFood(id){
+    const item = myFoods.find(f => f.id === id);
+    const row = document.getElementById("lib-row-" + id);
+    row.innerHTML = `
+      <div class="lib-edit-row">
+        <input class="name-input" id="ef-name-${id}" value="${item.name}">
+        <input class="num-input" id="ef-cal-${id}" type="number" step="0.1" value="${item.calories_per_100g}" title="Kcal/100g">
+        <input class="num-input" id="ef-protein-${id}" type="number" step="0.1" value="${item.protein_per_100g}" title="Protéines/100g">
+        <input class="num-input" id="ef-carbs-${id}" type="number" step="0.1" value="${item.carbs_per_100g}" title="Glucides/100g">
+        <input class="num-input" id="ef-fat-${id}" type="number" step="0.1" value="${item.fat_per_100g}" title="Lipides/100g">
+      </div>
+      <div class="lib-actions">
+        <button class="lib-btn edit" onclick="saveEditFood('${id}')" title="Enregistrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </button>
+        <button class="lib-btn delete" onclick="renderList()" title="Annuler">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>`;
+  }
+
+  async function saveEditFood(id){
+    const payload = {
+      name: document.getElementById(`ef-name-${id}`).value.trim(),
+      calories_per_100g: parseFloat(document.getElementById(`ef-cal-${id}`).value) || 0,
+      protein_per_100g: parseFloat(document.getElementById(`ef-protein-${id}`).value) || 0,
+      carbs_per_100g: parseFloat(document.getElementById(`ef-carbs-${id}`).value) || 0,
+      fat_per_100g: parseFloat(document.getElementById(`ef-fat-${id}`).value) || 0,
+    };
+    const { error } = await supabaseClient.from("food_library").update(payload).eq("id", id);
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadLibraries();
+    renderList();
+  }
+
+  async function deleteFood(id){
+    if (!confirm("Supprimer cet aliment de ta bibliothèque ? Les repas déjà loggés avec ne seront pas affectés.")) return;
+    const { error } = await supabaseClient.from("food_library").delete().eq("id", id);
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadLibraries();
+    renderList();
+  }
+
+  function startEditExo(id){
+    const item = myExercises.find(e => e.id === id);
+    const row = document.getElementById("lib-row-" + id);
+    row.innerHTML = `
+      <div class="lib-edit-row">
+        <input class="name-input" id="ee-name-${id}" value="${item.name}">
+        <input class="num-input" id="ee-muscle-${id}" value="${item.muscle_group || ""}" placeholder="Muscle" style="width:110px;">
+        <input class="num-input" id="ee-equip-${id}" value="${item.equipment || ""}" placeholder="Matériel" style="width:110px;">
+      </div>
+      <div class="lib-actions">
+        <button class="lib-btn edit" onclick="saveEditExo('${id}')" title="Enregistrer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        </button>
+        <button class="lib-btn delete" onclick="renderList()" title="Annuler">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+        </button>
+      </div>`;
+  }
+
+  async function saveEditExo(id){
+    const payload = {
+      name: document.getElementById(`ee-name-${id}`).value.trim(),
+      muscle_group: document.getElementById(`ee-muscle-${id}`).value.trim() || null,
+      equipment: document.getElementById(`ee-equip-${id}`).value.trim() || null,
+    };
+    const { error } = await supabaseClient.from("exercise_library").update(payload).eq("id", id);
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadLibraries();
+    renderList();
+  }
+
+  async function deleteExo(id){
+    if (!confirm("Supprimer cet exercice de ta bibliothèque ? Les séances passées qui l'utilisent ne seront pas affectées.")) return;
+    const { error } = await supabaseClient.from("exercise_library").delete().eq("id", id);
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadLibraries();
+    renderList();
+  }
+
+  async function loadLibraries(){
+    const [{ data: foods }, { data: exos }] = await Promise.all([
+      supabaseClient.from("food_library").select("*").eq("user_id", currentUser.id).order("name"),
+      supabaseClient.from("exercise_library").select("*").eq("user_id", currentUser.id).order("name"),
+    ]);
+    myFoods = foods || [];
+    myExercises = exos || [];
+  }
+
+  (async function init(){
+    const user = await requireAuth();
+    if (!user) return;
+    await loadLibraries();
+    renderList();
+  })();
+</script>
+</body>
+</html>
