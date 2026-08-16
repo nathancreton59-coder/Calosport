@@ -16,12 +16,11 @@
   html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
   body{ min-height:100vh; display:flex; align-items:center; justify-content:center; padding:32px 12px; }
 
-  .device{
-    width:390px; min-height:844px; background:var(--bg);
-    border-radius:44px; border:1px solid #262d35;
-    box-shadow: 0 40px 80px -20px rgba(0,0,0,0.6), 0 0 0 8px #05070a;
-    overflow:hidden; position:relative; display:flex; flex-direction:column;
-    padding: 70px 28px 40px;
+  .auth-card{
+    width:100%; max-width:420px; background:var(--bg);
+    border-radius:24px; border:1px solid var(--line);
+    box-shadow: 0 30px 60px -20px rgba(0,0,0,0.5);
+    padding: 44px 40px;
   }
 
   .brand{ text-align:center; margin-bottom: 46px; }
@@ -57,7 +56,7 @@
 </head>
 <body>
 
-<div class="device">
+<div class="auth-card">
   <div class="brand">
     <div class="brand-mark">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
