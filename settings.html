@@ -120,6 +120,11 @@
   .submit-btn:disabled{ opacity:0.5; }
   .msg{ font-size:12.5px; margin-top:12px; text-align:center; color:var(--flame); }
   .msg.ok{ color:var(--lime); }
+  .modal-btn-like{
+    flex:1; background: var(--bg); border:1px solid var(--line); border-radius:12px;
+    color: var(--text); font-family:'Inter'; font-weight:700; font-size:13px; padding:11px; cursor:pointer;
+  }
+  .modal-btn-like:hover{ border-color: var(--volt); color: var(--volt); }
 </style>
 </head>
 <body>
@@ -264,6 +269,25 @@
             <div class="hint">Minimum recommandé : 1,5 L/jour</div>
           </div>
         </div>
+
+        <div class="card">
+          <div class="card-title">Objectif sport</div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Séances par semaine</label>
+            <input type="number" id="weekly-goal" min="1" max="14" step="1" value="4">
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Mes données</div>
+          <div class="field" style="margin-bottom:12px;">
+            <label style="margin-bottom:10px;">Exporter en CSV pour garder une copie perso</label>
+          </div>
+          <div style="display:flex; gap:10px;">
+            <button type="button" class="modal-btn-like" onclick="exportMealsCsv()">Repas</button>
+            <button type="button" class="modal-btn-like" onclick="exportWorkoutsCsv()">Séances</button>
+          </div>
+        </div>
       </div>
 
       <div class="preview-card">
@@ -394,6 +418,7 @@
     btn.disabled = true;
 
     const waterGoalL = parseFloat(document.getElementById("water-goal").value) || 2.0;
+    const weeklyGoal = parseInt(document.getElementById("weekly-goal").value) || 4;
 
     const { error } = await supabaseClient.from("profiles").update({
       sex,
@@ -406,6 +431,7 @@
       protein_per_kg: parseFloat(document.getElementById("protein-range").value),
       fat_per_kg: parseFloat(document.getElementById("fat-range").value),
       water_goal_ml: Math.round(waterGoalL * 1000),
+      weekly_workout_goal: weeklyGoal,
       calorie_goal: plan.calorieGoal,
       protein_goal_g: plan.proteinG,
       carbs_goal_g: plan.carbsG,
@@ -438,6 +464,7 @@
     if (profile.activity_level) document.getElementById("activity-level").value = profile.activity_level;
 
     document.getElementById("water-goal").value = ((profile.water_goal_ml || 2000) / 1000).toFixed(1);
+    document.getElementById("weekly-goal").value = profile.weekly_workout_goal || 4;
     document.getElementById("protein-range").value = profile.protein_per_kg || 2.0;
     document.getElementById("fat-range").value = profile.fat_per_kg || 0.9;
     onMacroChange();
@@ -455,6 +482,78 @@
     } else {
       recompute();
     }
+  }
+
+  function downloadCsv(filename, rows){
+    const csv = rows.map(row =>
+      row.map(cell => {
+        const s = String(cell ?? "");
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(",")
+    ).join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportMealsCsv(){
+    const { data: meals, error } = await supabaseClient
+      .from("meals").select("*").eq("user_id", currentUser.id).order("logged_at", { ascending: true });
+    if (error){ alert("Erreur : " + error.message); return; }
+    const rows = [["Date", "Repas", "Aliment", "Poids (g)", "Kcal", "Protéines (g)", "Glucides (g)", "Lipides (g)"]];
+    (meals || []).forEach(m => {
+      rows.push([
+        new Date(m.logged_at).toLocaleString("fr-FR"),
+        m.meal_type, m.name, m.weight_g || "", m.calories, m.protein_g, m.carbs_g, m.fat_g
+      ]);
+    });
+    downloadCsv("mes_repas.csv", rows);
+  }
+
+  async function exportWorkoutsCsv(){
+    const { data: workouts, error } = await supabaseClient
+      .from("workouts").select("*").eq("user_id", currentUser.id).order("scheduled_at", { ascending: true });
+    if (error){ alert("Erreur : " + error.message); return; }
+
+    const workoutIds = (workouts || []).map(w => w.id);
+    let exercises = [];
+    let sets = [];
+    if (workoutIds.length){
+      const { data: exoData } = await supabaseClient.from("exercises").select("*").in("workout_id", workoutIds);
+      exercises = exoData || [];
+      const exoIds = exercises.map(e => e.id);
+      if (exoIds.length){
+        const { data: setData } = await supabaseClient.from("workout_sets").select("*").in("exercise_id", exoIds);
+        sets = setData || [];
+      }
+    }
+
+    const rows = [["Date", "Séance", "Terminée", "Durée (min)", "Kcal brûlées", "Exercice", "Type de série", "N° série", "Poids (kg)", "Reps"]];
+    (workouts || []).forEach(w => {
+      const wExos = exercises.filter(e => e.workout_id === w.id);
+      if (!wExos.length){
+        rows.push([w.scheduled_at ? new Date(w.scheduled_at).toLocaleString("fr-FR") : "", w.name, w.completed ? "Oui" : "Non", w.duration_min || "", w.calories_burned || "", "", "", "", "", ""]);
+        return;
+      }
+      wExos.forEach(ex => {
+        const exSets = sets.filter(s => s.exercise_id === ex.id);
+        if (!exSets.length){
+          rows.push([w.scheduled_at ? new Date(w.scheduled_at).toLocaleString("fr-FR") : "", w.name, w.completed ? "Oui" : "Non", w.duration_min || "", w.calories_burned || "", ex.name, "", "", "", ""]);
+        } else {
+          exSets.forEach(s => {
+            rows.push([
+              w.scheduled_at ? new Date(w.scheduled_at).toLocaleString("fr-FR") : "",
+              w.name, w.completed ? "Oui" : "Non", w.duration_min || "", w.calories_burned || "",
+              ex.name, s.is_warmup ? "Échauffement" : "Efficace", s.set_number, s.weight_kg || "", s.reps || ""
+            ]);
+          });
+        }
+      });
+    });
+    downloadCsv("mes_seances.csv", rows);
   }
 
   loadExistingProfile();

@@ -169,22 +169,23 @@
     background: var(--lime); border-color: var(--lime);
     display:flex; align-items:center; justify-content:center;
   }
-  .exo-delete, .history-delete, .hero-delete, .exo-edit, .history-edit, .hero-edit{
+  .exo-delete, .history-delete, .hero-delete, .exo-edit, .history-edit, .hero-edit, .history-duplicate, .hero-duplicate{
     background:none; border:none; cursor:pointer; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
     color: var(--text-muted);
   }
-  .exo-delete, .history-delete, .exo-edit, .history-edit{ width:26px; height:26px; border-radius:8px; }
+  .exo-delete, .history-delete, .exo-edit, .history-edit, .history-duplicate{ width:26px; height:26px; border-radius:8px; }
   .exo-delete:hover, .history-delete:hover{ color: var(--flame); background: var(--flame-dim); }
-  .exo-edit:hover, .history-edit:hover{ color: var(--volt); background: var(--volt-dim); }
-  .hero-delete, .hero-edit{
+  .exo-edit:hover, .history-edit:hover, .history-duplicate:hover{ color: var(--volt); background: var(--volt-dim); }
+  .hero-delete, .hero-edit, .hero-duplicate{
     position:absolute; top:16px; width:30px; height:30px; border-radius:10px;
     background: rgba(0,0,0,0.25);
   }
   .hero-delete{ right:16px; }
   .hero-edit{ right:54px; }
+  .hero-duplicate{ right:92px; }
   .hero-delete:hover{ color: var(--flame); background: var(--flame-dim); }
-  .hero-edit:hover{ color: var(--volt); background: var(--volt-dim); }
+  .hero-edit:hover, .hero-duplicate:hover{ color: var(--volt); background: var(--volt-dim); }
   .history-actions{ display:flex; gap:4px; flex-shrink:0; }
 
   /* ---------- detail de seance passee ---------- */
@@ -523,7 +524,7 @@
             </div>
             <div>
               <div class="stat-value" id="completed-count">—</div>
-              <div class="stat-label">Séances complétées</div>
+              <div class="stat-label" id="completed-label">Séances complétées</div>
             </div>
           </div>
           <div class="stat-card">
@@ -742,6 +743,17 @@
     if (!(exercises || []).length){ addExoRow(); addExoRow(); }
 
     document.getElementById("workout-modal-overlay").classList.add("open");
+  }
+
+  async function duplicateWorkout(workoutId){
+    await editWorkout(workoutId);
+    // On repart du même contenu, mais comme une nouvelle séance (pas une modification)
+    document.getElementById("w-id").value = "";
+    document.getElementById("workout-modal-title").textContent = "Dupliquer la séance";
+    document.getElementById("workout-modal-submit").textContent = "Créer la séance";
+    const today = new Date();
+    document.getElementById("w-date").value = today.toISOString().slice(0, 10);
+    document.getElementById("w-time").value = today.toTimeString().slice(0, 5);
   }
 
   let plannedSetsByRow = {}; // { rowId: { rest: 90, warmup: [{reps,weight}], working: [{reps,weight}] } }
@@ -1065,6 +1077,9 @@
 
     heroContainer.innerHTML = `
       <div class="workout-hero">
+        <button class="hero-duplicate" onclick="duplicateWorkout('${todays.id}')" title="Dupliquer la séance">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        </button>
         <button class="hero-edit" onclick="editWorkout('${todays.id}')" title="Modifier la séance">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
         </button>
@@ -1449,6 +1464,9 @@
         </div>
         <div class="history-dur">${w.duration_min || "?"} min</div>
         <div class="history-actions">
+          <button class="history-duplicate" onclick="event.stopPropagation(); duplicateWorkout('${w.id}')" title="Dupliquer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
           <button class="history-edit" onclick="event.stopPropagation(); editWorkout('${w.id}')" title="Modifier">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
           </button>
@@ -1467,6 +1485,10 @@
     document.getElementById("sport-date").textContent =
       new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
+    const { data: profile } = await supabaseClient
+      .from("profiles").select("weekly_workout_goal").eq("id", user.id).single();
+    const weeklyGoal = profile?.weekly_workout_goal || 4;
+
     const { data: weekWorkouts } = await supabaseClient
       .from("workouts").select("*")
       .eq("user_id", user.id)
@@ -1475,7 +1497,10 @@
 
     const list = weekWorkouts || [];
     renderWeekBars(list);
-    document.getElementById("completed-count").textContent = list.filter(w => w.completed).length;
+    const completedCount = list.filter(w => w.completed).length;
+    document.getElementById("completed-count").textContent = `${completedCount}/${weeklyGoal}`;
+    document.getElementById("completed-label").textContent =
+      completedCount >= weeklyGoal ? "Objectif atteint 🎉" : "Séances complétées";
     document.getElementById("burned-total").textContent =
       list.filter(w => w.completed).reduce((s, w) => s + (w.calories_burned || 0), 0).toLocaleString("fr-FR");
     renderHistory(list);
