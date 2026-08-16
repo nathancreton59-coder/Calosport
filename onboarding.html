@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Tes besoins — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #12161B; --surface: #1B2128; --surface-2: #222A32;
+    --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+    --lime: #D4F252; --lime-dim: #3A4420;
+    --flame: #FF7A59; --flame-dim: #3D2620;
+    --volt: #6FA8FF; --volt-dim: #202B3D;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+  body{ min-height:100vh; display:flex; align-items:flex-start; justify-content:center; padding:56px 20px; }
+
+  .wrap{ width:100%; max-width:900px; }
+  .head{ text-align:center; margin-bottom:36px; }
+  .head .eyebrow{ font-size:12px; letter-spacing:0.14em; text-transform:uppercase; color:var(--lime); font-weight:700; margin-bottom:10px; }
+  .head h1{ font-family:'Unbounded'; font-size:28px; margin:0 0 10px; }
+  .head p{ font-size:14px; color:var(--text-muted); margin:0; max-width:480px; margin:0 auto; }
+
+  .grid{ display:grid; grid-template-columns: 1.3fr 1fr; gap:24px; align-items:start; }
+
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:22px; padding:26px; }
+  .card + .card{ margin-top:20px; }
+  .card-title{ font-weight:700; font-size:14.5px; margin-bottom:16px; }
+
+  .row{ display:flex; gap:12px; }
+  .field{ flex:1; margin-bottom:14px; }
+  .field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:7px; font-weight:600; }
+  .field input, .field select{
+    width:100%; background:var(--bg); border:1px solid var(--line); border-radius:12px;
+    padding:12px; font-size:13.5px; color:var(--text); font-family:'Inter';
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--lime); }
+  .field .hint{ font-size:10.5px; color:var(--text-muted); margin-top:5px; }
+
+  .pill-group{ display:flex; gap:8px; margin-bottom:14px; }
+  .pill{
+    flex:1; text-align:center; padding:12px; border-radius:12px; border:1px solid var(--line);
+    background:var(--bg); color:var(--text-muted); font-weight:600; font-size:13.5px; cursor:pointer;
+  }
+  .pill.active{ background:var(--lime); border-color:var(--lime); color:#12161B; }
+
+  .range-field{ margin-bottom:14px; }
+  .range-field label{ display:flex; justify-content:space-between; font-size:11.5px; color:var(--text-muted); margin-bottom:8px; font-weight:600; }
+  .range-field label b{ color:var(--text); font-weight:700; }
+  .range-field input[type=range]{ width:100%; accent-color:var(--lime); }
+
+  /* preview */
+  .preview-card{
+    background: linear-gradient(160deg, var(--surface) 0%, #171C22 100%);
+    border:1px solid var(--line); border-radius:22px; padding:26px; position:sticky; top:24px;
+  }
+  .preview-title{ font-size:12px; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); font-weight:700; margin-bottom:16px; }
+  .preview-main{ text-align:center; padding-bottom:20px; border-bottom:1px solid var(--line); margin-bottom:16px; }
+  .preview-main .num{ font-family:'Unbounded'; font-weight:800; font-size:38px; color:var(--lime); }
+  .preview-main .lbl{ font-size:12px; color:var(--text-muted); margin-top:4px; }
+  .preview-sub{ display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:16px; }
+  .preview-sub b{ color:var(--text); }
+
+  .macro-line{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .macro-line:last-child{ border-bottom:none; }
+  .macro-dot{ width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+  .macro-dot.p{ background:var(--volt); }
+  .macro-dot.g{ background:var(--lime); }
+  .macro-dot.l{ background:#C892FF; }
+  .macro-line .name{ flex:1; font-size:12.5px; color:var(--text-muted); }
+  .macro-line .amt{ font-weight:700; font-size:13px; }
+
+  .water-row{ display:flex; align-items:center; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid var(--line); }
+  .water-row svg{ flex-shrink:0; }
+  .water-row .name{ flex:1; font-size:12.5px; color:var(--text-muted); }
+  .water-row .amt{ font-weight:700; font-size:13px; }
+
+  .submit-btn{
+    width:100%; border:none; border-radius:16px; background:var(--lime); color:#12161B;
+    font-family:'Inter'; font-weight:700; font-size:14.5px; padding:16px; margin-top:20px; cursor:pointer;
+  }
+  .submit-btn:disabled{ opacity:0.5; }
+  .msg{ font-size:12.5px; margin-top:12px; text-align:center; color:var(--flame); }
+
+  @media (max-width: 760px){
+    .grid{ grid-template-columns: 1fr; }
+    .preview-card{ position:static; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="head">
+    <div class="eyebrow">Avant de commencer</div>
+    <h1>Calculons tes besoins réels</h1>
+    <p>Ces infos permettent de calculer précisément ton objectif calorique et tes macros, à la place d'une valeur générique.</p>
+  </div>
+
+  <div class="grid">
+    <div>
+      <div class="card">
+        <div class="card-title">Profil</div>
+        <div class="pill-group">
+          <div class="pill active" id="pill-homme" onclick="setSex('homme')">Homme</div>
+          <div class="pill" id="pill-femme" onclick="setSex('femme')">Femme</div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Poids (kg)</label>
+            <input type="number" id="weight" min="30" max="300" step="0.1" placeholder="72" required>
+          </div>
+          <div class="field">
+            <label>Taille (cm)</label>
+            <input type="number" id="height" min="120" max="230" placeholder="178" required>
+          </div>
+          <div class="field">
+            <label>Âge</label>
+            <input type="number" id="age" min="14" max="100" placeholder="27" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Niveau d'activité</div>
+        <div class="field" style="margin-bottom:0;">
+          <select id="activity-level">
+            <option value="sedentaire">Pas de sport</option>
+            <option value="leger">Activité légère (1 à 3 séances/semaine)</option>
+            <option value="modere" selected>Activité modérée (3 à 5 séances/semaine)</option>
+            <option value="eleve">Activité élevée (6 à 7 séances/semaine)</option>
+            <option value="tres_eleve">Très élevée (sport quotidien + travail physique)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Objectif</div>
+        <div class="pill-group">
+          <div class="pill" id="pill-seche" onclick="setGoal('seche')">Sèche</div>
+          <div class="pill active" id="pill-maintien" onclick="setGoal('maintien')">Maintien</div>
+          <div class="pill" id="pill-masse" onclick="setGoal('prise_masse')">Prise de masse</div>
+        </div>
+
+        <div id="seche-field" style="display:none;">
+          <div class="range-field">
+            <label>Déficit calorique <b id="seche-val">550</b> kcal/jour</label>
+            <input type="range" id="seche-range" min="550" max="700" step="10" value="550" oninput="onAdjustmentChange()">
+            <div class="field hint">Recommandé entre 550 et 700 kcal/jour. Au-delà, risque de perte de muscle.</div>
+          </div>
+        </div>
+
+        <div id="masse-field" style="display:none;">
+          <div class="field">
+            <label>Intensité</label>
+            <select id="masse-intensity" onchange="onIntensityChange()">
+              <option value="propre">Propre (+150 à +250 kcal)</option>
+              <option value="classique" selected>Classique (+250 à +350 kcal)</option>
+              <option value="agressive">Agressive (+350 à +500 kcal)</option>
+            </select>
+          </div>
+          <div class="range-field">
+            <label>Surplus calorique <b id="masse-val">300</b> kcal/jour</label>
+            <input type="range" id="masse-range" min="250" max="350" step="10" value="300" oninput="onAdjustmentChange()">
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Répartition des macros</div>
+        <div class="range-field">
+          <label>Protéines <b id="protein-val">2.0</b> g/kg de poids</label>
+          <input type="range" id="protein-range" min="1.8" max="2.2" step="0.1" value="2.0" oninput="onMacroChange()">
+          <div class="field hint">Recommandé : 1,8 à 2,2 g/kg</div>
+        </div>
+        <div class="range-field">
+          <label>Lipides <b id="fat-val">0.9</b> g/kg de poids</label>
+          <input type="range" id="fat-range" min="0.8" max="1.0" step="0.05" value="0.9" oninput="onMacroChange()">
+          <div class="field hint">Recommandé : 0,8 à 1 g/kg — le reste des calories va aux glucides</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Hydratation</div>
+        <div class="field" style="margin-bottom:0;">
+          <label>Objectif quotidien (L)</label>
+          <input type="number" id="water-goal" min="1.5" max="6" step="0.1" value="2.0" oninput="onMacroChange()">
+          <div class="hint">Minimum recommandé : 1,5 L/jour</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="preview-card">
+      <div class="preview-title">Ton objectif calculé</div>
+      <div class="preview-main">
+        <div class="num" id="prev-calories">—</div>
+        <div class="lbl">kcal / jour</div>
+      </div>
+      <div class="preview-sub">
+        <div>Métabolisme de base <b id="prev-mb">—</b></div>
+      </div>
+      <div class="preview-sub">
+        <div>Dépense totale (TDEE) <b id="prev-tdee">—</b></div>
+      </div>
+
+      <div class="macro-line"><div class="macro-dot p"></div><div class="name">Protéines</div><div class="amt" id="prev-protein">— g</div></div>
+      <div class="macro-line"><div class="macro-dot g"></div><div class="name">Glucides</div><div class="amt" id="prev-carbs">— g</div></div>
+      <div class="macro-line"><div class="macro-dot l"></div><div class="name">Lipides</div><div class="amt" id="prev-fat">— g</div></div>
+
+      <div class="water-row">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69s5 5.5 5 9.86a5 5 0 0 1-10 0c0-4.37 5-9.86 5-9.86z"/></svg>
+        <div class="name">Hydratation</div>
+        <div class="amt" id="prev-water">— L</div>
+      </div>
+
+      <button class="submit-btn" id="submit-btn" onclick="saveOnboarding()">Enregistrer mes objectifs</button>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="nutrition-calc.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  let sex = "homme";
+  let goal = "maintien";
+
+  function setSex(s){
+    sex = s;
+    document.getElementById("pill-homme").classList.toggle("active", s === "homme");
+    document.getElementById("pill-femme").classList.toggle("active", s === "femme");
+    recompute();
+  }
+
+  function setGoal(g){
+    goal = g;
+    document.getElementById("pill-seche").classList.toggle("active", g === "seche");
+    document.getElementById("pill-maintien").classList.toggle("active", g === "maintien");
+    document.getElementById("pill-masse").classList.toggle("active", g === "prise_masse");
+    document.getElementById("seche-field").style.display = g === "seche" ? "block" : "none";
+    document.getElementById("masse-field").style.display = g === "prise_masse" ? "block" : "none";
+    recompute();
+  }
+
+  function onIntensityChange(){
+    const intensity = document.getElementById("masse-intensity").value;
+    const range = PDM_RANGES[intensity];
+    const input = document.getElementById("masse-range");
+    input.min = range.min; input.max = range.max; input.value = range.default;
+    document.getElementById("masse-val").textContent = range.default;
+    recompute();
+  }
+
+  function onAdjustmentChange(){
+    document.getElementById("seche-val").textContent = document.getElementById("seche-range").value;
+    document.getElementById("masse-val").textContent = document.getElementById("masse-range").value;
+    recompute();
+  }
+
+  function onMacroChange(){
+    document.getElementById("protein-val").textContent = parseFloat(document.getElementById("protein-range").value).toFixed(1);
+    document.getElementById("fat-val").textContent = parseFloat(document.getElementById("fat-range").value).toFixed(2);
+    recompute();
+  }
+
+  function getAdjustment(){
+    if (goal === "seche") return parseInt(document.getElementById("seche-range").value) || SECHE_DEFAULT;
+    if (goal === "prise_masse") return parseInt(document.getElementById("masse-range").value) || 300;
+    return 0;
+  }
+
+  function recompute(){
+    const weight = parseFloat(document.getElementById("weight").value);
+    const height = parseFloat(document.getElementById("height").value);
+    const age = parseInt(document.getElementById("age").value);
+    const activityLevel = document.getElementById("activity-level").value;
+    const proteinPerKg = parseFloat(document.getElementById("protein-range").value);
+    const fatPerKg = parseFloat(document.getElementById("fat-range").value);
+    const waterGoal = parseFloat(document.getElementById("water-goal").value) || 2.0;
+
+    document.getElementById("prev-water").textContent = waterGoal.toFixed(1) + " L";
+
+    if (!weight || !height || !age){
+      document.getElementById("prev-calories").textContent = "—";
+      document.getElementById("prev-mb").textContent = "—";
+      document.getElementById("prev-tdee").textContent = "—";
+      document.getElementById("prev-protein").textContent = "— g";
+      document.getElementById("prev-carbs").textContent = "— g";
+      document.getElementById("prev-fat").textContent = "— g";
+      return null;
+    }
+
+    const plan = computeNutritionPlan({
+      sex, weight, height, age, activityLevel, goal,
+      goalAdjustment: getAdjustment(), proteinPerKg, fatPerKg
+    });
+
+    document.getElementById("prev-calories").textContent = plan.calorieGoal.toLocaleString("fr-FR");
+    document.getElementById("prev-mb").textContent = plan.mb.toLocaleString("fr-FR") + " kcal";
+    document.getElementById("prev-tdee").textContent = plan.tdee.toLocaleString("fr-FR") + " kcal";
+    document.getElementById("prev-protein").textContent = plan.proteinG + " g";
+    document.getElementById("prev-carbs").textContent = plan.carbsG + " g";
+    document.getElementById("prev-fat").textContent = plan.fatG + " g";
+
+    return plan;
+  }
+
+  ["weight","height","age","activity-level"].forEach(id => {
+    document.getElementById(id).addEventListener("input", recompute);
+    document.getElementById(id).addEventListener("change", recompute);
+  });
+
+  async function saveOnboarding(){
+    const plan = recompute();
+    if (!plan){
+      document.getElementById("msg").textContent = "Renseigne ton poids, ta taille et ton âge.";
+      return;
+    }
+    const btn = document.getElementById("submit-btn");
+    btn.disabled = true;
+
+    const waterGoalL = parseFloat(document.getElementById("water-goal").value) || 2.0;
+
+    const { error } = await supabaseClient.from("profiles").update({
+      sex,
+      weight_kg: parseFloat(document.getElementById("weight").value),
+      height_cm: parseFloat(document.getElementById("height").value),
+      age: parseInt(document.getElementById("age").value),
+      activity_level: document.getElementById("activity-level").value,
+      goal,
+      goal_adjustment_kcal: getAdjustment(),
+      protein_per_kg: parseFloat(document.getElementById("protein-range").value),
+      fat_per_kg: parseFloat(document.getElementById("fat-range").value),
+      water_goal_ml: Math.round(waterGoalL * 1000),
+      calorie_goal: plan.calorieGoal,
+      protein_goal_g: plan.proteinG,
+      carbs_goal_g: plan.carbsG,
+      fat_goal_g: plan.fatG,
+      onboarding_completed: true
+    }).eq("id", currentUser.id);
+
+    if (error){
+      document.getElementById("msg").textContent = "Erreur : " + error.message;
+      btn.disabled = false;
+      return;
+    }
+    window.location.href = "index.html";
+  }
+
+  (async () => {
+    await requireAuth({ skipOnboardingCheck: true });
+  })();
+</script>
+</body>
+</html>

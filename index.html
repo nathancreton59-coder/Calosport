@@ -59,6 +59,7 @@
   .sidebar-link.home.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
   .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
   .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
 
   .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
   .sidebar-logout{
@@ -151,6 +152,23 @@
     background: var(--lime); display:flex; align-items:center; justify-content:center; gap:8px;
     color:#12161B; text-decoration:none; font-weight:700; font-size:13px;
   }
+
+  /* ---------- hydratation ---------- */
+  .water-card{
+    background: var(--surface); border:1px solid var(--line); border-radius: 22px; padding: 22px;
+  }
+  .water-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+  .water-top .t{ font-weight:700; font-size:14.5px; }
+  .water-top .v{ font-family:'Unbounded'; font-weight:700; font-size:15px; color: var(--volt); }
+  .water-bar-track{ height:10px; border-radius:6px; background:#2A323B; overflow:hidden; margin-bottom:16px; }
+  .water-bar-fill{ height:100%; background: var(--volt); border-radius:6px; transition: width .3s ease; }
+  .water-quick{ display:flex; gap:8px; }
+  .water-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
+    background: var(--volt-dim); border:1px solid var(--line); border-radius:14px;
+    padding:12px 6px; color: var(--volt); font-family:'Inter'; font-weight:700; font-size:12px; cursor:pointer;
+  }
+  .water-btn:hover{ border-color: var(--volt); }
 </style>
 </head>
 <body>
@@ -178,6 +196,11 @@
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 6.5 17.5 17.5M4 9l3-3 3 3-3 3-3-3zM17 12l3 3-3 3-3-3 3-3z"/></svg>
       Sport
+    </a>
+    <a class="sidebar-link settings" href="settings.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+      Réglages
     </a>
   </div>
 
@@ -260,6 +283,29 @@
             </button>
           </div>
         </div>
+
+        <div class="section-title" style="margin-top:24px;">Hydratation</div>
+        <div class="water-card">
+          <div class="water-top">
+            <div class="t">Aujourd'hui</div>
+            <div class="v" id="water-total">— L</div>
+          </div>
+          <div class="water-bar-track"><div class="water-bar-fill" id="water-bar" style="width:0%"></div></div>
+          <div class="water-quick">
+            <button class="water-btn" onclick="addWater(250)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69s5 5.5 5 9.86a5 5 0 0 1-10 0c0-4.37 5-9.86 5-9.86z"/></svg>
+              +250 ml
+            </button>
+            <button class="water-btn" onclick="addWater(500)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69s5 5.5 5 9.86a5 5 0 0 1-10 0c0-4.37 5-9.86 5-9.86z"/></svg>
+              +500 ml
+            </button>
+            <button class="water-btn" onclick="addWater(1000)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69s5 5.5 5 9.86a5 5 0 0 1-10 0c0-4.37 5-9.86 5-9.86z"/></svg>
+              +1 L
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -315,6 +361,11 @@
     document.getElementById("active-value").textContent = activeMin + " min";
     document.getElementById("active-bar").style.width = Math.min(100, (activeMin / 60) * 100) + "%";
 
+    // Hydratation
+    const waterGoalMl = profile?.water_goal_ml ?? 2000;
+    window.waterGoalMl = waterGoalMl;
+    await refreshWater(user.id);
+
     const { data: next } = await supabaseClient
       .from("workouts").select("*")
       .eq("user_id", user.id)
@@ -337,6 +388,25 @@
       document.getElementById("next-workout-title").textContent = "Aucune séance planifiée";
       document.getElementById("next-workout-meta").textContent = "Ajoute-en une depuis l'onglet Sport";
     }
+  }
+
+  async function refreshWater(userId){
+    const { data: waterLogs } = await supabaseClient
+      .from("water_logs").select("amount_ml")
+      .eq("user_id", userId)
+      .gte("logged_at", startOfToday().toISOString())
+      .lte("logged_at", endOfToday().toISOString());
+
+    const totalMl = (waterLogs || []).reduce((s, w) => s + (w.amount_ml || 0), 0);
+    const goal = window.waterGoalMl || 2000;
+    document.getElementById("water-total").textContent = (totalMl / 1000).toFixed(2) + " L / " + (goal / 1000).toFixed(1) + " L";
+    document.getElementById("water-bar").style.width = Math.min(100, (totalMl / goal) * 100) + "%";
+  }
+
+  async function addWater(ml){
+    if (!currentUser) return;
+    await supabaseClient.from("water_logs").insert({ user_id: currentUser.id, amount_ml: ml });
+    await refreshWater(currentUser.id);
   }
 
   async function deleteNextWorkout(){

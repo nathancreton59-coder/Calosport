@@ -3,13 +3,23 @@
 
 let currentUser = null;
 
-async function requireAuth() {
+async function requireAuth(opts = {}) {
   const { data: { session } } = await supabaseClient.auth.getSession();
   if (!session) {
     window.location.href = "login.html";
     return null;
   }
   currentUser = session.user;
+
+  if (!opts.skipOnboardingCheck) {
+    const { data: profile } = await supabaseClient
+      .from("profiles").select("onboarding_completed").eq("id", session.user.id).single();
+    if (profile && !profile.onboarding_completed){
+      window.location.href = "onboarding.html";
+      return null;
+    }
+  }
+
   return session.user;
 }
 
