@@ -43,3 +43,15 @@ function startOfWeek() {
   d.setHours(0, 0, 0, 0);
   return d;
 }
+
+// Heure réelle affichée en haut de chaque écran (au lieu d'une heure fixe)
+function updateStatusTime() {
+  const el = document.getElementById("status-time");
+  if (!el) return;
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2, "0");
+  const m = String(now.getMinutes()).padStart(2, "0");
+  el.textContent = `${h}:${m}`;
+}
+updateStatusTime();
+setInterval(updateStatusTime, 15000);
