@@ -192,6 +192,42 @@
   .modal-btn{ flex:1; border:none; border-radius:14px; padding:13px; font-weight:700; font-size:13.5px; font-family:'Inter'; cursor:pointer; }
   .modal-btn.cancel{ background: var(--surface); color: var(--text-muted); border:1px solid var(--line); }
   .modal-btn.save{ background: var(--lime); color:#12161B; }
+  .modal-btn.save:disabled{ opacity:0.4; }
+
+  .food-results{
+    margin-top:8px; max-height:200px; overflow-y:auto; border-radius:12px;
+    background: var(--surface); border:1px solid var(--line);
+  }
+  .food-results:empty{ display:none; border:none; margin-top:0; }
+  .food-result-item{
+    padding:11px 13px; cursor:pointer; border-bottom:1px solid var(--line);
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+  }
+  .food-result-item:last-child{ border-bottom:none; }
+  .food-result-item:hover{ background: var(--surface-2); }
+  .food-result-name{ font-size:13px; font-weight:600; }
+  .food-result-kcal{ font-size:11.5px; color:var(--text-muted); white-space:nowrap; }
+  .food-result-item.create-new{ color: var(--flame); font-weight:600; }
+
+  .selected-food-box{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    background: var(--flame-dim); border:1px solid var(--line); border-radius:14px;
+    padding:14px; margin-bottom:14px;
+  }
+  .selected-food-name{ font-weight:700; font-size:13.5px; }
+  .selected-food-macros{ font-size:11.5px; color:var(--text-muted); margin-top:3px; }
+  .selected-food-change{
+    background:none; border:1px solid var(--line); border-radius:10px; color:var(--text);
+    font-family:'Inter'; font-weight:600; font-size:12px; padding:8px 12px; cursor:pointer; flex-shrink:0;
+  }
+
+  .computed-preview{
+    display:flex; gap:8px; background: var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:14px; margin-bottom:14px;
+  }
+  .cp-item{ flex:1; text-align:center; }
+  .cp-v{ font-family:'Unbounded'; font-weight:700; font-size:15px; }
+  .cp-k{ font-size:10.5px; color:var(--text-muted); margin-top:3px; }
 </style>
 </head>
 <body>
@@ -320,42 +356,77 @@
   <div class="modal-sheet">
     <div class="modal-title">Ajouter un aliment</div>
     <form onsubmit="submitMeal(event)">
-      <div class="modal-field">
-        <label>Nom de l'aliment</label>
-        <input type="text" id="m-name" placeholder="Ex. Salade de poulet" required>
+
+      <div class="modal-field" id="search-field">
+        <label>Aliment</label>
+        <input type="text" id="food-search" placeholder="Rechercher un aliment…" autocomplete="off"
+               oninput="onFoodSearchInput()" onfocus="onFoodSearchInput()">
+        <div id="food-results" class="food-results"></div>
       </div>
-      <div class="modal-row">
-        <div class="modal-field">
-          <label>Repas</label>
-          <select id="m-type">
-            <option value="petit-dejeuner">Petit-déjeuner</option>
-            <option value="dejeuner">Déjeuner</option>
-            <option value="diner">Dîner</option>
-            <option value="collation">Collation</option>
-          </select>
+
+      <div id="selected-food-box" class="selected-food-box" style="display:none;">
+        <div class="selected-food-info">
+          <div class="selected-food-name" id="selected-food-name">—</div>
+          <div class="selected-food-macros" id="selected-food-macros">—</div>
         </div>
+        <button type="button" class="selected-food-change" onclick="clearSelectedFood()">Changer</button>
+      </div>
+
+      <div id="custom-food-fields" style="display:none;">
         <div class="modal-field">
-          <label>Calories (kcal)</label>
-          <input type="number" id="m-cal" placeholder="350" min="0" required>
+          <label>Nom du nouvel aliment</label>
+          <input type="text" id="cf-name" placeholder="Ex. Galette de riz">
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Kcal / 100g</label>
+            <input type="number" id="cf-cal" placeholder="350" min="0" step="0.1">
+          </div>
+          <div class="modal-field">
+            <label>Protéines / 100g</label>
+            <input type="number" id="cf-protein" placeholder="0" min="0" step="0.1">
+          </div>
+        </div>
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Glucides / 100g</label>
+            <input type="number" id="cf-carbs" placeholder="0" min="0" step="0.1">
+          </div>
+          <div class="modal-field">
+            <label>Lipides / 100g</label>
+            <input type="number" id="cf-fat" placeholder="0" min="0" step="0.1">
+          </div>
+        </div>
+        <button type="button" class="modal-btn cancel" style="width:100%; margin-bottom:14px;" onclick="saveCustomFood()">Enregistrer cet aliment dans ma bibliothèque</button>
+      </div>
+
+      <div id="weight-section" style="display:none;">
+        <div class="modal-row">
+          <div class="modal-field">
+            <label>Repas</label>
+            <select id="m-type">
+              <option value="petit-dejeuner">Petit-déjeuner</option>
+              <option value="dejeuner">Déjeuner</option>
+              <option value="diner">Dîner</option>
+              <option value="collation">Collation</option>
+            </select>
+          </div>
+          <div class="modal-field">
+            <label>Poids consommé (g)</label>
+            <input type="number" id="m-weight" placeholder="150" min="0" step="1" oninput="updateComputedPreview()" required>
+          </div>
+        </div>
+        <div class="computed-preview" id="computed-preview">
+          <div class="cp-item"><div class="cp-v" id="cp-cal">0</div><div class="cp-k">kcal</div></div>
+          <div class="cp-item"><div class="cp-v" id="cp-protein">0 g</div><div class="cp-k">Protéines</div></div>
+          <div class="cp-item"><div class="cp-v" id="cp-carbs">0 g</div><div class="cp-k">Glucides</div></div>
+          <div class="cp-item"><div class="cp-v" id="cp-fat">0 g</div><div class="cp-k">Lipides</div></div>
         </div>
       </div>
-      <div class="modal-row">
-        <div class="modal-field">
-          <label>Protéines (g)</label>
-          <input type="number" id="m-protein" placeholder="0" min="0" step="0.1">
-        </div>
-        <div class="modal-field">
-          <label>Glucides (g)</label>
-          <input type="number" id="m-carbs" placeholder="0" min="0" step="0.1">
-        </div>
-        <div class="modal-field">
-          <label>Lipides (g)</label>
-          <input type="number" id="m-fat" placeholder="0" min="0" step="0.1">
-        </div>
-      </div>
+
       <div class="modal-actions">
         <button type="button" class="modal-btn cancel" onclick="closeModal()">Annuler</button>
-        <button type="submit" class="modal-btn save">Ajouter</button>
+        <button type="submit" class="modal-btn save" id="submit-meal-btn" disabled>Ajouter</button>
       </div>
     </form>
   </div>
@@ -374,29 +445,145 @@
     { key: "collation", label: "🍎 Collation" },
   ];
 
+  let FOOD_LIBRARY = [];
+  let selectedFood = null; // { id, name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g }
+
+  async function loadFoodLibrary(){
+    const { data } = await supabaseClient
+      .from("food_library").select("*").order("name", { ascending: true });
+    FOOD_LIBRARY = data || [];
+  }
+
   function openModal(prefType){
     document.getElementById("modal-overlay").classList.add("open");
     if (prefType) document.getElementById("m-type").value = prefType;
   }
   function closeModal(){
     document.getElementById("modal-overlay").classList.remove("open");
-    document.getElementById("m-name").value = "";
-    document.getElementById("m-cal").value = "";
-    document.getElementById("m-protein").value = "";
-    document.getElementById("m-carbs").value = "";
-    document.getElementById("m-fat").value = "";
+    document.getElementById("food-search").value = "";
+    document.getElementById("food-results").innerHTML = "";
+    document.getElementById("m-weight").value = "";
+    document.getElementById("cf-name").value = "";
+    document.getElementById("cf-cal").value = "";
+    document.getElementById("cf-protein").value = "";
+    document.getElementById("cf-carbs").value = "";
+    document.getElementById("cf-fat").value = "";
+    document.getElementById("custom-food-fields").style.display = "none";
+    clearSelectedFood();
+  }
+
+  function onFoodSearchInput(){
+    const query = document.getElementById("food-search").value.trim().toLowerCase();
+    const resultsEl = document.getElementById("food-results");
+    if (!query){ resultsEl.innerHTML = ""; return; }
+
+    const matches = FOOD_LIBRARY.filter(f => f.name.toLowerCase().includes(query)).slice(0, 8);
+    resultsEl.innerHTML = "";
+
+    matches.forEach(f => {
+      const row = document.createElement("div");
+      row.className = "food-result-item";
+      row.innerHTML = `<div class="food-result-name">${f.name}</div><div class="food-result-kcal">${f.calories_per_100g} kcal/100g</div>`;
+      row.onclick = () => selectFood(f);
+      resultsEl.appendChild(row);
+    });
+
+    const createRow = document.createElement("div");
+    createRow.className = "food-result-item create-new";
+    createRow.textContent = `➕ Créer "${document.getElementById("food-search").value.trim()}"`;
+    createRow.onclick = () => openCustomFoodFields(document.getElementById("food-search").value.trim());
+    resultsEl.appendChild(createRow);
+  }
+
+  function selectFood(food){
+    selectedFood = food;
+    document.getElementById("food-search").value = "";
+    document.getElementById("food-results").innerHTML = "";
+    document.getElementById("search-field").style.display = "none";
+    document.getElementById("custom-food-fields").style.display = "none";
+
+    document.getElementById("selected-food-name").textContent = food.name;
+    document.getElementById("selected-food-macros").textContent =
+      `${food.calories_per_100g} kcal · ${food.protein_per_100g}g P · ${food.carbs_per_100g}g G · ${food.fat_per_100g}g L (/100g)`;
+    document.getElementById("selected-food-box").style.display = "flex";
+
+    document.getElementById("weight-section").style.display = "block";
+    updateComputedPreview();
+  }
+
+  function clearSelectedFood(){
+    selectedFood = null;
+    document.getElementById("search-field").style.display = "block";
+    document.getElementById("selected-food-box").style.display = "none";
+    document.getElementById("weight-section").style.display = "none";
+    document.getElementById("m-weight").value = "";
+    document.getElementById("submit-meal-btn").disabled = true;
+  }
+
+  function openCustomFoodFields(prefillName){
+    document.getElementById("food-results").innerHTML = "";
+    document.getElementById("custom-food-fields").style.display = "block";
+    document.getElementById("cf-name").value = prefillName || "";
+  }
+
+  async function saveCustomFood(){
+    const name = document.getElementById("cf-name").value.trim();
+    const cal = parseFloat(document.getElementById("cf-cal").value);
+    if (!name || isNaN(cal)){
+      alert("Renseigne au moins le nom et les calories pour 100g.");
+      return;
+    }
+    const payload = {
+      user_id: currentUser.id,
+      name,
+      calories_per_100g: cal,
+      protein_per_100g: parseFloat(document.getElementById("cf-protein").value) || 0,
+      carbs_per_100g: parseFloat(document.getElementById("cf-carbs").value) || 0,
+      fat_per_100g: parseFloat(document.getElementById("cf-fat").value) || 0,
+    };
+    const { data, error } = await supabaseClient.from("food_library").insert(payload).select().single();
+    if (error){ alert("Erreur : " + error.message); return; }
+    FOOD_LIBRARY.push(data);
+    document.getElementById("custom-food-fields").style.display = "none";
+    selectFood(data);
+  }
+
+  function updateComputedPreview(){
+    const weight = parseFloat(document.getElementById("m-weight").value) || 0;
+    const btn = document.getElementById("submit-meal-btn");
+    if (!selectedFood || weight <= 0){
+      document.getElementById("cp-cal").textContent = "0";
+      document.getElementById("cp-protein").textContent = "0 g";
+      document.getElementById("cp-carbs").textContent = "0 g";
+      document.getElementById("cp-fat").textContent = "0 g";
+      btn.disabled = true;
+      return;
+    }
+    const ratio = weight / 100;
+    document.getElementById("cp-cal").textContent = Math.round(selectedFood.calories_per_100g * ratio);
+    document.getElementById("cp-protein").textContent = (selectedFood.protein_per_100g * ratio).toFixed(1) + " g";
+    document.getElementById("cp-carbs").textContent = (selectedFood.carbs_per_100g * ratio).toFixed(1) + " g";
+    document.getElementById("cp-fat").textContent = (selectedFood.fat_per_100g * ratio).toFixed(1) + " g";
+    btn.disabled = false;
   }
 
   async function submitMeal(e){
     e.preventDefault();
+    if (!selectedFood) return;
+    const weight = parseFloat(document.getElementById("m-weight").value) || 0;
+    if (weight <= 0) return;
+    const ratio = weight / 100;
+
     const { error } = await supabaseClient.from("meals").insert({
       user_id: currentUser.id,
-      name: document.getElementById("m-name").value.trim(),
+      food_library_id: selectedFood.id,
+      name: selectedFood.name,
+      weight_g: weight,
       meal_type: document.getElementById("m-type").value,
-      calories: parseInt(document.getElementById("m-cal").value) || 0,
-      protein_g: parseFloat(document.getElementById("m-protein").value) || 0,
-      carbs_g: parseFloat(document.getElementById("m-carbs").value) || 0,
-      fat_g: parseFloat(document.getElementById("m-fat").value) || 0,
+      calories: Math.round(selectedFood.calories_per_100g * ratio),
+      protein_g: Math.round(selectedFood.protein_per_100g * ratio * 10) / 10,
+      carbs_g: Math.round(selectedFood.carbs_per_100g * ratio * 10) / 10,
+      fat_g: Math.round(selectedFood.fat_per_100g * ratio * 10) / 10,
     });
     if (error){ alert("Erreur : " + error.message); return; }
     closeModal();
@@ -427,13 +614,14 @@
 
       items.forEach(m => {
         const time = new Date(m.logged_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+        const weightLabel = m.weight_g ? `${m.weight_g} g · ${time}` : time;
         const foodEl = document.createElement("div");
         foodEl.className = "food-item";
         foodEl.innerHTML = `
           <div class="food-icon a">🍽️</div>
           <div class="food-meta">
             <div class="food-name">${m.name}</div>
-            <div class="food-detail">${time}</div>
+            <div class="food-detail">${weightLabel}</div>
           </div>
           <div class="food-kcal">${m.calories} kcal</div>
           <button class="food-delete" onclick="deleteMeal('${m.id}')" title="Supprimer">
@@ -500,7 +688,10 @@
     renderMeals(list);
   }
 
-  loadCalories();
+  (async function init(){
+    await loadFoodLibrary();
+    await loadCalories();
+  })();
 </script>
 </body>
 </html>
