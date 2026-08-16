@@ -157,18 +157,23 @@
     background: var(--lime); border-color: var(--lime);
     display:flex; align-items:center; justify-content:center;
   }
-  .exo-delete, .history-delete, .hero-delete{
+  .exo-delete, .history-delete, .hero-delete, .exo-edit, .history-edit, .hero-edit{
     background:none; border:none; cursor:pointer; flex-shrink:0;
     display:flex; align-items:center; justify-content:center;
     color: var(--text-muted);
   }
-  .exo-delete, .history-delete{ width:26px; height:26px; border-radius:8px; }
+  .exo-delete, .history-delete, .exo-edit, .history-edit{ width:26px; height:26px; border-radius:8px; }
   .exo-delete:hover, .history-delete:hover{ color: var(--flame); background: var(--flame-dim); }
-  .hero-delete{
-    position:absolute; top:16px; right:16px; width:30px; height:30px; border-radius:10px;
+  .exo-edit:hover, .history-edit:hover{ color: var(--volt); background: var(--volt-dim); }
+  .hero-delete, .hero-edit{
+    position:absolute; top:16px; width:30px; height:30px; border-radius:10px;
     background: rgba(0,0,0,0.25);
   }
+  .hero-delete{ right:16px; }
+  .hero-edit{ right:54px; }
   .hero-delete:hover{ color: var(--flame); background: var(--flame-dim); }
+  .hero-edit:hover{ color: var(--volt); background: var(--volt-dim); }
+  .history-actions{ display:flex; gap:4px; flex-shrink:0; }
 
   /* historique */
   .history-item{
@@ -430,8 +435,9 @@
 
   <div class="modal-overlay" id="workout-modal-overlay">
     <div class="modal-sheet">
-      <div class="modal-title">Nouvelle séance</div>
+      <div class="modal-title" id="workout-modal-title">Nouvelle séance</div>
       <form onsubmit="submitWorkout(event)">
+        <input type="hidden" id="w-id" value="">
         <div class="modal-field">
           <label>Nom de la séance</label>
           <input type="text" id="w-name" placeholder="Ex. Push day — épaules & triceps" required>
@@ -472,7 +478,7 @@
 
         <div class="modal-actions">
           <button type="button" class="modal-btn cancel" onclick="closeWorkoutModal()">Annuler</button>
-          <button type="submit" class="modal-btn save">Créer la séance</button>
+          <button type="submit" class="modal-btn save" id="workout-modal-submit">Créer la séance</button>
         </div>
       </form>
     </div>
@@ -548,6 +554,9 @@
   }
 
   function openWorkoutModal(){
+    document.getElementById("workout-modal-title").textContent = "Nouvelle séance";
+    document.getElementById("workout-modal-submit").textContent = "Créer la séance";
+    document.getElementById("w-id").value = "";
     document.getElementById("workout-modal-overlay").classList.add("open");
     const today = new Date();
     document.getElementById("w-date").value = today.toISOString().slice(0,10);
@@ -558,12 +567,57 @@
   }
   function closeWorkoutModal(){
     document.getElementById("workout-modal-overlay").classList.remove("open");
+    document.getElementById("w-id").value = "";
     document.getElementById("w-name").value = "";
     document.getElementById("w-type").value = "";
     document.getElementById("w-duration").value = "";
     document.getElementById("w-calories").value = "";
     document.getElementById("exo-rows").innerHTML = "";
     exoRowCount = 0;
+  }
+
+  async function editWorkout(workoutId){
+    const { data: workout, error } = await supabaseClient
+      .from("workouts").select("*").eq("id", workoutId).single();
+    if (error || !workout){ alert("Impossible de charger cette séance."); return; }
+
+    const { data: exercises } = await supabaseClient
+      .from("exercises").select("*").eq("workout_id", workoutId).order("position", { ascending: true });
+
+    document.getElementById("workout-modal-title").textContent = "Modifier la séance";
+    document.getElementById("workout-modal-submit").textContent = "Enregistrer les modifications";
+    document.getElementById("w-id").value = workout.id;
+    document.getElementById("w-name").value = workout.name || "";
+    document.getElementById("w-type").value = workout.workout_type || "";
+    document.getElementById("w-duration").value = workout.duration_min || "";
+    document.getElementById("w-calories").value = workout.calories_burned || "";
+    if (workout.scheduled_at){
+      const d = new Date(workout.scheduled_at);
+      document.getElementById("w-date").value = d.toISOString().slice(0,10);
+      document.getElementById("w-time").value = d.toTimeString().slice(0,5);
+    }
+
+    document.getElementById("exo-rows").innerHTML = "";
+    exoRowCount = 0;
+    (exercises || []).forEach(ex => {
+      addExoRow();
+      const row = document.getElementById("exo-row-" + (exoRowCount - 1));
+      const select = row.querySelector(".exo-select");
+      const customInput = row.querySelector(".exo-custom-input");
+      if (ex.exercise_library_id && EXERCISE_LIBRARY.some(e => e.id === ex.exercise_library_id)){
+        select.value = ex.exercise_library_id;
+      } else {
+        select.value = "__custom__";
+        customInput.style.display = "block";
+        customInput.value = ex.name || "";
+      }
+      row.querySelector(".exo-sets-input").value = ex.sets || "";
+      row.querySelector(".exo-reps-input").value = ex.reps || "";
+      row.querySelector(".exo-rest-input").value = ex.rest_seconds || 90;
+    });
+    if (!(exercises || []).length){ addExoRow(); addExoRow(); }
+
+    document.getElementById("workout-modal-overlay").classList.add("open");
   }
 
   function onExoSelectChange(selectEl){
@@ -595,6 +649,7 @@
 
   async function submitWorkout(e){
     e.preventDefault();
+    const editId = document.getElementById("w-id").value;
     const name = document.getElementById("w-name").value.trim();
     const type = document.getElementById("w-type").value.trim();
     const duration = parseInt(document.getElementById("w-duration").value) || null;
@@ -603,17 +658,31 @@
     const time = document.getElementById("w-time").value;
     const scheduledAt = new Date(`${date}T${time}`).toISOString();
 
-    const { data: workout, error } = await supabaseClient
-      .from("workouts")
-      .insert({
-        user_id: currentUser.id,
-        name, workout_type: type || null,
-        duration_min: duration, calories_burned: calories,
-        scheduled_at: scheduledAt, completed: false
-      })
-      .select().single();
-
-    if (error){ alert("Erreur : " + error.message); return; }
+    let workout;
+    if (editId){
+      const { data, error } = await supabaseClient
+        .from("workouts")
+        .update({ name, workout_type: type || null, duration_min: duration, calories_burned: calories, scheduled_at: scheduledAt })
+        .eq("id", editId)
+        .select().single();
+      if (error){ alert("Erreur : " + error.message); return; }
+      workout = data;
+      // On repart des exercices actuels du formulaire : on supprime les anciens puis on réinsère
+      // (les séries déjà loggées sur cette séance seront donc réinitialisées)
+      await supabaseClient.from("exercises").delete().eq("workout_id", editId);
+    } else {
+      const { data, error } = await supabaseClient
+        .from("workouts")
+        .insert({
+          user_id: currentUser.id,
+          name, workout_type: type || null,
+          duration_min: duration, calories_burned: calories,
+          scheduled_at: scheduledAt, completed: false
+        })
+        .select().single();
+      if (error){ alert("Erreur : " + error.message); return; }
+      workout = data;
+    }
 
     const exoRows = Array.from(document.querySelectorAll(".exo-row"));
     const exercisesToInsert = [];
@@ -728,6 +797,9 @@
 
     heroContainer.innerHTML = `
       <div class="workout-hero">
+        <button class="hero-edit" onclick="editWorkout('${todays.id}')" title="Modifier la séance">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+        </button>
         <button class="hero-delete" onclick="deleteWorkout('${todays.id}')" title="Supprimer la séance">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
         </button>
@@ -1018,9 +1090,14 @@
           <div class="history-date">${date}</div>
         </div>
         <div class="history-dur">${w.duration_min || "?"} min</div>
-        <button class="history-delete" onclick="deleteWorkout('${w.id}')" title="Supprimer">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
-        </button>`;
+        <div class="history-actions">
+          <button class="history-edit" onclick="editWorkout('${w.id}')" title="Modifier">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+          </button>
+          <button class="history-delete" onclick="deleteWorkout('${w.id}')" title="Supprimer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+          </button>
+        </div>`;
       container.appendChild(el);
     });
   }
