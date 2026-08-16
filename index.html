@@ -167,8 +167,15 @@
   }
   .workout-meta .t{ font-weight:700; font-size:14.5px; }
   .workout-meta .m{ font-size:12px; color:var(--text-muted); margin-top:3px; }
+  .workout-actions{ margin-left:auto; display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .workout-delete{
+    width:32px; height:32px; border-radius:10px; background: var(--surface-2, #222A32);
+    border:1px solid var(--line); color: var(--text-muted);
+    display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .workout-delete:hover{ color: var(--flame); background: var(--flame-dim); }
   .workout-cta{
-    margin-left:auto; width:38px; height:38px; border-radius:50%;
+    width:38px; height:38px; border-radius:50%;
     background: var(--lime); display:flex; align-items:center; justify-content:center;
     flex-shrink:0;
   }
@@ -298,9 +305,14 @@
         <div class="t" id="next-workout-title">Chargement…</div>
         <div class="m" id="next-workout-meta"></div>
       </div>
-      <a class="workout-cta" href="sport.html">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </a>
+      <div class="workout-actions">
+        <button class="workout-delete" id="next-workout-delete" onclick="deleteNextWorkout()" title="Supprimer" style="display:none;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+        </button>
+        <a class="workout-cta" href="sport.html">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </a>
+      </div>
     </div>
   </div>
 
@@ -380,23 +392,37 @@
     document.getElementById("active-value").textContent = activeMin + " min";
     document.getElementById("active-bar").style.width = Math.min(100, (activeMin / 60) * 100) + "%";
 
-    // Prochaine séance non terminée
+    // Prochaine séance non terminée, à venir uniquement
     const { data: next } = await supabaseClient
       .from("workouts").select("*")
       .eq("user_id", user.id)
       .eq("completed", false)
+      .gte("scheduled_at", startOfToday().toISOString())
       .order("scheduled_at", { ascending: true })
       .limit(1)
       .maybeSingle();
 
+    const deleteBtn = document.getElementById("next-workout-delete");
     if (next){
+      window.nextWorkoutId = next.id;
+      deleteBtn.style.display = "flex";
       document.getElementById("next-workout-title").textContent = next.name;
       const when = next.scheduled_at ? new Date(next.scheduled_at).toLocaleString("fr-FR", { weekday: "short", hour: "2-digit", minute: "2-digit" }) : "Non planifiée";
       document.getElementById("next-workout-meta").textContent = `${when} · ${next.duration_min || "?"} min`;
     } else {
+      window.nextWorkoutId = null;
+      deleteBtn.style.display = "none";
       document.getElementById("next-workout-title").textContent = "Aucune séance planifiée";
       document.getElementById("next-workout-meta").textContent = "Ajoute-en une depuis l'onglet Sport";
     }
+  }
+
+  async function deleteNextWorkout(){
+    if (!window.nextWorkoutId) return;
+    if (!confirm("Supprimer cette séance ?")) return;
+    const { error } = await supabaseClient.from("workouts").delete().eq("id", window.nextWorkoutId);
+    if (error){ alert("Erreur : " + error.message); return; }
+    loadHome();
   }
 
   loadHome();
