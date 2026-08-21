@@ -88,6 +88,31 @@
   }
 
   /* ---------- grille du tableau de bord ---------- */
+  /* ---------- score du jour ---------- */
+  .score-card{
+    background: linear-gradient(150deg, var(--surface) 0%, #171C22 70%);
+    border: 1px solid var(--line); border-radius: 26px; padding: 26px;
+    display:flex; gap:28px; align-items:center; margin-bottom:24px; flex-wrap:wrap;
+  }
+  .score-ring{ position:relative; width:112px; height:112px; flex-shrink:0; }
+  .score-ring svg{ transform: rotate(-90deg); width:112px; height:112px; }
+  .score-ring .bg{ fill:none; stroke:#2A323B; stroke-width:10; }
+  .score-ring .fg{ fill:none; stroke-width:10; stroke-linecap:round; stroke-dasharray:314; transition: stroke-dashoffset .4s ease; }
+  .score-ring-center{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; }
+  .score-ring-center .num{ font-family:'Unbounded'; font-weight:800; font-size:26px; }
+  .score-ring-center .lbl{ font-size:9.5px; color:var(--text-muted); }
+
+  .score-body{ flex:1; min-width:220px; }
+  .score-title{ font-weight:700; font-size:14.5px; margin-bottom:12px; }
+  .score-breakdown{ display:flex; flex-wrap:wrap; gap:8px 18px; margin-bottom:14px; }
+  .score-item{ display:flex; align-items:center; gap:6px; font-size:12px; color:var(--text-muted); }
+  .score-item b{ color: var(--text); }
+  .score-tip{
+    background: var(--surface-2); border-left:3px solid var(--lime); border-radius:10px;
+    padding:10px 14px; font-size:12px; color: var(--text-muted); line-height:1.5;
+  }
+  .score-tip b{ color: var(--lime); }
+
   .dashboard-grid{ display:grid; grid-template-columns: 1.5fr 1fr; gap:24px; align-items:start; }
   .col-stack{ display:flex; flex-direction:column; gap:24px; }
 
@@ -238,6 +263,24 @@
       <div>
         <div class="greeting-eyebrow" id="today-date">—</div>
         <div class="greeting">Bonjour, <span id="greet-name">👋</span></div>
+      </div>
+    </div>
+
+    <div class="score-card">
+      <div class="score-ring">
+        <svg viewBox="0 0 112 112">
+          <circle class="bg" cx="56" cy="56" r="50"></circle>
+          <circle class="fg" id="score-ring-fg" cx="56" cy="56" r="50" stroke="#D4F252"></circle>
+        </svg>
+        <div class="score-ring-center">
+          <div class="num" id="score-num">—</div>
+          <div class="lbl">/ 100</div>
+        </div>
+      </div>
+      <div class="score-body">
+        <div class="score-title">Score du jour</div>
+        <div class="score-breakdown" id="score-breakdown"></div>
+        <div class="score-tip" id="score-tip">Chargement…</div>
       </div>
     </div>
 
@@ -412,6 +455,104 @@
       document.getElementById("next-workout-title").textContent = "Aucune séance planifiée";
       document.getElementById("next-workout-meta").textContent = "Ajoute-en une depuis l'onglet Sport";
     }
+
+    computeDailyScore();
+  }
+
+  const SCORE_RING_CIRC = 314; // 2 * PI * 50
+
+  async function computeDailyScore(){
+    const user = currentUser;
+    if (!user) return;
+
+    const { data: profile } = await supabaseClient.from("profiles").select("*").eq("id", user.id).single();
+    const calorieGoal = profile?.calorie_goal ?? 2400;
+    const waterGoal = profile?.water_goal_ml ?? 2000;
+    const weeklyGoal = profile?.weekly_workout_goal ?? 4;
+
+    // Nutrition : proximité par rapport à l'objectif calorique du jour
+    const { data: meals } = await supabaseClient
+      .from("meals").select("calories")
+      .eq("user_id", user.id)
+      .gte("logged_at", startOfToday().toISOString())
+      .lte("logged_at", endOfToday().toISOString());
+    const consumed = (meals || []).reduce((s, m) => s + (m.calories || 0), 0);
+    const ratio = consumed / calorieGoal;
+    const nutritionScore = consumed === 0 ? 0 : Math.max(0, Math.round(100 - Math.abs(1 - ratio) * 100));
+
+    // Sport : séance faite aujourd'hui, sinon crédit partiel selon la progression hebdo
+    const { data: weekWorkouts } = await supabaseClient
+      .from("workouts").select("completed, scheduled_at")
+      .eq("user_id", user.id)
+      .gte("scheduled_at", startOfWeek().toISOString());
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const doneToday = (weekWorkouts || []).some(w => w.completed && w.scheduled_at && w.scheduled_at.slice(0, 10) === todayStr);
+    const completedThisWeek = (weekWorkouts || []).filter(w => w.completed).length;
+    const sportScore = doneToday ? 100 : Math.round(Math.min(1, completedThisWeek / weeklyGoal) * 70);
+
+    // Hydratation
+    const { data: waterLogs } = await supabaseClient
+      .from("water_logs").select("amount_ml")
+      .eq("user_id", user.id)
+      .gte("logged_at", startOfToday().toISOString())
+      .lte("logged_at", endOfToday().toISOString());
+    const waterMl = (waterLogs || []).reduce((s, w) => s + (w.amount_ml || 0), 0);
+    const waterScore = Math.min(100, Math.round((waterMl / waterGoal) * 100));
+
+    // Régularité : jours consécutifs (jusqu'à aujourd'hui) avec au moins un repas ou une séance
+    const since = new Date(); since.setDate(since.getDate() - 13);
+    const { data: recentMeals } = await supabaseClient.from("meals").select("logged_at").eq("user_id", user.id).gte("logged_at", since.toISOString());
+    const { data: recentWorkouts } = await supabaseClient.from("workouts").select("scheduled_at, completed").eq("user_id", user.id).gte("scheduled_at", since.toISOString());
+    const activeDays = new Set();
+    (recentMeals || []).forEach(m => activeDays.add(m.logged_at.slice(0, 10)));
+    (recentWorkouts || []).forEach(w => { if (w.completed && w.scheduled_at) activeDays.add(w.scheduled_at.slice(0, 10)); });
+    let streak = 0;
+    for (let i = 0; i < 14; i++){
+      const d = new Date(); d.setDate(d.getDate() - i);
+      if (activeDays.has(d.toISOString().slice(0, 10))) streak++;
+      else break;
+    }
+    const regularityScore = Math.min(100, Math.round((streak / 7) * 100));
+
+    const global = Math.round((nutritionScore + sportScore + waterScore + regularityScore) / 4);
+
+    // Rendu
+    const color = global >= 80 ? "#D4F252" : global >= 50 ? "#FF7A59" : "#FF5C5C";
+    document.getElementById("score-ring-fg").style.stroke = color;
+    document.getElementById("score-ring-fg").style.strokeDashoffset = SCORE_RING_CIRC * (1 - global / 100);
+    document.getElementById("score-num").textContent = global;
+
+    document.getElementById("score-breakdown").innerHTML = `
+      <div class="score-item">🍎 Nutrition <b>${nutritionScore}</b></div>
+      <div class="score-item">🏋️ Sport <b>${sportScore}</b></div>
+      <div class="score-item">💧 Hydratation <b>${waterScore}</b></div>
+      <div class="score-item">🔥 Régularité <b>${regularityScore}</b></div>`;
+
+    // Suggestion basée sur le point le plus faible
+    const scores = [
+      { key: "nutrition", val: nutritionScore },
+      { key: "sport", val: sportScore },
+      { key: "water", val: waterScore },
+      { key: "regularity", val: regularityScore },
+    ].sort((a, b) => a.val - b.val);
+    const weakest = scores[0];
+    const targetGlobal = Math.min(100, global + (100 - weakest.val >= 20 ? 15 : 8));
+    let tip = "";
+    if (weakest.key === "nutrition"){
+      const remaining = calorieGoal - consumed;
+      tip = remaining > 0
+        ? `Il te reste <b>${remaining.toLocaleString("fr-FR")} kcal</b> à consommer pour bien atteindre ton objectif.`
+        : `Tu as dépassé ton objectif de <b>${Math.abs(remaining).toLocaleString("fr-FR")} kcal</b> aujourd'hui — ajuste un peu demain.`;
+    } else if (weakest.key === "sport"){
+      tip = doneToday ? `Continue sur ta lancée pour rester régulier cette semaine.` : `Fais une séance aujourd'hui pour booster ton score.`;
+    } else if (weakest.key === "water"){
+      const remainingMl = Math.max(0, waterGoal - waterMl);
+      tip = `Bois encore <b>${remainingMl} ml</b> d'eau pour atteindre ton objectif du jour.`;
+    } else {
+      tip = `Reviens loguer un repas ou une séance demain pour garder ta régularité.`;
+    }
+    document.getElementById("score-tip").innerHTML =
+      global >= 95 ? `Score excellent aujourd'hui 🎉 Continue comme ça !` : `Pour passer à <b>${targetGlobal}</b> aujourd'hui : ${tip}`;
   }
 
   async function refreshWater(userId){
@@ -430,18 +571,21 @@
 
     window.lastWaterLogId = list.length ? list[list.length - 1].id : null;
     document.getElementById("water-undo").disabled = !window.lastWaterLogId;
+    return totalMl;
   }
 
   async function addWater(ml){
     if (!currentUser) return;
     await supabaseClient.from("water_logs").insert({ user_id: currentUser.id, amount_ml: ml });
     await refreshWater(currentUser.id);
+    computeDailyScore();
   }
 
   async function undoLastWater(){
     if (!window.lastWaterLogId) return;
     await supabaseClient.from("water_logs").delete().eq("id", window.lastWaterLogId);
     await refreshWater(currentUser.id);
+    computeDailyScore();
   }
 
   async function deleteNextWorkout(){
