@@ -312,6 +312,14 @@
         </div>
 
         <div class="card">
+          <div class="card-title">Objectif sommeil</div>
+          <div class="field" style="margin-bottom:0;">
+            <label>Heures de sommeil par nuit</label>
+            <input type="number" id="sleep-goal" min="4" max="12" step="0.5" value="8">
+          </div>
+        </div>
+
+        <div class="card">
           <div class="card-title">Mes données</div>
           <div class="field" style="margin-bottom:12px;">
             <label style="margin-bottom:10px;">Exporter en CSV pour garder une copie perso</label>
@@ -488,6 +496,7 @@
       fat_per_kg: parseFloat(document.getElementById("fat-range").value),
       water_goal_ml: Math.round(waterGoalL * 1000),
       weekly_workout_goal: weeklyGoal,
+      sleep_goal_hours: parseFloat(document.getElementById("sleep-goal").value) || 8,
       calorie_goal: plan.calorieGoal,
       protein_goal_g: plan.proteinG,
       carbs_goal_g: plan.carbsG,
@@ -521,6 +530,7 @@
 
     document.getElementById("water-goal").value = ((profile.water_goal_ml || 2000) / 1000).toFixed(1);
     document.getElementById("weekly-goal").value = profile.weekly_workout_goal || 4;
+    document.getElementById("sleep-goal").value = profile.sleep_goal_hours || 8;
     document.getElementById("protein-range").value = profile.protein_per_kg || 2.0;
     document.getElementById("fat-range").value = profile.fat_per_kg || 0.9;
     onMacroChange();

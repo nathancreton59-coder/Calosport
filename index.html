@@ -204,6 +204,33 @@
   .water-undo:hover{ color: var(--flame); }
   .water-undo:disabled{ opacity:0.4; cursor:default; }
   .water-undo:disabled:hover{ color: var(--text-muted); }
+
+  /* ---------- sommeil ---------- */
+  .sleep-card{
+    background: var(--surface); border:1px solid var(--line); border-radius: 22px; padding: 22px;
+  }
+  .sleep-top{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:14px; }
+  .sleep-top .t{ font-weight:700; font-size:14.5px; }
+  .sleep-top .v{ font-family:'Unbounded'; font-weight:700; font-size:15px; color:#C892FF; }
+  .sleep-bar-track{ height:10px; border-radius:6px; background:#2A323B; overflow:hidden; margin-bottom:16px; }
+  .sleep-bar-fill{ height:100%; background:#C892FF; border-radius:6px; transition: width .3s ease; }
+  .sleep-inputs{ display:flex; gap:8px; margin-bottom:12px; }
+  .sleep-field{ flex:1; }
+  .sleep-field label{ display:block; font-size:10.5px; color:var(--text-muted); margin-bottom:5px; font-weight:600; }
+  .sleep-field input{
+    width:100%; background: var(--bg); border:1px solid var(--line); border-radius:12px;
+    padding:10px; font-size:13px; color:var(--text); font-family:'Inter';
+  }
+  .sleep-quality-row{ display:flex; gap:6px; margin-bottom:14px; }
+  .sleep-quality-btn{
+    flex:1; background: var(--bg); border:1px solid var(--line); border-radius:12px;
+    padding:9px 4px; font-size:17px; cursor:pointer; text-align:center;
+  }
+  .sleep-quality-btn.active{ border-color:#C892FF; background:#2E2440; }
+  .sleep-save-btn{
+    width:100%; background:#C892FF; color:#12161B; border:none; border-radius:14px;
+    padding:12px; font-weight:700; font-size:13px; font-family:'Inter'; cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -373,6 +400,33 @@
             Annuler le dernier ajout
           </button>
         </div>
+
+        <div class="section-title" style="margin-top:24px;">Sommeil</div>
+        <div class="sleep-card">
+          <div class="sleep-top">
+            <div class="t">Cette nuit</div>
+            <div class="v" id="sleep-duration">— h</div>
+          </div>
+          <div class="sleep-bar-track"><div class="sleep-bar-fill" id="sleep-bar" style="width:0%"></div></div>
+          <div class="sleep-inputs">
+            <div class="sleep-field">
+              <label>Coucher</label>
+              <input type="time" id="sleep-bedtime" value="23:00">
+            </div>
+            <div class="sleep-field">
+              <label>Réveil</label>
+              <input type="time" id="sleep-waketime" value="07:00">
+            </div>
+          </div>
+          <div class="sleep-quality-row" id="sleep-quality-row">
+            <div class="sleep-quality-btn" data-q="1" onclick="selectSleepQuality(1)">😫</div>
+            <div class="sleep-quality-btn" data-q="2" onclick="selectSleepQuality(2)">😐</div>
+            <div class="sleep-quality-btn" data-q="3" onclick="selectSleepQuality(3)">🙂</div>
+            <div class="sleep-quality-btn active" data-q="4" onclick="selectSleepQuality(4)">😴</div>
+            <div class="sleep-quality-btn" data-q="5" onclick="selectSleepQuality(5)">🤩</div>
+          </div>
+          <button class="sleep-save-btn" onclick="logSleep()">Enregistrer ma nuit</button>
+        </div>
       </div>
     </div>
   </div>
@@ -432,6 +486,7 @@
     const waterGoalMl = profile?.water_goal_ml ?? 2000;
     window.waterGoalMl = waterGoalMl;
     await refreshWater(user.id);
+    await loadSleep();
 
     const { data: next } = await supabaseClient
       .from("workouts").select("*")
@@ -514,7 +569,15 @@
     }
     const regularityScore = Math.min(100, Math.round((streak / 7) * 100));
 
-    const global = Math.round((nutritionScore + sportScore + waterScore + regularityScore) / 4);
+    // Sommeil : proximité par rapport à l'objectif d'heures de sommeil
+    const sleepGoalH = profile?.sleep_goal_hours || 8;
+    const { data: sleepLog } = await supabaseClient
+      .from("sleep_logs").select("duration_min")
+      .eq("user_id", user.id).eq("sleep_date", todayStr).maybeSingle();
+    const sleepHours = sleepLog ? sleepLog.duration_min / 60 : 0;
+    const sleepScore = sleepLog ? Math.max(0, Math.round(100 - Math.abs(1 - sleepHours / sleepGoalH) * 100)) : 0;
+
+    const global = Math.round((nutritionScore + sportScore + waterScore + regularityScore + sleepScore) / 5);
 
     // Rendu
     const color = global >= 80 ? "#D4F252" : global >= 50 ? "#FF7A59" : "#FF5C5C";
@@ -526,6 +589,7 @@
       <div class="score-item">🍎 Nutrition <b>${nutritionScore}</b></div>
       <div class="score-item">🏋️ Sport <b>${sportScore}</b></div>
       <div class="score-item">💧 Hydratation <b>${waterScore}</b></div>
+      <div class="score-item">😴 Sommeil <b>${sleepScore}</b></div>
       <div class="score-item">🔥 Régularité <b>${regularityScore}</b></div>`;
 
     // Suggestion basée sur le point le plus faible
@@ -533,6 +597,7 @@
       { key: "nutrition", val: nutritionScore },
       { key: "sport", val: sportScore },
       { key: "water", val: waterScore },
+      { key: "sleep", val: sleepScore },
       { key: "regularity", val: regularityScore },
     ].sort((a, b) => a.val - b.val);
     const weakest = scores[0];
@@ -548,11 +613,76 @@
     } else if (weakest.key === "water"){
       const remainingMl = Math.max(0, waterGoal - waterMl);
       tip = `Bois encore <b>${remainingMl} ml</b> d'eau pour atteindre ton objectif du jour.`;
+    } else if (weakest.key === "sleep"){
+      tip = sleepLog
+        ? `Vise <b>${sleepGoalH}h</b> de sommeil cette nuit pour mieux récupérer.`
+        : `N'oublie pas de logger ta nuit de sommeil ce matin.`;
     } else {
       tip = `Reviens loguer un repas ou une séance demain pour garder ta régularité.`;
     }
     document.getElementById("score-tip").innerHTML =
       global >= 95 ? `Score excellent aujourd'hui 🎉 Continue comme ça !` : `Pour passer à <b>${targetGlobal}</b> aujourd'hui : ${tip}`;
+  }
+
+  let selectedSleepQuality = 4;
+  function selectSleepQuality(q){
+    selectedSleepQuality = q;
+    document.querySelectorAll(".sleep-quality-btn").forEach(btn => {
+      btn.classList.toggle("active", parseInt(btn.dataset.q) === q);
+    });
+  }
+
+  function computeSleepDates(){
+    const bedStr = document.getElementById("sleep-bedtime").value;
+    const wakeStr = document.getElementById("sleep-waketime").value;
+    if (!bedStr || !wakeStr) return null;
+    const now = new Date();
+    const [wh, wm] = wakeStr.split(":").map(Number);
+    const wake = new Date(now); wake.setHours(wh, wm, 0, 0);
+    const [bh, bm] = bedStr.split(":").map(Number);
+    const bed = new Date(wake); bed.setHours(bh, bm, 0, 0);
+    if (bed >= wake) bed.setDate(bed.getDate() - 1);
+    return { bed, wake };
+  }
+
+  async function loadSleep(){
+    const { data } = await supabaseClient
+      .from("sleep_logs").select("*")
+      .eq("user_id", currentUser.id)
+      .eq("sleep_date", new Date().toISOString().slice(0, 10))
+      .order("created_at", { ascending: false }).limit(1).maybeSingle();
+
+    const { data: profile } = await supabaseClient.from("profiles").select("sleep_goal_hours").eq("id", currentUser.id).single();
+    const goalH = profile?.sleep_goal_hours || 8;
+
+    if (data){
+      const hours = data.duration_min / 60;
+      document.getElementById("sleep-duration").textContent = hours.toFixed(1) + " h";
+      document.getElementById("sleep-bar").style.width = Math.min(100, (hours / goalH) * 100) + "%";
+      window.todaySleepLogged = true;
+    } else {
+      document.getElementById("sleep-duration").textContent = "— h";
+      document.getElementById("sleep-bar").style.width = "0%";
+      window.todaySleepLogged = false;
+    }
+  }
+
+  async function logSleep(){
+    const dates = computeSleepDates();
+    if (!dates) return;
+    const durationMin = Math.round((dates.wake - dates.bed) / 60000);
+    if (durationMin <= 0 || durationMin > 20 * 60){ alert("Vérifie les heures saisies."); return; }
+
+    await supabaseClient.from("sleep_logs").upsert({
+      user_id: currentUser.id,
+      sleep_date: new Date().toISOString().slice(0, 10),
+      bedtime: dates.bed.toISOString(),
+      wake_time: dates.wake.toISOString(),
+      duration_min: durationMin,
+      quality: selectedSleepQuality,
+    }, { onConflict: "user_id,sleep_date" });
+    await loadSleep();
+    computeDailyScore();
   }
 
   async function refreshWater(userId){
