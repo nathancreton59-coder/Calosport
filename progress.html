@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Progression — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #12161B; --surface: #1B2128; --surface-2: #222A32;
+    --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+    --lime: #D4F252; --lime-dim: #3A4420;
+    --flame: #FF7A59; --flame-dim: #3D2620;
+    --volt: #6FA8FF; --volt-dim: #202B3D;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+  body{ display:flex; min-height:100vh; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width: 264px; flex-shrink:0;
+    background: var(--bg); border-right:1px solid var(--line);
+    padding: 28px 18px; display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{ display:flex; align-items:center; gap:12px; padding: 6px 10px 30px; }
+  .brand-mark{
+    width:38px; height:38px; border-radius:12px; background:var(--lime);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-name{ font-family:'Unbounded'; font-weight:700; font-size:14.5px; line-height:1.25; }
+  .brand-name span{ display:block; font-family:'Inter'; font-weight:600; font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .sidebar-nav{ display:flex; flex-direction:column; gap:4px; }
+  .sidebar-link{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:13px;
+    color: var(--text-muted); text-decoration:none; font-weight:600; font-size:14px;
+  }
+  .sidebar-link .dot{ width:7px; height:7px; border-radius:50%; background: var(--text-muted); flex-shrink:0; }
+  .sidebar-link.active{ background: var(--surface); color: var(--text); }
+  .sidebar-link.home.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
+  .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
+  .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
+  .sidebar-link.library.active .dot, .sidebar-link.progress.active .dot{ background: var(--text); }
+
+  .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
+  .sidebar-logout{
+    width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:13px;
+    background:none; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .sidebar-logout:hover{ background: var(--surface); color: var(--flame); }
+
+  /* ---------- main ---------- */
+  .main{ flex:1; padding: 48px 56px 100px; min-width:0; }
+  .main-inner{ max-width: 900px; }
+  .page-title{ font-family:'Unbounded'; font-weight:700; font-size:32px; margin-bottom:8px; }
+  .page-sub{ font-size:13.5px; color:var(--text-muted); margin-bottom:28px; }
+
+  .card{
+    background: var(--surface); border:1px solid var(--line); border-radius:22px; padding:24px; margin-bottom:20px;
+  }
+  .card-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:10px; }
+  .card-title{ font-weight:700; font-size:15px; }
+  .card-stat{ font-family:'Unbounded'; font-weight:700; font-size:20px; }
+  .card-stat.lime{ color: var(--lime); }
+  .card-stat.flame{ color: var(--flame); }
+  .card-stat.volt{ color: var(--volt); }
+  .card-delta{ font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+
+  .toggle-group{ display:flex; gap:6px; }
+  .toggle-btn{
+    padding:7px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg);
+    color:var(--text-muted); font-weight:700; font-size:11.5px; cursor:pointer;
+  }
+  .toggle-btn.active{ background: var(--flame); border-color: var(--flame); color:#12161B; }
+
+  .chart-wrap{ margin-top:16px; }
+  .chart-empty{ text-align:center; padding:40px 20px; color: var(--text-muted); font-size:12.5px; }
+
+  .quick-log{ display:flex; gap:8px; margin-top:16px; }
+  .quick-log input{
+    flex:1; background: var(--bg); border:1px solid var(--line); border-radius:12px;
+    padding:11px 14px; font-size:13px; color:var(--text); font-family:'Inter';
+  }
+  .quick-log button{
+    background: var(--lime); color:#12161B; border:none; border-radius:12px;
+    padding:11px 18px; font-weight:700; font-size:13px; cursor:pointer; font-family:'Inter';
+  }
+
+  .exo-select-row{ margin-top:6px; margin-bottom:4px; }
+  .exo-select-row select{
+    width:100%; background: var(--bg); border:1px solid var(--line); border-radius:12px;
+    padding:11px 14px; font-size:13px; color:var(--text); font-family:'Inter';
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-mark">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </div>
+    <div class="brand-name">Suivi Fitness<span>Calories & sport</span></div>
+  </div>
+
+  <div class="sidebar-nav">
+    <a class="sidebar-link home" href="index.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      Accueil
+    </a>
+    <a class="sidebar-link cal" href="calories.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+      Calories
+    </a>
+    <a class="sidebar-link sport" href="sport.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="2.3" height="6" rx="1"/><rect x="4.3" y="7" width="2" height="10" rx="1"/><line x1="7.3" y1="12" x2="16.7" y2="12"/><rect x="17.7" y="7" width="2" height="10" rx="1"/><rect x="20.2" y="9" width="2.3" height="6" rx="1"/></svg>
+      Sport
+    </a>
+    <a class="sidebar-link progress active" href="progress.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Progression
+    </a>
+    <a class="sidebar-link library" href="library.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Bibliothèques
+    </a>
+    <a class="sidebar-link settings" href="settings.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+      Réglages
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-logout" onclick="logout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Déconnexion
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+    <div class="page-title">Progression</div>
+    <div class="page-sub">Ton évolution dans le temps — poids, calories et charges soulevées.</div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Poids corporel</div>
+          <div class="card-stat lime" id="weight-current">—</div>
+          <div class="card-delta" id="weight-delta"></div>
+        </div>
+      </div>
+      <div class="chart-wrap" id="weight-chart"></div>
+      <div class="quick-log">
+        <input type="number" id="weight-input" step="0.1" placeholder="Ton poids aujourd'hui (kg)">
+        <button onclick="logWeight()">Enregistrer</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Calories consommées</div>
+          <div class="card-stat flame" id="cal-avg">—</div>
+          <div class="card-delta" id="cal-avg-label">Moyenne quotidienne</div>
+        </div>
+        <div class="toggle-group">
+          <div class="toggle-btn active" id="cal-7d" onclick="setCalRange(7)">7 jours</div>
+          <div class="toggle-btn" id="cal-30d" onclick="setCalRange(30)">30 jours</div>
+        </div>
+      </div>
+      <div class="chart-wrap" id="cal-chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Charge par exercice</div>
+          <div class="card-stat volt" id="exo-max">—</div>
+          <div class="card-delta" id="exo-max-label">Meilleure charge</div>
+        </div>
+      </div>
+      <div class="exo-select-row">
+        <select id="exo-progress-select" onchange="renderExerciseChart()"></select>
+      </div>
+      <div class="chart-wrap" id="exo-chart"></div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  // ---------- petites fonctions de graphique SVG (sans librairie) ----------
+  function lineChartSvg(points, color){
+    if (!points.length) return '<div class="chart-empty">Pas encore de données.</div>';
+    const w = 600, h = 200, padX = 10, padY = 24;
+    const values = points.map(p => p.value);
+    let min = Math.min(...values), max = Math.max(...values);
+    if (min === max){ min -= 1; max += 1; }
+    const spanY = max - min;
+    const stepX = points.length > 1 ? (w - padX * 2) / (points.length - 1) : 0;
+
+    const coords = points.map((p, i) => {
+      const x = padX + i * stepX;
+      const y = h - padY - ((p.value - min) / spanY) * (h - padY * 2);
+      return { x, y, label: p.label, value: p.value };
+    });
+
+    const linePath = coords.map((c, i) => (i === 0 ? "M" : "L") + c.x.toFixed(1) + "," + c.y.toFixed(1)).join(" ");
+    const areaPath = linePath + ` L${coords[coords.length-1].x.toFixed(1)},${h-padY} L${coords[0].x.toFixed(1)},${h-padY} Z`;
+
+    const dots = coords.map((c, i) => {
+      const isLast = i === coords.length - 1;
+      return `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="${isLast ? 4.5 : 3}" fill="${isLast ? color : '#0A0C0F'}" stroke="${color}" stroke-width="1.6"/>`;
+    }).join("");
+
+    const firstLbl = coords[0].label, lastLbl = coords[coords.length-1].label;
+
+    return `
+      <svg viewBox="0 0 ${w} ${h + 20}" style="width:100%; height:auto; display:block;">
+        <path d="${areaPath}" fill="${color}" fill-opacity="0.12" stroke="none"/>
+        <path d="${linePath}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        ${dots}
+        <text x="${padX}" y="${h+16}" font-size="10.5" fill="#8A93A0" font-family="Inter">${firstLbl}</text>
+        <text x="${w-padX}" y="${h+16}" font-size="10.5" fill="#8A93A0" font-family="Inter" text-anchor="end">${lastLbl}</text>
+      </svg>`;
+  }
+
+  function barChartSvg(points, color, goal){
+    if (!points.length) return '<div class="chart-empty">Pas encore de données.</div>';
+    const w = 600, h = 200, padX = 10, padY = 24;
+    const values = points.map(p => p.value);
+    const max = Math.max(...values, goal || 0) * 1.15 || 1;
+    const gap = 6;
+    const barW = (w - padX * 2) / points.length - gap;
+
+    const bars = points.map((p, i) => {
+      const x = padX + i * ((w - padX * 2) / points.length);
+      const barH = (p.value / max) * (h - padY * 2);
+      const y = h - padY - barH;
+      return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barW.toFixed(1)}" height="${barH.toFixed(1)}" rx="4" fill="${color}"/>`;
+    }).join("");
+
+    const goalLine = goal ? (() => {
+      const y = h - padY - (goal / max) * (h - padY * 2);
+      return `<line x1="${padX}" y1="${y.toFixed(1)}" x2="${w-padX}" y2="${y.toFixed(1)}" stroke="#D4F252" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+    })() : "";
+
+    const firstLbl = points[0].label, lastLbl = points[points.length-1].label;
+
+    return `
+      <svg viewBox="0 0 ${w} ${h + 20}" style="width:100%; height:auto; display:block;">
+        ${bars}
+        ${goalLine}
+        <text x="${padX}" y="${h+16}" font-size="10.5" fill="#8A93A0" font-family="Inter">${firstLbl}</text>
+        <text x="${w-padX}" y="${h+16}" font-size="10.5" fill="#8A93A0" font-family="Inter" text-anchor="end">${lastLbl}</text>
+      </svg>`;
+  }
+
+  const shortDate = iso => new Date(iso).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+
+  // ---------- poids ----------
+  async function loadWeightChart(){
+    const { data } = await supabaseClient
+      .from("weight_logs").select("*").eq("user_id", currentUser.id)
+      .order("logged_at", { ascending: true }).limit(90);
+    const logs = data || [];
+    const points = logs.map(l => ({ label: shortDate(l.logged_at), value: parseFloat(l.weight_kg) }));
+
+    document.getElementById("weight-chart").innerHTML = lineChartSvg(points, "#D4F252");
+
+    if (logs.length){
+      const current = logs[logs.length - 1].weight_kg;
+      document.getElementById("weight-current").textContent = current + " kg";
+      if (logs.length > 1){
+        const delta = current - logs[0].weight_kg;
+        const sign = delta > 0 ? "+" : "";
+        document.getElementById("weight-delta").textContent = `${sign}${delta.toFixed(1)} kg depuis le ${shortDate(logs[0].logged_at)}`;
+      } else {
+        document.getElementById("weight-delta").textContent = "Première pesée enregistrée";
+      }
+    } else {
+      document.getElementById("weight-current").textContent = "—";
+      document.getElementById("weight-delta").textContent = "Ajoute ta première pesée ci-dessous";
+    }
+  }
+
+  async function logWeight(){
+    const val = parseFloat(document.getElementById("weight-input").value);
+    if (!val || val <= 0) return;
+    await supabaseClient.from("weight_logs").insert({ user_id: currentUser.id, weight_kg: val });
+    document.getElementById("weight-input").value = "";
+    await loadWeightChart();
+  }
+
+  // ---------- calories ----------
+  let calRangeDays = 7;
+  function setCalRange(days){
+    calRangeDays = days;
+    document.getElementById("cal-7d").classList.toggle("active", days === 7);
+    document.getElementById("cal-30d").classList.toggle("active", days === 30);
+    loadCalChart();
+  }
+
+  async function loadCalChart(){
+    const { data: profile } = await supabaseClient.from("profiles").select("calorie_goal").eq("id", currentUser.id).single();
+    const goal = profile?.calorie_goal || 2400;
+
+    const start = new Date();
+    start.setDate(start.getDate() - (calRangeDays - 1));
+    start.setHours(0, 0, 0, 0);
+
+    const { data: meals } = await supabaseClient
+      .from("meals").select("calories, logged_at")
+      .eq("user_id", currentUser.id)
+      .gte("logged_at", start.toISOString());
+
+    const byDay = {};
+    for (let i = 0; i < calRangeDays; i++){
+      const d = new Date(start); d.setDate(d.getDate() + i);
+      byDay[d.toISOString().slice(0, 10)] = 0;
+    }
+    (meals || []).forEach(m => {
+      const key = new Date(m.logged_at).toISOString().slice(0, 10);
+      if (key in byDay) byDay[key] += (m.calories || 0);
+    });
+
+    const points = Object.keys(byDay).sort().map(k => ({ label: shortDate(k), value: byDay[k] }));
+    document.getElementById("cal-chart").innerHTML = barChartSvg(points, "#FF7A59", goal);
+
+    const withData = points.filter(p => p.value > 0);
+    const avg = withData.length ? Math.round(withData.reduce((s, p) => s + p.value, 0) / withData.length) : 0;
+    document.getElementById("cal-avg").textContent = avg ? avg.toLocaleString("fr-FR") + " kcal" : "—";
+  }
+
+  // ---------- charge par exercice ----------
+  let exerciseHistoryData = {}; // { name: [{date, maxWeight}] }
+
+  async function loadExerciseProgress(){
+    const { data: workouts } = await supabaseClient
+      .from("workouts").select("id, scheduled_at")
+      .eq("user_id", currentUser.id).eq("completed", true);
+    const workoutById = {};
+    (workouts || []).forEach(w => workoutById[w.id] = w.scheduled_at);
+    const workoutIds = (workouts || []).map(w => w.id);
+    if (!workoutIds.length){ populateExerciseSelect(); return; }
+
+    const { data: exercises } = await supabaseClient
+      .from("exercises").select("id, name, workout_id").in("workout_id", workoutIds);
+    const exoNameById = {};
+    (exercises || []).forEach(e => exoNameById[e.id] = { name: e.name, date: workoutById[e.workout_id] });
+    const exoIds = (exercises || []).map(e => e.id);
+    if (!exoIds.length){ populateExerciseSelect(); return; }
+
+    const { data: sets } = await supabaseClient
+      .from("workout_sets").select("exercise_id, weight_kg, is_warmup")
+      .in("exercise_id", exoIds).eq("is_warmup", false).not("weight_kg", "is", null);
+
+    const byNameByDate = {}; // name -> date -> maxWeight
+    (sets || []).forEach(s => {
+      const meta = exoNameById[s.exercise_id];
+      if (!meta || !meta.date) return;
+      const dateKey = meta.date.slice(0, 10);
+      byNameByDate[meta.name] = byNameByDate[meta.name] || {};
+      byNameByDate[meta.name][dateKey] = Math.max(byNameByDate[meta.name][dateKey] || 0, s.weight_kg);
+    });
+
+    exerciseHistoryData = {};
+    Object.keys(byNameByDate).forEach(name => {
+      exerciseHistoryData[name] = Object.keys(byNameByDate[name]).sort()
+        .map(d => ({ label: shortDate(d), value: byNameByDate[name][d] }));
+    });
+
+    populateExerciseSelect();
+  }
+
+  function populateExerciseSelect(){
+    const select = document.getElementById("exo-progress-select");
+    const names = Object.keys(exerciseHistoryData).sort();
+    if (!names.length){
+      select.innerHTML = `<option>Aucun exercice avec poids enregistré</option>`;
+      document.getElementById("exo-chart").innerHTML = '<div class="chart-empty">Termine des séances en mode live avec du poids pour voir ta progression ici.</div>';
+      document.getElementById("exo-max").textContent = "—";
+      return;
+    }
+    select.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join("");
+    renderExerciseChart();
+  }
+
+  function renderExerciseChart(){
+    const name = document.getElementById("exo-progress-select").value;
+    const points = exerciseHistoryData[name] || [];
+    document.getElementById("exo-chart").innerHTML = lineChartSvg(points, "#6FA8FF");
+    if (points.length){
+      const max = Math.max(...points.map(p => p.value));
+      document.getElementById("exo-max").textContent = max + " kg";
+      document.getElementById("exo-max-label").textContent = `Meilleure charge sur ${name}`;
+    }
+  }
+
+  (async function init(){
+    const user = await requireAuth();
+    if (!user) return;
+    await loadWeightChart();
+    await loadCalChart();
+    await loadExerciseProgress();
+  })();
+</script>
+</body>
+</html>
