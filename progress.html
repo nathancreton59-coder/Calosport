@@ -96,6 +96,31 @@
     width:100%; background: var(--bg); border:1px solid var(--line); border-radius:12px;
     padding:11px 14px; font-size:13px; color:var(--text); font-family:'Inter';
   }
+
+  /* ---------- heatmap entrainements ---------- */
+  .heatmap-scroll{ overflow-x:auto; padding-bottom:6px; margin-top:16px; }
+  .heatmap-inner{ display:inline-block; min-width:100%; }
+  .heatmap-months{ display:flex; margin-left:34px; margin-bottom:6px; height:14px; position:relative; }
+  .heatmap-month-lbl{ position:absolute; font-size:10.5px; color:var(--text-muted); font-weight:600; }
+  .heatmap-body{ display:flex; gap:3px; }
+  .heatmap-daylabels{ display:flex; flex-direction:column; gap:3px; margin-right:8px; width:26px; flex-shrink:0; }
+  .heatmap-daylabels div{ height:13px; font-size:10px; color:var(--text-muted); display:flex; align-items:center; }
+  .heatmap-week{ display:flex; flex-direction:column; gap:3px; }
+  .heatmap-cell{ width:13px; height:13px; border-radius:3px; background: var(--line); }
+  .heatmap-legend{ display:flex; align-items:center; gap:6px; margin-top:14px; font-size:11px; color:var(--text-muted); }
+  .heatmap-legend .cells{ display:flex; gap:3px; }
+  .heatmap-legend .heatmap-cell{ width:11px; height:11px; }
+  .heatmap-count{ font-family:'Unbounded'; font-weight:700; font-size:19px; }
+
+  /* ---------- tendances ---------- */
+  .trends-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:16px; }
+  .trend-card{
+    background: var(--surface); border:1px solid var(--line); border-radius:18px;
+    padding:16px; display:flex; align-items:center; gap:12px;
+  }
+  .trend-icon{ width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .trend-val{ font-family:'Unbounded'; font-weight:700; font-size:16px; }
+  .trend-lbl{ font-size:11px; color:var(--text-muted); margin-top:2px; }
 </style>
 </head>
 <body>
@@ -153,6 +178,86 @@
   <div class="main-inner">
     <div class="page-title">Progression</div>
     <div class="page-sub">Ton évolution dans le temps — poids, calories et charges soulevées.</div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="heatmap-count" id="heatmap-count">— entraînements</div>
+        </div>
+        <div class="card-delta" id="heatmap-year"></div>
+      </div>
+      <div class="heatmap-scroll">
+        <div class="heatmap-inner">
+          <div class="heatmap-months" id="heatmap-months"></div>
+          <div class="heatmap-body">
+            <div class="heatmap-daylabels">
+              <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+            </div>
+            <div id="heatmap-weeks" style="display:flex; gap:3px;"></div>
+          </div>
+        </div>
+      </div>
+      <div class="heatmap-legend">
+        <span>Volume</span>
+        <span style="margin-left:auto;">Moins</span>
+        <div class="cells">
+          <div class="heatmap-cell" style="background:var(--line);"></div>
+          <div class="heatmap-cell" style="background:#1B3A5C;"></div>
+          <div class="heatmap-cell" style="background:#2C5C8F;"></div>
+          <div class="heatmap-cell" style="background:#4C89C4;"></div>
+          <div class="heatmap-cell" style="background:#6FA8FF;"></div>
+        </div>
+        <span>Plus</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div class="card-title">Tendances</div>
+        <div class="toggle-group">
+          <div class="toggle-btn active" id="trend-7d" onclick="setTrendRange(7)">7 jours</div>
+          <div class="toggle-btn" id="trend-30d" onclick="setTrendRange(30)">30 jours</div>
+        </div>
+      </div>
+      <div class="trends-grid">
+        <div class="trend-card">
+          <div class="trend-icon" style="background:var(--volt-dim);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+          </div>
+          <div>
+            <div class="trend-val" id="trend-duration">—</div>
+            <div class="trend-lbl">Entraînements</div>
+          </div>
+        </div>
+        <div class="trend-card">
+          <div class="trend-icon" style="background:var(--lime-dim);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D4F252" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v18M18 3v18M3 8h6M3 16h6M15 8h6M15 16h6"/></svg>
+          </div>
+          <div>
+            <div class="trend-val" id="trend-volume">—</div>
+            <div class="trend-lbl">Volume (kg)</div>
+          </div>
+        </div>
+        <div class="trend-card">
+          <div class="trend-icon" style="background:var(--flame-dim);">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF7A59" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+          </div>
+          <div>
+            <div class="trend-val" id="trend-energy">—</div>
+            <div class="trend-lbl">Énergie (kcal)</div>
+          </div>
+        </div>
+        <div class="trend-card">
+          <div class="trend-icon" style="background:#2E2440;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C892FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m18-6h-4a2 2 0 0 1-2-2m6 8V5a2 2 0 0 0-2-2M3 15v4a2 2 0 0 0 2 2h4m10-6v4a2 2 0 0 1-2 2h-4"/></svg>
+          </div>
+          <div>
+            <div class="trend-val" id="trend-sets">—</div>
+            <div class="trend-lbl">Séries</div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <div class="card">
       <div class="card-top">
@@ -411,9 +516,162 @@
     }
   }
 
+  // ---------- donnees brutes des seances completees (reutilisees par heatmap + tendances) ----------
+  let COMPLETED_WORKOUTS = []; // { id, date(YYYY-MM-DD), duration_min, calories_burned, volume, setsCount }
+
+  async function loadWorkoutStatsData(){
+    const { data: workouts } = await supabaseClient
+      .from("workouts").select("id, scheduled_at, duration_min, calories_burned")
+      .eq("user_id", currentUser.id).eq("completed", true);
+    const list = workouts || [];
+    const workoutIds = list.map(w => w.id);
+    let exercises = [], sets = [];
+    if (workoutIds.length){
+      const { data: exoData } = await supabaseClient.from("exercises").select("id, workout_id").in("workout_id", workoutIds);
+      exercises = exoData || [];
+      const exoIds = exercises.map(e => e.id);
+      if (exoIds.length){
+        const { data: setData } = await supabaseClient
+          .from("workout_sets").select("exercise_id, weight_kg, reps, is_warmup").in("exercise_id", exoIds);
+        sets = setData || [];
+      }
+    }
+    const exoToWorkout = {};
+    exercises.forEach(e => exoToWorkout[e.id] = e.workout_id);
+    const volumeByWorkout = {}, setsByWorkout = {};
+    sets.forEach(s => {
+      const wId = exoToWorkout[s.exercise_id];
+      if (!wId) return;
+      setsByWorkout[wId] = (setsByWorkout[wId] || 0) + 1;
+      if (!s.is_warmup && s.weight_kg != null && s.reps != null){
+        volumeByWorkout[wId] = (volumeByWorkout[wId] || 0) + s.weight_kg * s.reps;
+      }
+    });
+
+    COMPLETED_WORKOUTS = list.filter(w => w.scheduled_at).map(w => ({
+      id: w.id,
+      date: w.scheduled_at.slice(0, 10),
+      duration_min: w.duration_min || 0,
+      calories_burned: w.calories_burned || 0,
+      volume: volumeByWorkout[w.id] || 0,
+      setsCount: setsByWorkout[w.id] || 0,
+    }));
+  }
+
+  // ---------- heatmap ----------
+  function renderHeatmap(){
+    const year = new Date().getFullYear();
+    document.getElementById("heatmap-year").textContent = String(year);
+
+    const yearWorkouts = COMPLETED_WORKOUTS.filter(w => w.date.startsWith(String(year)));
+    document.getElementById("heatmap-count").textContent = `${yearWorkouts.length} entraînement${yearWorkouts.length > 1 ? "s" : ""}`;
+
+    const volumeByDate = {};
+    yearWorkouts.forEach(w => { volumeByDate[w.date] = (volumeByDate[w.date] || 0) + w.volume; });
+    const maxVolume = Math.max(1, ...Object.values(volumeByDate));
+
+    const yearStart = new Date(year, 0, 1);
+    const gridStart = new Date(yearStart);
+    const startDow = (gridStart.getDay() + 6) % 7; // lundi = 0
+    gridStart.setDate(gridStart.getDate() - startDow);
+
+    const today = new Date();
+    const totalDays = Math.floor((today - gridStart) / 86400000) + 1;
+    const weeksCount = Math.ceil(totalDays / 7);
+
+    const COLORS = ["#1B3A5C", "#2C5C8F", "#4C89C4", "#6FA8FF"];
+    const weeksContainer = document.getElementById("heatmap-weeks");
+    const monthsContainer = document.getElementById("heatmap-months");
+    weeksContainer.innerHTML = "";
+    monthsContainer.innerHTML = "";
+    let lastMonth = -1;
+
+    for (let w = 0; w < weeksCount; w++){
+      const weekEl = document.createElement("div");
+      weekEl.className = "heatmap-week";
+
+      const weekMonday = new Date(gridStart);
+      weekMonday.setDate(weekMonday.getDate() + w * 7);
+      if (weekMonday.getMonth() !== lastMonth && weekMonday >= yearStart){
+        lastMonth = weekMonday.getMonth();
+        const lbl = document.createElement("div");
+        lbl.className = "heatmap-month-lbl";
+        lbl.style.left = (w * 16) + "px";
+        lbl.textContent = weekMonday.toLocaleDateString("fr-FR", { month: "short" });
+        monthsContainer.appendChild(lbl);
+      }
+
+      for (let d = 0; d < 7; d++){
+        const date = new Date(gridStart);
+        date.setDate(date.getDate() + w * 7 + d);
+        const cell = document.createElement("div");
+        cell.className = "heatmap-cell";
+        if (date < yearStart || date > today){
+          cell.style.background = "transparent";
+        } else {
+          const key = date.toISOString().slice(0, 10);
+          const vol = volumeByDate[key] || 0;
+          if (vol > 0){
+            const level = Math.min(3, Math.ceil((vol / maxVolume) * 4) - 1);
+            cell.style.background = COLORS[Math.max(0, level)];
+            cell.title = `${date.toLocaleDateString("fr-FR")} · ${Math.round(vol).toLocaleString("fr-FR")} kg`;
+          }
+        }
+        weekEl.appendChild(cell);
+      }
+      weeksContainer.appendChild(weekEl);
+    }
+  }
+
+  // ---------- tendances ----------
+  let trendRangeDays = 7;
+  function setTrendRange(days){
+    trendRangeDays = days;
+    document.getElementById("trend-7d").classList.toggle("active", days === 7);
+    document.getElementById("trend-30d").classList.toggle("active", days === 30);
+    renderTrends();
+  }
+
+  function sumInRange(list, startIso, endIso, key){
+    return list.filter(w => w.date >= startIso && w.date < endIso).reduce((s, w) => s + w[key], 0);
+  }
+
+  function trendArrow(current, previous){
+    if (previous === 0 && current === 0) return "";
+    if (current >= previous) return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>';
+    return '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>';
+  }
+
+  function renderTrends(){
+    const today = new Date();
+    const endIso = today.toISOString().slice(0, 10);
+    const startDate = new Date(today); startDate.setDate(startDate.getDate() - trendRangeDays);
+    const startIso = startDate.toISOString().slice(0, 10);
+    const prevStartDate = new Date(startDate); prevStartDate.setDate(prevStartDate.getDate() - trendRangeDays);
+    const prevStartIso = prevStartDate.toISOString().slice(0, 10);
+
+    const curDuration = sumInRange(COMPLETED_WORKOUTS, startIso, endIso, "duration_min");
+    const prevDuration = sumInRange(COMPLETED_WORKOUTS, prevStartIso, startIso, "duration_min");
+    const curVolume = sumInRange(COMPLETED_WORKOUTS, startIso, endIso, "volume");
+    const prevVolume = sumInRange(COMPLETED_WORKOUTS, prevStartIso, startIso, "volume");
+    const curEnergy = sumInRange(COMPLETED_WORKOUTS, startIso, endIso, "calories_burned");
+    const prevEnergy = sumInRange(COMPLETED_WORKOUTS, prevStartIso, startIso, "calories_burned");
+    const curSets = sumInRange(COMPLETED_WORKOUTS, startIso, endIso, "setsCount");
+    const prevSets = sumInRange(COMPLETED_WORKOUTS, prevStartIso, startIso, "setsCount");
+
+    const h = curDuration >= 60 ? `${Math.floor(curDuration/60)}h ${curDuration%60}min` : `${curDuration}min`;
+    document.getElementById("trend-duration").innerHTML = `${h} ${trendArrow(curDuration, prevDuration)}`;
+    document.getElementById("trend-volume").innerHTML = `${Math.round(curVolume).toLocaleString("fr-FR")} ${trendArrow(curVolume, prevVolume)}`;
+    document.getElementById("trend-energy").innerHTML = `${Math.round(curEnergy).toLocaleString("fr-FR")} ${trendArrow(curEnergy, prevEnergy)}`;
+    document.getElementById("trend-sets").innerHTML = `${curSets} ${trendArrow(curSets, prevSets)}`;
+  }
+
   (async function init(){
     const user = await requireAuth();
     if (!user) return;
+    await loadWorkoutStatsData();
+    renderHeatmap();
+    renderTrends();
     await loadWeightChart();
     await loadCalChart();
     await loadExerciseProgress();
