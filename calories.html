@@ -163,6 +163,24 @@
   }
   .food-delete:hover{ color: var(--flame); background: var(--flame-dim); }
 
+  .food-fav{
+    width:26px; height:26px; border-radius:8px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background: transparent; border:none; cursor:pointer; color: var(--text-muted);
+  }
+  .food-fav:hover{ color: #FFC94A; }
+  .food-fav.active{ color: #FFC94A; }
+
+  .fav-row-label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:8px; font-weight:600; }
+  .favorites-row{ display:flex; gap:8px; overflow-x:auto; padding-bottom:6px; margin-bottom:16px; }
+  .fav-chip{
+    flex-shrink:0; background: var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:10px 14px; cursor:pointer; min-width:120px;
+  }
+  .fav-chip:hover{ border-color: #FFC94A; }
+  .fav-chip .fc-name{ font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+  .fav-chip .fc-detail{ font-size:10.5px; color:var(--text-muted); margin-top:3px; }
+
   .add-meal-btn{
     width:100%; border:1.5px dashed var(--line); border-radius:16px;
     background: transparent; color: var(--text-muted);
@@ -396,6 +414,11 @@
     <div class="modal-title">Ajouter un aliment</div>
     <form onsubmit="submitMeal(event)">
 
+      <div id="favorites-row-wrap" style="display:none;">
+        <label class="fav-row-label">⭐ Favoris</label>
+        <div class="favorites-row" id="favorites-row"></div>
+      </div>
+
       <div class="modal-field" id="search-field">
         <label>Aliment</label>
         <div class="search-row">
@@ -500,6 +523,8 @@
   ];
 
   let FOOD_LIBRARY = [];
+  let FAVORITE_MEALS = [];
+  let TODAYS_MEALS = [];
   let selectedFood = null; // { id, name, calories_per_100g, protein_per_100g, carbs_per_100g, fat_per_100g }
   let html5QrScanner = null;
   let pendingBarcode = null;
@@ -508,6 +533,60 @@
     const { data } = await supabaseClient
       .from("food_library").select("*").order("name", { ascending: true });
     FOOD_LIBRARY = data || [];
+  }
+
+  async function loadFavorites(){
+    const { data } = await supabaseClient
+      .from("favorite_meals").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+    FAVORITE_MEALS = data || [];
+    renderFavoritesRow();
+  }
+
+  function renderFavoritesRow(){
+    const wrap = document.getElementById("favorites-row-wrap");
+    const row = document.getElementById("favorites-row");
+    if (!FAVORITE_MEALS.length){ wrap.style.display = "none"; return; }
+    wrap.style.display = "block";
+    row.innerHTML = "";
+    FAVORITE_MEALS.forEach(f => {
+      const chip = document.createElement("div");
+      chip.className = "fav-chip";
+      chip.innerHTML = `<div class="fc-name">${f.name}</div><div class="fc-detail">${f.weight_g}g · ${f.calories} kcal</div>`;
+      chip.onclick = () => selectFavorite(f);
+      row.appendChild(chip);
+    });
+  }
+
+  function selectFavorite(fav){
+    const libFood = FOOD_LIBRARY.find(x => x.id === fav.food_library_id);
+    selectFood(libFood || {
+      id: fav.food_library_id, name: fav.name,
+      calories_per_100g: Math.round(fav.calories / fav.weight_g * 100),
+      protein_per_100g: Math.round(fav.protein_g / fav.weight_g * 1000) / 10,
+      carbs_per_100g: Math.round(fav.carbs_g / fav.weight_g * 1000) / 10,
+      fat_per_100g: Math.round(fav.fat_g / fav.weight_g * 1000) / 10,
+    });
+    document.getElementById("m-weight").value = fav.weight_g;
+    if (fav.meal_type) document.getElementById("m-type").value = fav.meal_type;
+    updateComputedPreview();
+  }
+
+  async function toggleFavoriteFromMeal(mealId){
+    const m = TODAYS_MEALS.find(x => x.id === mealId);
+    if (!m) return;
+    const existing = FAVORITE_MEALS.find(f => f.food_library_id === m.food_library_id && f.weight_g == m.weight_g);
+    if (existing){
+      await supabaseClient.from("favorite_meals").delete().eq("id", existing.id);
+    } else {
+      await supabaseClient.from("favorite_meals").insert({
+        user_id: currentUser.id,
+        food_library_id: m.food_library_id,
+        name: m.name, weight_g: m.weight_g, meal_type: m.meal_type,
+        calories: m.calories, protein_g: m.protein_g, carbs_g: m.carbs_g, fat_g: m.fat_g,
+      });
+    }
+    await loadFavorites();
+    renderMeals(TODAYS_MEALS);
   }
 
   function openScanner(){
@@ -619,6 +698,7 @@
     document.getElementById("food-results").innerHTML = "";
     document.getElementById("search-field").style.display = "none";
     document.getElementById("custom-food-fields").style.display = "none";
+    document.getElementById("favorites-row-wrap").style.display = "none";
 
     document.getElementById("selected-food-name").textContent = food.name;
     document.getElementById("selected-food-macros").textContent =
@@ -636,6 +716,7 @@
     document.getElementById("weight-section").style.display = "none";
     document.getElementById("m-weight").value = "";
     document.getElementById("submit-meal-btn").disabled = true;
+    if (FAVORITE_MEALS.length) document.getElementById("favorites-row-wrap").style.display = "block";
   }
 
   function openCustomFoodFields(prefillName){
@@ -739,6 +820,7 @@
         const weightLabel = m.weight_g ? `${m.weight_g} g · ${time}` : time;
         const foodEl = document.createElement("div");
         foodEl.className = "food-item";
+        const isFav = FAVORITE_MEALS.some(f => f.food_library_id === m.food_library_id && f.weight_g == m.weight_g);
         foodEl.innerHTML = `
           <div class="food-icon a">🍽️</div>
           <div class="food-meta">
@@ -746,6 +828,9 @@
             <div class="food-detail">${weightLabel}</div>
           </div>
           <div class="food-kcal">${m.calories} kcal</div>
+          <button class="food-fav ${isFav ? "active" : ""}" onclick="toggleFavoriteFromMeal('${m.id}')" title="${isFav ? "Retirer des favoris" : "Ajouter aux favoris"}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="${isFav ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
           <button class="food-delete" onclick="deleteMeal('${m.id}')" title="Supprimer">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
           </button>`;
@@ -807,11 +892,15 @@
     setMacro("carbs", carbs, carbsGoal);
     setMacro("fat", fat, fatGoal);
 
+    TODAYS_MEALS = list;
     renderMeals(list);
   }
 
   (async function init(){
+    const user = await requireAuth();
+    if (!user) return;
     await loadFoodLibrary();
+    await loadFavorites();
     await loadCalories();
   })();
 </script>
