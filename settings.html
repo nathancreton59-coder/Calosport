@@ -126,6 +126,33 @@
     color: var(--text); font-family:'Inter'; font-weight:700; font-size:13px; padding:11px; cursor:pointer;
   }
   .modal-btn-like:hover{ border-color: var(--volt); color: var(--volt); }
+
+  .danger-zone{
+    margin-top: 32px; background: var(--flame-dim); border:1px solid var(--flame);
+    border-radius:22px; padding:24px; max-width:900px;
+  }
+  .danger-title{ font-weight:700; font-size:14.5px; color: var(--flame); margin-bottom:8px; }
+  .danger-text{ font-size:12.5px; color: var(--text-muted); line-height:1.6; margin-bottom:16px; max-width:520px; }
+  .danger-btn{
+    background: var(--flame); color:#12161B; border:none; border-radius:14px;
+    padding:12px 20px; font-family:'Inter'; font-weight:700; font-size:13px; cursor:pointer;
+  }
+
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(6,8,10,0.75);
+    display:none; align-items:center; justify-content:center; z-index:60; padding:24px;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-sheet{
+    width:100%; background: var(--bg); border:1px solid var(--line);
+    border-radius:22px; padding:24px;
+  }
+  .modal-title{ font-family:'Unbounded'; font-weight:700; font-size:16px; margin-bottom:12px; }
+  .modal-actions{ display:flex; gap:10px; }
+  .modal-btn{ flex:1; border:none; border-radius:14px; padding:12px; font-weight:700; font-size:13px; font-family:'Inter'; cursor:pointer; }
+  .modal-btn.cancel{ background: var(--surface); color: var(--text-muted); border:1px solid var(--line); }
+  .modal-btn.danger-confirm{ background: var(--flame); color:#12161B; }
+  .modal-btn.danger-confirm:disabled{ opacity:0.4; cursor:default; }
 </style>
 </head>
 <body>
@@ -317,6 +344,29 @@
         <button class="submit-btn" id="submit-btn" onclick="saveSettings()">Enregistrer les modifications</button>
         <div class="msg" id="msg"></div>
       </div>
+    </div>
+
+    <div class="danger-zone">
+      <div class="danger-title">Zone dangereuse</div>
+      <div class="danger-text">Supprime définitivement ton compte et toutes tes données (repas, séances, historique, réglages). Cette action est irréversible.</div>
+      <button class="danger-btn" onclick="openDeleteAccountModal()">Supprimer mon compte</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delete-account-overlay">
+  <div class="modal-sheet" style="max-width:420px;">
+    <div class="modal-title" style="color:var(--flame);">Supprimer ton compte ?</div>
+    <p style="font-size:12.5px; color:var(--text-muted); line-height:1.6; margin:0 0 16px;">
+      Cette action est <b style="color:var(--text);">définitive</b>. Toutes tes données (profil, repas, séances, historique, bibliothèques perso) seront supprimées immédiatement et ne pourront pas être récupérées.
+    </p>
+    <div class="field" style="margin-bottom:16px;">
+      <label>Tape <b>SUPPRIMER</b> pour confirmer</label>
+      <input type="text" id="delete-confirm-input" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn cancel" onclick="closeDeleteAccountModal()">Annuler</button>
+      <button type="button" class="modal-btn danger-confirm" id="delete-confirm-btn" onclick="confirmDeleteAccount()" disabled>Supprimer définitivement</button>
     </div>
   </div>
 </div>
@@ -560,6 +610,35 @@
       });
     });
     downloadCsv("mes_seances.csv", rows);
+  }
+
+  function openDeleteAccountModal(){
+    document.getElementById("delete-account-overlay").classList.add("open");
+    document.getElementById("delete-confirm-input").value = "";
+    document.getElementById("delete-confirm-btn").disabled = true;
+  }
+  function closeDeleteAccountModal(){
+    document.getElementById("delete-account-overlay").classList.remove("open");
+  }
+  document.addEventListener("input", (e) => {
+    if (e.target && e.target.id === "delete-confirm-input"){
+      document.getElementById("delete-confirm-btn").disabled = e.target.value.trim().toUpperCase() !== "SUPPRIMER";
+    }
+  });
+
+  async function confirmDeleteAccount(){
+    const btn = document.getElementById("delete-confirm-btn");
+    btn.disabled = true;
+    btn.textContent = "Suppression en cours…";
+    const { error } = await supabaseClient.rpc("delete_user");
+    if (error){
+      alert("Erreur lors de la suppression : " + error.message);
+      btn.disabled = false;
+      btn.textContent = "Supprimer définitivement";
+      return;
+    }
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
   }
 
   loadExistingProfile();
