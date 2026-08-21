@@ -123,33 +123,6 @@
   .trend-lbl{ font-size:11px; color:var(--text-muted); margin-top:2px; }
 
 
-  /* ---------- carte musculaire ---------- */
-  .muscle-bodies{ display:flex; justify-content:center; gap:32px; margin:10px 0 20px; flex-wrap:wrap; }
-  .muscle-body-col{ text-align:center; }
-  .muscle-body-lbl{ font-size:11px; color:var(--text-muted); font-weight:600; margin-top:8px; }
-  .muscle-zone{ cursor:pointer; transition: opacity .15s ease; stroke:#0A0C0F; stroke-width:1.5; }
-  .muscle-zone:hover{ opacity:0.8; }
-  .muscle-zone.selected{ stroke:#F2F0EA; stroke-width:2.5; }
-
-  .muscle-detail{
-    background: var(--surface); border:1px solid var(--line); border-radius:16px;
-    padding:16px; margin-bottom:20px; display:flex; align-items:center; justify-content:space-between; gap:10px;
-  }
-  .muscle-detail .md-name{ font-weight:700; font-size:14px; }
-  .muscle-detail .md-sub{ font-size:11.5px; color:var(--text-muted); margin-top:3px; }
-  .muscle-detail .md-badge{ font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:10px; white-space:nowrap; }
-
-  .muscle-legend{ display:flex; align-items:center; gap:10px; font-size:11px; color:var(--text-muted); margin-bottom:18px; flex-wrap:wrap; }
-  .muscle-legend .dot{ width:10px; height:10px; border-radius:3px; display:inline-block; margin-right:4px; }
-
-  .muscle-rank-row{
-    display:flex; align-items:center; justify-content:space-between;
-    background: var(--surface); border:1px solid var(--line); border-radius:14px;
-    padding:12px 16px; margin-bottom:8px; cursor:pointer;
-  }
-  .muscle-rank-row:hover{ border-color:var(--text-muted); }
-  .muscle-rank-name{ font-weight:600; font-size:13px; }
-  .muscle-rank-badge{ font-size:11px; font-weight:700; padding:5px 11px; border-radius:9px; }
 </style>
 </head>
 <body>
@@ -286,132 +259,6 @@
           </div>
         </div>
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title" style="margin-bottom:4px;">Carte musculaire</div>
-      <div class="card-delta" style="margin-bottom:6px;">Niveau d'entraînement par muscle, sur les 30 derniers jours</div>
-
-      <div class="muscle-bodies">
-        <div class="muscle-body-col">
-          <svg width="150" height="360" viewBox="0 0 160 380">
-            <g fill="#181D24">
-              <ellipse cx="80" cy="24" rx="15" ry="17"/>
-              <path d="M72,38 L88,38 L86,50 L74,50 Z"/>
-              <path d="M40,52 Q80,40 120,52 L112,140 Q108,170 80,176 Q52,170 48,140 Z"/>
-              <path d="M30,54 C18,58 14,80 14,110 C14,140 16,165 20,188 C22,196 30,197 34,190 C38,168 40,140 40,110 C40,85 38,62 30,54 Z"/>
-              <path d="M130,54 C142,58 146,80 146,110 C146,140 144,165 140,188 C138,196 130,197 126,190 C122,168 120,140 120,110 C120,85 122,62 130,54 Z"/>
-              <path d="M52,176 C44,180 40,220 40,260 C40,300 42,330 46,350 C48,360 58,360 60,350 C64,330 66,300 66,260 C66,220 64,185 58,176 Z"/>
-              <path d="M108,176 C116,180 120,220 120,260 C120,300 118,330 114,350 C112,360 102,360 100,350 C96,330 94,300 94,260 C94,220 96,185 102,176 Z"/>
-              <ellipse cx="53" cy="362" rx="9" ry="8"/>
-              <ellipse cx="107" cy="362" rx="9" ry="8"/>
-            </g>
-
-            <g id="zone-epaules" class="muscle-zone" data-zone="epaules" onclick="selectZone('epaules')" fill="#2A323B">
-              <ellipse cx="40" cy="58" rx="16" ry="14"/>
-              <ellipse cx="120" cy="58" rx="16" ry="14"/>
-            </g>
-            <ellipse cx="35" cy="53" rx="6" ry="5" fill="#ffffff" fill-opacity="0.15" pointer-events="none"/>
-            <ellipse cx="115" cy="53" rx="6" ry="5" fill="#ffffff" fill-opacity="0.15" pointer-events="none"/>
-
-            <g id="zone-pectoraux" class="muscle-zone" data-zone="pectoraux" onclick="selectZone('pectoraux')" fill="#2A323B">
-              <path d="M43,64 Q40,86 52,96 Q68,100 78,90 Q80,74 74,64 Q58,56 43,64 Z"/>
-              <path d="M117,64 Q120,86 108,96 Q92,100 82,90 Q80,74 86,64 Q102,56 117,64 Z"/>
-            </g>
-            <path d="M78,64 L80,92" stroke="#00000055" stroke-width="2" fill="none" pointer-events="none"/>
-            <ellipse cx="55" cy="72" rx="8" ry="6" fill="#ffffff" fill-opacity="0.13" pointer-events="none"/>
-            <ellipse cx="105" cy="72" rx="8" ry="6" fill="#ffffff" fill-opacity="0.13" pointer-events="none"/>
-
-            <g id="zone-biceps" class="muscle-zone" data-zone="biceps" onclick="selectZone('biceps')" fill="#2A323B">
-              <path d="M22,64 C16,68 14,86 15,108 C15,124 18,134 25,140 C31,134 34,124 34,108 C35,86 33,68 27,64 Z"/>
-              <path d="M138,64 C144,68 146,86 145,108 C145,124 142,134 135,140 C129,134 126,124 126,108 C125,86 127,68 133,64 Z"/>
-            </g>
-
-            <g id="zone-abdominaux" class="muscle-zone" data-zone="abdominaux" onclick="selectZone('abdominaux')" fill="#2A323B">
-              <rect x="66" y="98" width="12" height="15" rx="4"/>
-              <rect x="82" y="98" width="12" height="15" rx="4"/>
-              <rect x="66" y="116" width="12" height="15" rx="4"/>
-              <rect x="82" y="116" width="12" height="15" rx="4"/>
-              <rect x="66" y="134" width="12" height="15" rx="4"/>
-              <rect x="82" y="134" width="12" height="15" rx="4"/>
-              <path d="M50,100 Q46,125 54,150 L64,148 Q58,124 62,102 Z"/>
-              <path d="M110,100 Q114,125 106,150 L96,148 Q102,124 98,102 Z"/>
-            </g>
-
-            <g id="zone-quadriceps" class="muscle-zone" data-zone="quadriceps" onclick="selectZone('quadriceps')" fill="#2A323B">
-              <ellipse cx="53" cy="232" rx="17" ry="46"/>
-              <ellipse cx="107" cy="232" rx="17" ry="46"/>
-            </g>
-            <path d="M53,192 L53,272" stroke="#00000044" stroke-width="1.6" fill="none" pointer-events="none"/>
-            <path d="M107,192 L107,272" stroke="#00000044" stroke-width="1.6" fill="none" pointer-events="none"/>
-            <ellipse cx="46" cy="210" rx="7" ry="16" fill="#ffffff" fill-opacity="0.1" pointer-events="none"/>
-            <ellipse cx="100" cy="210" rx="7" ry="16" fill="#ffffff" fill-opacity="0.1" pointer-events="none"/>
-          </svg>
-          <div class="muscle-body-lbl">Avant</div>
-        </div>
-
-        <div class="muscle-body-col">
-          <svg width="150" height="360" viewBox="0 0 160 380">
-            <g fill="#181D24">
-              <ellipse cx="80" cy="24" rx="15" ry="17"/>
-              <path d="M72,38 L88,38 L86,50 L74,50 Z"/>
-              <path d="M40,52 Q80,40 120,52 L112,140 Q108,170 80,176 Q52,170 48,140 Z"/>
-              <path d="M30,54 C18,58 14,80 14,110 C14,140 16,165 20,188 C22,196 30,197 34,190 C38,168 40,140 40,110 C40,85 38,62 30,54 Z"/>
-              <path d="M130,54 C142,58 146,80 146,110 C146,140 144,165 140,188 C138,196 130,197 126,190 C122,168 120,140 120,110 C120,85 122,62 130,54 Z"/>
-              <path d="M52,176 C44,180 40,220 40,260 C40,300 42,330 46,350 C48,360 58,360 60,350 C64,330 66,300 66,260 C66,220 64,185 58,176 Z"/>
-              <path d="M108,176 C116,180 120,220 120,260 C120,300 118,330 114,350 C112,360 102,360 100,350 C96,330 94,300 94,260 C94,220 96,185 102,176 Z"/>
-              <ellipse cx="53" cy="362" rx="9" ry="8"/>
-              <ellipse cx="107" cy="362" rx="9" ry="8"/>
-            </g>
-
-            <g id="zone-epaules-b" class="muscle-zone" data-zone="epaules" onclick="selectZone('epaules')" fill="#2A323B">
-              <ellipse cx="40" cy="58" rx="16" ry="14"/>
-              <ellipse cx="120" cy="58" rx="16" ry="14"/>
-            </g>
-
-            <g id="zone-dos" class="muscle-zone" data-zone="dos" onclick="selectZone('dos')" fill="#2A323B">
-              <path d="M44,54 Q26,80 34,118 Q44,142 66,150 Q80,152 80,140 Q80,152 94,150 Q116,142 126,118 Q134,80 116,54 Q98,44 80,46 Q62,44 44,54 Z"/>
-            </g>
-            <path d="M80,52 L80,148" stroke="#00000044" stroke-width="1.6" fill="none" pointer-events="none"/>
-            <ellipse cx="55" cy="78" rx="9" ry="18" fill="#ffffff" fill-opacity="0.1" pointer-events="none"/>
-            <ellipse cx="105" cy="78" rx="9" ry="18" fill="#ffffff" fill-opacity="0.1" pointer-events="none"/>
-
-            <g id="zone-triceps" class="muscle-zone" data-zone="triceps" onclick="selectZone('triceps')" fill="#2A323B">
-              <path d="M22,64 C16,68 14,86 15,108 C15,124 18,134 25,140 C31,134 34,124 34,108 C35,86 33,68 27,64 Z"/>
-              <path d="M138,64 C144,68 146,86 145,108 C145,124 142,134 135,140 C129,134 126,124 126,108 C125,86 127,68 133,64 Z"/>
-            </g>
-
-            <g id="zone-jambesarriere" class="muscle-zone" data-zone="jambesarriere" onclick="selectZone('jambesarriere')" fill="#2A323B">
-              <ellipse cx="53" cy="228" rx="17" ry="44"/>
-              <ellipse cx="107" cy="228" rx="17" ry="44"/>
-              <ellipse cx="53" cy="308" rx="12" ry="36"/>
-              <ellipse cx="107" cy="308" rx="12" ry="36"/>
-            </g>
-            <ellipse cx="46" cy="205" rx="7" ry="15" fill="#ffffff" fill-opacity="0.1" pointer-events="none"/>
-            <ellipse cx="100" cy="205" rx="7" ry="15" fill="#ffffff" fill-opacity="0.1" pointer-events="none"/>
-          </svg>
-          <div class="muscle-body-lbl">Arrière</div>
-        </div>
-      </div>
-
-      <div class="muscle-legend">
-        <span>Niveau</span>
-        <span><span class="dot" style="background:#2A323B;"></span>Non entraîné</span>
-        <span><span class="dot" style="background:#CD7F32;"></span>Bronze</span>
-        <span><span class="dot" style="background:#B8C4D0;"></span>Argent</span>
-        <span><span class="dot" style="background:#FFD24C;"></span>Or</span>
-        <span><span class="dot" style="background:#D4F252;"></span>Élite</span>
-      </div>
-
-      <div class="muscle-detail" id="muscle-detail" style="display:none;">
-        <div>
-          <div class="md-name" id="md-name">—</div>
-          <div class="md-sub" id="md-sub">—</div>
-        </div>
-        <div class="md-badge" id="md-badge">—</div>
-      </div>
-
-      <div id="muscle-rank-list"></div>
     </div>
 
     <div class="card">
@@ -827,7 +674,6 @@
     await loadWorkoutStatsData();
     renderHeatmap();
     renderTrends();
-    await loadMuscleMap();
     await loadWeightChart();
     await loadCalChart();
     await loadExerciseProgress();
