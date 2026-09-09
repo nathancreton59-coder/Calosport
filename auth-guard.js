@@ -14,7 +14,7 @@ async function requireAuth(opts = {}) {
 
   const { data: profile } = await supabaseClient
     .from("profiles")
-    .select("onboarding_completed, weight_unit, energy_unit, distance_unit")
+    .select("onboarding_completed, weight_unit, energy_unit, distance_unit, theme_preference")
     .eq("id", session.user.id).single();
 
   if (profile){
@@ -23,6 +23,7 @@ async function requireAuth(opts = {}) {
       energy: profile.energy_unit || "kcal",
       distance: profile.distance_unit || "km",
     };
+    applyTheme(profile.theme_preference || "dark");
   }
 
   if (!opts.skipOnboardingCheck && profile && !profile.onboarding_completed){
@@ -119,3 +120,39 @@ function updateStatusTime() {
 }
 updateStatusTime();
 setInterval(updateStatusTime, 15000);
+
+// ---------- theme (mode clair / sombre / automatique) ----------
+// Un petit script inline en tête de chaque page lit déjà le cache localStorage
+// pour appliquer le thème avant l'affichage (évite le flash). Cette fonction,
+// appelée après le chargement du profil, applique la préférence réelle et
+// met le cache à jour pour la prochaine visite / les autres pages.
+function resolveTheme(pref){
+  if (pref === "auto"){
+    return window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  return pref === "light" ? "light" : "dark";
+}
+
+function applyTheme(pref){
+  const resolved = resolveTheme(pref);
+  document.documentElement.setAttribute("data-theme", resolved);
+  try {
+    localStorage.setItem("calosport-theme-pref", pref);
+    localStorage.setItem("calosport-theme-resolved", resolved);
+  } catch (e){ /* stockage indisponible, tant pis pour le cache anti-flash */ }
+}
+
+async function setThemePreference(pref){
+  applyTheme(pref);
+  if (currentUser){
+    await supabaseClient.from("profiles").update({ theme_preference: pref }).eq("id", currentUser.id);
+  }
+}
+
+// Si l'OS change de thème en direct et que la préférence est "auto", on suit.
+if (window.matchMedia){
+  window.matchMedia("(prefers-color-scheme: light)").addEventListener("change", () => {
+    const cachedPref = (() => { try { return localStorage.getItem("calosport-theme-pref"); } catch(e){ return null; } })();
+    if (cachedPref === "auto") applyTheme("auto");
+  });
+}

@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem("calosport-theme-resolved")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 <title>Calories — Suivi fitness</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="calosport-icon.svg">
@@ -31,6 +32,17 @@
   }
 
   *{ box-sizing: border-box; }
+
+  /* ---------- mode clair ---------- */
+  :root[data-theme="light"]{
+    --bg: #EFF1EA; --surface: #FFFFFF; --surface-2: #F3F4EE;
+    --text: #14181D; --text-muted: #667085; --line: #E1E3DC;
+    --lime: #6F9A16; --lime-dim: #EAF3D2;
+    --flame: #D9522E; --flame-dim: #FBE4DC;
+    --volt: #2F63C7; --volt-dim: #E3EBFB;
+    --grape: #7C5CD1; --grape-dim: #EDE7FB;
+  }
+  html[data-theme="light"], html[data-theme="light"] body{ background: var(--bg); }
   html,body{
     margin:0; padding:0;
     background:#0A0C0F;

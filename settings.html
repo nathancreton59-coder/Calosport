@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem("calosport-theme-resolved")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 <title>Réglages — Suivi fitness</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="calosport-icon.svg">
@@ -19,6 +20,17 @@
     --volt: #6FA8FF; --volt-dim: #202B3D;
   }
   *{ box-sizing:border-box; }
+
+  /* ---------- mode clair ---------- */
+  :root[data-theme="light"]{
+    --bg: #EFF1EA; --surface: #FFFFFF; --surface-2: #F3F4EE;
+    --text: #14181D; --text-muted: #667085; --line: #E1E3DC;
+    --lime: #6F9A16; --lime-dim: #EAF3D2;
+    --flame: #D9522E; --flame-dim: #FBE4DC;
+    --volt: #2F63C7; --volt-dim: #E3EBFB;
+    --grape: #7C5CD1; --grape-dim: #EDE7FB;
+  }
+  html[data-theme="light"], html[data-theme="light"] body{ background: var(--bg); }
   html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
   body{ display:flex; min-height:100vh; }
 
@@ -113,6 +125,14 @@
   .switch input:disabled + .slider{ opacity:0.4; cursor:default; }
 
   .settings-note{ font-size:11.5px; color: var(--text-muted); line-height:1.6; padding:14px 18px; }
+
+  .theme-pill-group{ display:flex; gap:6px; flex-shrink:0; }
+  .theme-pill{
+    border:1px solid var(--line); background: var(--surface-2); color: var(--text-muted);
+    font-family:'Inter'; font-weight:700; font-size:12px; padding:8px 12px; border-radius:10px; cursor:pointer;
+    white-space:nowrap;
+  }
+  .theme-pill.active{ background: var(--lime); border-color: var(--lime); color:#12161B; }
 
   .save-msg{ font-size:11.5px; color: var(--lime); padding: 8px 18px 14px; }
 
@@ -308,9 +328,17 @@
 
     <!-- ===== APPARENCE ===== -->
     <div class="settings-group">
-      <div class="settings-group-header">🎨 Apparence <span class="badge">Bientôt disponible</span></div>
+      <div class="settings-group-header">🎨 Apparence <span class="badge">Langue à venir</span></div>
       <div class="settings-card">
-        <div class="settings-note" style="padding:16px 18px;">Le mode clair et le choix de langue arrivent dans une prochaine mise à jour — l'application reste en thème sombre pour le moment.</div>
+        <div class="settings-row">
+          <div class="settings-row-body"><div class="settings-row-label">Thème</div></div>
+          <div class="theme-pill-group">
+            <button type="button" class="theme-pill" id="theme-light" onclick="chooseTheme('light')">☀️ Clair</button>
+            <button type="button" class="theme-pill" id="theme-dark" onclick="chooseTheme('dark')">🌙 Sombre</button>
+            <button type="button" class="theme-pill" id="theme-auto" onclick="chooseTheme('auto')">🖥️ Auto</button>
+          </div>
+        </div>
+        <div class="settings-note">"Auto" suit le réglage clair/sombre de ton appareil.</div>
       </div>
     </div>
 
@@ -538,6 +566,17 @@
     window._unitMsgTimeout = setTimeout(() => { el.style.display = "none"; }, 3000);
   }
 
+  // ---------- theme ----------
+  function markActiveThemePill(pref){
+    document.getElementById("theme-light").classList.toggle("active", pref === "light");
+    document.getElementById("theme-dark").classList.toggle("active", pref === "dark");
+    document.getElementById("theme-auto").classList.toggle("active", pref === "auto");
+  }
+  async function chooseTheme(pref){
+    markActiveThemePill(pref);
+    await setThemePreference(pref);
+  }
+
   // ---------- infos statiques ----------
   function openPrivacyInfoModal(){ openModal("privacy-info-overlay"); }
   function openPolicyModal(){ openModal("policy-overlay"); }
@@ -661,6 +700,7 @@
       document.getElementById("unit-weight").value = profile.weight_unit || "kg";
       document.getElementById("unit-distance").value = profile.distance_unit || "km";
       document.getElementById("unit-energy").value = profile.energy_unit || "kcal";
+      markActiveThemePill(profile.theme_preference || "dark");
     }
   })();
 </script>
