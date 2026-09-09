@@ -2,6 +2,7 @@
 // (index.html, calories.html, sport.html) après config.js
 
 let currentUser = null;
+window.userUnits = { weight: "kg", energy: "kcal", distance: "km" };
 
 async function requireAuth(opts = {}) {
   const { data: { session } } = await supabaseClient.auth.getSession();
@@ -11,16 +12,69 @@ async function requireAuth(opts = {}) {
   }
   currentUser = session.user;
 
-  if (!opts.skipOnboardingCheck) {
-    const { data: profile } = await supabaseClient
-      .from("profiles").select("onboarding_completed").eq("id", session.user.id).single();
-    if (profile && !profile.onboarding_completed){
-      window.location.href = "onboarding.html";
-      return null;
-    }
+  const { data: profile } = await supabaseClient
+    .from("profiles")
+    .select("onboarding_completed, weight_unit, energy_unit, distance_unit")
+    .eq("id", session.user.id).single();
+
+  if (profile){
+    window.userUnits = {
+      weight: profile.weight_unit || "kg",
+      energy: profile.energy_unit || "kcal",
+      distance: profile.distance_unit || "km",
+    };
+  }
+
+  if (!opts.skipOnboardingCheck && profile && !profile.onboarding_completed){
+    window.location.href = "onboarding.html";
+    return null;
   }
 
   return session.user;
+}
+
+// ---------- préférences d'unités (kg/lb, kcal/kJ, km/mi) ----------
+// Les données restent TOUJOURS stockées en kg / kcal / km en base.
+// Ces fonctions ne convertissent que ce qui est affiché ou saisi par l'utilisateur.
+const KG_TO_LB = 2.2046226218;
+const KCAL_TO_KJ = 4.184;
+const KM_TO_MI = 0.621371;
+
+function weightUnitLabel(){ return window.userUnits.weight === "lb" ? "lb" : "kg"; }
+function energyUnitLabel(){ return window.userUnits.energy === "kj" ? "kJ" : "kcal"; }
+function distanceUnitLabel(){ return window.userUnits.distance === "mi" ? "mi" : "km"; }
+
+function kgToDisplayWeight(kg){
+  if (kg == null || isNaN(kg)) return kg;
+  return window.userUnits.weight === "lb" ? kg * KG_TO_LB : kg;
+}
+function displayWeightToKg(val){
+  if (val == null || isNaN(val)) return val;
+  return window.userUnits.weight === "lb" ? val / KG_TO_LB : val;
+}
+function kcalToDisplayEnergy(kcal){
+  if (kcal == null || isNaN(kcal)) return kcal;
+  return window.userUnits.energy === "kj" ? kcal * KCAL_TO_KJ : kcal;
+}
+function displayEnergyToKcal(val){
+  if (val == null || isNaN(val)) return val;
+  return window.userUnits.energy === "kj" ? val / KCAL_TO_KJ : val;
+}
+function kmToDisplayDistance(km){
+  if (km == null || isNaN(km)) return km;
+  return window.userUnits.distance === "mi" ? km * KM_TO_MI : km;
+}
+
+// Formatte un poids en kg (valeur brute stockée) dans l'unité choisie par l'utilisateur.
+function formatWeight(kg, decimals){
+  if (kg == null || isNaN(kg)) return "—";
+  const d = decimals != null ? decimals : 1;
+  return kgToDisplayWeight(kg).toFixed(d) + " " + weightUnitLabel();
+}
+// Formatte une énergie en kcal (valeur brute stockée) dans l'unité choisie par l'utilisateur.
+function formatEnergy(kcal){
+  if (kcal == null || isNaN(kcal)) return "—";
+  return Math.round(kcalToDisplayEnergy(kcal)).toLocaleString("fr-FR") + " " + energyUnitLabel();
 }
 
 // Réagit si l'utilisateur se déconnecte depuis un autre onglet

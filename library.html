@@ -213,7 +213,7 @@
         row.innerHTML = `
           <div class="lib-main">
             <div class="lib-name">${item.name}</div>
-            <div class="lib-detail">${item.calories_per_100g} kcal · ${item.protein_per_100g}g P · ${item.carbs_per_100g}g G · ${item.fat_per_100g}g L (/100g)${item.barcode ? " · scanné" : ""}</div>
+            <div class="lib-detail">${Math.round(kcalToDisplayEnergy(item.calories_per_100g))} ${energyUnitLabel()} · ${item.protein_per_100g}g P · ${item.carbs_per_100g}g G · ${item.fat_per_100g}g L (/100g)${item.barcode ? " · scanné" : ""}</div>
           </div>
           <div class="lib-actions">
             <button class="lib-btn edit" onclick="startEditFood('${item.id}')" title="Modifier">
@@ -248,7 +248,7 @@
     row.innerHTML = `
       <div class="lib-edit-row">
         <input class="name-input" id="ef-name-${id}" value="${item.name}">
-        <input class="num-input" id="ef-cal-${id}" type="number" step="0.1" value="${item.calories_per_100g}" title="Kcal/100g">
+        <input class="num-input" id="ef-cal-${id}" type="number" step="0.1" value="${Math.round(kcalToDisplayEnergy(item.calories_per_100g) * 10) / 10}" title="${energyUnitLabel()}/100g">
         <input class="num-input" id="ef-protein-${id}" type="number" step="0.1" value="${item.protein_per_100g}" title="Protéines/100g">
         <input class="num-input" id="ef-carbs-${id}" type="number" step="0.1" value="${item.carbs_per_100g}" title="Glucides/100g">
         <input class="num-input" id="ef-fat-${id}" type="number" step="0.1" value="${item.fat_per_100g}" title="Lipides/100g">
@@ -266,7 +266,7 @@
   async function saveEditFood(id){
     const payload = {
       name: document.getElementById(`ef-name-${id}`).value.trim(),
-      calories_per_100g: parseFloat(document.getElementById(`ef-cal-${id}`).value) || 0,
+      calories_per_100g: displayEnergyToKcal(parseFloat(document.getElementById(`ef-cal-${id}`).value)) || 0,
       protein_per_100g: parseFloat(document.getElementById(`ef-protein-${id}`).value) || 0,
       carbs_per_100g: parseFloat(document.getElementById(`ef-carbs-${id}`).value) || 0,
       fat_per_100g: parseFloat(document.getElementById(`ef-fat-${id}`).value) || 0,

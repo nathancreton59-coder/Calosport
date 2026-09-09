@@ -284,7 +284,7 @@
           </div>
           <div>
             <div class="trend-val" id="trend-volume">—</div>
-            <div class="trend-lbl">Volume (kg)</div>
+            <div class="trend-lbl" id="trend-volume-lbl">Volume (kg)</div>
           </div>
         </div>
         <div class="trend-card">
@@ -293,7 +293,7 @@
           </div>
           <div>
             <div class="trend-val" id="trend-energy">—</div>
-            <div class="trend-lbl">Énergie (kcal)</div>
+            <div class="trend-lbl" id="trend-energy-lbl">Énergie (kcal)</div>
           </div>
         </div>
         <div class="trend-card">
@@ -318,7 +318,7 @@
       </div>
       <div class="chart-wrap" id="weight-chart"></div>
       <div class="quick-log">
-        <input type="number" id="weight-input" step="0.1" placeholder="Ton poids aujourd'hui (kg)">
+        <input type="number" id="weight-input" step="0.1" placeholder="Ton poids aujourd'hui">
         <button onclick="logWeight()">Enregistrer</button>
       </div>
     </div>
@@ -432,17 +432,18 @@
       .from("weight_logs").select("*").eq("user_id", currentUser.id)
       .order("logged_at", { ascending: true }).limit(90);
     const logs = data || [];
-    const points = logs.map(l => ({ label: shortDate(l.logged_at), value: parseFloat(l.weight_kg) }));
+    const points = logs.map(l => ({ label: shortDate(l.logged_at), value: kgToDisplayWeight(parseFloat(l.weight_kg)) }));
 
     document.getElementById("weight-chart").innerHTML = lineChartSvg(points, "#D4F252");
+    document.getElementById("weight-input").placeholder = `Ton poids aujourd'hui (${weightUnitLabel()})`;
 
     if (logs.length){
-      const current = logs[logs.length - 1].weight_kg;
-      document.getElementById("weight-current").textContent = current + " kg";
+      const current = parseFloat(logs[logs.length - 1].weight_kg);
+      document.getElementById("weight-current").textContent = formatWeight(current);
       if (logs.length > 1){
-        const delta = current - logs[0].weight_kg;
-        const sign = delta > 0 ? "+" : "";
-        document.getElementById("weight-delta").textContent = `${sign}${delta.toFixed(1)} kg depuis le ${shortDate(logs[0].logged_at)}`;
+        const deltaKg = current - parseFloat(logs[0].weight_kg);
+        const sign = deltaKg > 0 ? "+" : deltaKg < 0 ? "-" : "";
+        document.getElementById("weight-delta").textContent = `${sign}${Math.abs(kgToDisplayWeight(deltaKg)).toFixed(1)} ${weightUnitLabel()} depuis le ${shortDate(logs[0].logged_at)}`;
       } else {
         document.getElementById("weight-delta").textContent = "Première pesée enregistrée";
       }
@@ -455,7 +456,7 @@
   async function logWeight(){
     const val = parseFloat(document.getElementById("weight-input").value);
     if (!val || val <= 0) return;
-    await supabaseClient.from("weight_logs").insert({ user_id: currentUser.id, weight_kg: val });
+    await supabaseClient.from("weight_logs").insert({ user_id: currentUser.id, weight_kg: displayWeightToKg(val) });
     document.getElementById("weight-input").value = "";
     await loadWeightChart();
   }
@@ -497,7 +498,7 @@
 
     const withData = points.filter(p => p.value > 0);
     const avg = withData.length ? Math.round(withData.reduce((s, p) => s + p.value, 0) / withData.length) : 0;
-    document.getElementById("cal-avg").textContent = avg ? avg.toLocaleString("fr-FR") + " kcal" : "—";
+    document.getElementById("cal-avg").textContent = avg ? formatEnergy(avg) : "—";
   }
 
   // ---------- charge par exercice ----------
@@ -556,11 +557,12 @@
 
   function renderExerciseChart(){
     const name = document.getElementById("exo-progress-select").value;
-    const points = exerciseHistoryData[name] || [];
+    const rawPoints = exerciseHistoryData[name] || [];
+    const points = rawPoints.map(p => ({ label: p.label, value: kgToDisplayWeight(p.value) }));
     document.getElementById("exo-chart").innerHTML = lineChartSvg(points, "#6FA8FF");
     if (points.length){
       const max = Math.max(...points.map(p => p.value));
-      document.getElementById("exo-max").textContent = max + " kg";
+      document.getElementById("exo-max").textContent = max.toFixed(1) + " " + weightUnitLabel();
       document.getElementById("exo-max-label").textContent = `Meilleure charge sur ${name}`;
     }
   }
@@ -663,7 +665,7 @@
           if (vol > 0){
             const level = Math.min(3, Math.ceil((vol / maxVolume) * 4) - 1);
             cell.style.background = COLORS[Math.max(0, level)];
-            cell.title = `${date.toLocaleDateString("fr-FR")} · ${Math.round(vol).toLocaleString("fr-FR")} kg`;
+            cell.title = `${date.toLocaleDateString("fr-FR")} · ${Math.round(kgToDisplayWeight(vol)).toLocaleString("fr-FR")} ${weightUnitLabel()}`;
           }
         }
         weekEl.appendChild(cell);
@@ -708,10 +710,13 @@
     const curSets = sumInRange(COMPLETED_WORKOUTS, startIso, endIso, "setsCount");
     const prevSets = sumInRange(COMPLETED_WORKOUTS, prevStartIso, startIso, "setsCount");
 
+    document.getElementById("trend-volume-lbl").textContent = `Volume (${weightUnitLabel()})`;
+    document.getElementById("trend-energy-lbl").textContent = `Énergie (${energyUnitLabel()})`;
+
     const h = curDuration >= 60 ? `${Math.floor(curDuration/60)}h ${curDuration%60}min` : `${curDuration}min`;
     document.getElementById("trend-duration").innerHTML = `${h} ${trendArrow(curDuration, prevDuration)}`;
-    document.getElementById("trend-volume").innerHTML = `${Math.round(curVolume).toLocaleString("fr-FR")} ${trendArrow(curVolume, prevVolume)}`;
-    document.getElementById("trend-energy").innerHTML = `${Math.round(curEnergy).toLocaleString("fr-FR")} ${trendArrow(curEnergy, prevEnergy)}`;
+    document.getElementById("trend-volume").innerHTML = `${Math.round(kgToDisplayWeight(curVolume)).toLocaleString("fr-FR")} ${trendArrow(curVolume, prevVolume)}`;
+    document.getElementById("trend-energy").innerHTML = `${Math.round(kcalToDisplayEnergy(curEnergy)).toLocaleString("fr-FR")} ${trendArrow(curEnergy, prevEnergy)}`;
     document.getElementById("trend-sets").innerHTML = `${curSets} ${trendArrow(curSets, prevSets)}`;
   }
 

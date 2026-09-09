@@ -545,7 +545,7 @@
             </div>
             <div>
               <div class="stat-value" id="burned-total">—</div>
-              <div class="stat-label">Kcal brûlées</div>
+              <div class="stat-label" id="burned-label">Kcal brûlées</div>
             </div>
           </div>
         </div>
@@ -595,7 +595,7 @@
           </div>
         </div>
         <div class="modal-field">
-          <label>Kcal brûlées estimées</label>
+          <label id="w-calories-label">Kcal brûlées estimées</label>
           <input type="number" id="w-calories" placeholder="300" min="0">
         </div>
 
@@ -709,7 +709,7 @@
     document.getElementById("w-name").value = workout.name || "";
     document.getElementById("w-type").value = workout.workout_type || "";
     document.getElementById("w-duration").value = workout.duration_min || "";
-    document.getElementById("w-calories").value = workout.calories_burned || "";
+    document.getElementById("w-calories").value = workout.calories_burned ? Math.round(kcalToDisplayEnergy(workout.calories_burned)) : "";
     if (workout.scheduled_at){
       const d = new Date(workout.scheduled_at);
       document.getElementById("w-date").value = d.toISOString().slice(0,10);
@@ -911,7 +911,8 @@
     const name = document.getElementById("w-name").value.trim();
     const type = document.getElementById("w-type").value.trim();
     const duration = parseInt(document.getElementById("w-duration").value) || null;
-    const calories = parseInt(document.getElementById("w-calories").value) || null;
+    const caloriesInput = parseInt(document.getElementById("w-calories").value) || null;
+    const calories = caloriesInput != null ? Math.round(displayEnergyToKcal(caloriesInput)) : null;
     const date = document.getElementById("w-date").value;
     const time = document.getElementById("w-time").value;
     const scheduledAt = new Date(`${date}T${time}`).toISOString();
@@ -1189,7 +1190,8 @@
   function validateSet(setIdx){
     const exo = live.exercises[live.currentExoIndex];
     const row = document.getElementById("set-row-" + setIdx);
-    const weight = parseFloat(row.querySelector(".set-weight").value) || null;
+    const weightInput = parseFloat(row.querySelector(".set-weight").value) || null;
+    const weight = weightInput != null ? displayWeightToKg(weightInput) : null;
     const reps = parseInt(row.querySelector(".set-reps").value) || null;
     exo.loggedSets[setIdx].weight_kg = weight;
     exo.loggedSets[setIdx].reps = reps;
@@ -1281,7 +1283,8 @@
 
   async function finishWorkout(){
     const duration = parseInt(document.getElementById("summary-duration").value) || null;
-    const calories = parseInt(document.getElementById("summary-calories").value) || null;
+    const caloriesInput = parseInt(document.getElementById("summary-calories").value) || null;
+    const calories = caloriesInput != null ? Math.round(displayEnergyToKcal(caloriesInput)) : null;
     await supabaseClient.from("workouts")
       .update({ completed: true, duration_min: duration, calories_burned: calories })
       .eq("id", live.workout.id);
@@ -1303,7 +1306,7 @@
           <h2>Séance terminée !</h2>
           <p>Beau travail. Vérifie les derniers détails avant d'enregistrer.</p>
           <div class="modal-field"><label>Durée (min)</label><input type="number" id="summary-duration" value="${elapsedMin}"></div>
-          <div class="modal-field"><label>Kcal brûlées (estimation)</label><input type="number" id="summary-calories" value="${live.workout.calories_burned || ""}" placeholder="300"></div>
+          <div class="modal-field"><label>${energyUnitLabel()} brûlées (estimation)</label><input type="number" id="summary-calories" value="${live.workout.calories_burned ? Math.round(kcalToDisplayEnergy(live.workout.calories_burned)) : ""}" placeholder="300"></div>
         </div>`;
       footer.innerHTML = `<button class="live-next-btn" onclick="finishWorkout()">Enregistrer et terminer</button>`;
       return;
@@ -1333,7 +1336,7 @@
       <div class="set-row ${s.completed ? "done" : ""}" id="set-row-${i}">
         <div class="set-num">${s.isWarmup ? "É" + (s.set_number ?? i + 1) : (s.set_number ?? i + 1)}</div>
         <div class="set-input-group">
-          <div class="grp"><span class="u">kg</span><input type="number" class="set-weight" step="0.5" value="${s.weight_kg ?? ""}" ${s.completed ? "disabled" : ""}></div>
+          <div class="grp"><span class="u">${weightUnitLabel()}</span><input type="number" class="set-weight" step="0.5" value="${s.weight_kg != null ? kgToDisplayWeight(s.weight_kg).toFixed(1) : ""}" ${s.completed ? "disabled" : ""}></div>
           <div class="grp"><span class="u">reps</span><input type="number" class="set-reps" value="${s.reps ?? ""}" ${s.completed ? "disabled" : ""}></div>
         </div>
         <button type="button" class="set-validate ${s.completed ? "done" : ""}" onclick="validateSet(${i})" ${s.completed ? "disabled" : ""}>
@@ -1417,8 +1420,8 @@
     let totalVolume = 0, totalSets = 0;
     let html = `<div class="detail-summary">
       <div class="item"><div class="v">${workout.duration_min || "?"}</div><div class="k">Minutes</div></div>
-      <div class="item"><div class="v">${workout.calories_burned || "?"}</div><div class="k">Kcal brûlées</div></div>
-      <div class="item"><div class="v" id="detail-volume">—</div><div class="k">Volume total (kg)</div></div>
+      <div class="item"><div class="v">${workout.calories_burned ? Math.round(kcalToDisplayEnergy(workout.calories_burned)) : "?"}</div><div class="k">${energyUnitLabel()} brûlées</div></div>
+      <div class="item"><div class="v" id="detail-volume">—</div><div class="k">Volume total (${weightUnitLabel()})</div></div>
     </div>`;
 
     exercises.forEach(ex => {
@@ -1433,7 +1436,7 @@
           totalSets++;
           html += `<div class="detail-set-row">
             <div class="detail-set-num">#${s.set_number}</div>
-            <div class="detail-set-val">${s.weight_kg != null ? s.weight_kg + " kg" : "—"} × ${s.reps != null ? s.reps + " reps" : "—"}</div>
+            <div class="detail-set-val">${s.weight_kg != null ? kgToDisplayWeight(s.weight_kg).toFixed(1) + " " + weightUnitLabel() : "—"} × ${s.reps != null ? s.reps + " reps" : "—"}</div>
             ${isRecord ? '<div class="detail-set-record">🏆 Record</div>' : ''}
           </div>`;
         });
@@ -1443,7 +1446,7 @@
 
     body.innerHTML = html;
     const volEl = document.getElementById("detail-volume");
-    if (volEl) volEl.textContent = totalSets ? Math.round(totalVolume).toLocaleString("fr-FR") : "—";
+    if (volEl) volEl.textContent = totalSets ? Math.round(kgToDisplayWeight(totalVolume)).toLocaleString("fr-FR") : "—";
   }
 
   function closeDetailOverlay(){
@@ -1513,8 +1516,9 @@
     document.getElementById("completed-count").textContent = `${completedCount}/${weeklyGoal}`;
     document.getElementById("completed-label").textContent =
       completedCount >= weeklyGoal ? "Objectif atteint 🎉" : "Séances complétées";
-    document.getElementById("burned-total").textContent =
-      list.filter(w => w.completed).reduce((s, w) => s + (w.calories_burned || 0), 0).toLocaleString("fr-FR");
+    const totalBurnedKcal = list.filter(w => w.completed).reduce((s, w) => s + (w.calories_burned || 0), 0);
+    document.getElementById("burned-total").textContent = Math.round(kcalToDisplayEnergy(totalBurnedKcal)).toLocaleString("fr-FR");
+    document.getElementById("burned-label").textContent = `${energyUnitLabel()} brûlées`;
     renderHistory(list);
 
     await renderTodayWorkout(user);
@@ -1523,6 +1527,7 @@
   (async function init(){
     await loadExerciseLibrary();
     await loadSport();
+    document.getElementById("w-calories-label").textContent = `${energyUnitLabel()} brûlées estimées`;
     const params = new URLSearchParams(window.location.search);
     const editId = params.get("edit");
     if (editId) await editWorkout(editId);

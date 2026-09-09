@@ -343,7 +343,7 @@
               <div class="stat-icon">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FF7A59" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
               </div>
-              <div class="stat-value" id="cal-value">— kcal</div>
+              <div class="stat-value" id="cal-value">—</div>
               <div class="stat-label">Calories consommées</div>
               <div class="stat-bar"><i id="cal-bar" style="width:0%"></i></div>
             </div>
@@ -474,8 +474,8 @@
     const remaining = Math.max(0, calorieGoal - consumed);
     setRing(consumed / calorieGoal);
     document.getElementById("today-sub").innerHTML =
-      `<b>${consumed.toLocaleString("fr-FR")}</b> / ${calorieGoal.toLocaleString("fr-FR")} kcal consommées.<br>Il te reste <b>${remaining.toLocaleString("fr-FR")} kcal</b> avant ce soir.`;
-    document.getElementById("cal-value").textContent = consumed.toLocaleString("fr-FR") + " kcal";
+      `<b>${Math.round(kcalToDisplayEnergy(consumed)).toLocaleString("fr-FR")}</b> / ${Math.round(kcalToDisplayEnergy(calorieGoal)).toLocaleString("fr-FR")} ${energyUnitLabel()} consommées.<br>Il te reste <b>${formatEnergy(remaining)}</b> avant ce soir.`;
+    document.getElementById("cal-value").textContent = formatEnergy(consumed);
     document.getElementById("cal-bar").style.width = Math.min(100, (consumed / calorieGoal) * 100) + "%";
 
     const { data: todaysWorkouts } = await supabaseClient
@@ -612,8 +612,8 @@
     if (weakest.key === "nutrition"){
       const remaining = calorieGoal - consumed;
       tip = remaining > 0
-        ? `Il te reste <b>${remaining.toLocaleString("fr-FR")} kcal</b> à consommer pour bien atteindre ton objectif.`
-        : `Tu as dépassé ton objectif de <b>${Math.abs(remaining).toLocaleString("fr-FR")} kcal</b> aujourd'hui — ajuste un peu demain.`;
+        ? `Il te reste <b>${formatEnergy(remaining)}</b> à consommer pour bien atteindre ton objectif.`
+        : `Tu as dépassé ton objectif de <b>${formatEnergy(Math.abs(remaining))}</b> aujourd'hui — ajuste un peu demain.`;
     } else if (weakest.key === "sport"){
       tip = doneToday ? `Continue sur ta lancée pour rester régulier cette semaine.` : `Fais une séance aujourd'hui pour booster ton score.`;
     } else if (weakest.key === "water"){

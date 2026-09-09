@@ -211,7 +211,7 @@
     <div class="stat-row">
       <div class="stat-box">
         <div class="v" id="stat-volume">—</div>
-        <div class="k">Volume total (kg)</div>
+        <div class="k" id="stat-volume-lbl">Volume total (kg)</div>
       </div>
       <div class="stat-box">
         <div class="v" id="stat-sets">—</div>
@@ -285,6 +285,7 @@
 
     if (!workoutIds.length){
       document.getElementById("stat-volume").textContent = "0";
+      document.getElementById("stat-volume-lbl").textContent = `Volume total (${weightUnitLabel()})`;
       document.getElementById("stat-sets").textContent = "0";
       document.getElementById("improve-list").innerHTML = '<div class="empty-state">Aucune séance terminée ce mois-ci.</div>';
       MUSCLE_STATS = {};
@@ -344,7 +345,8 @@
       MUSCLE_STATS[m].volume += vol;
     });
 
-    document.getElementById("stat-volume").textContent = Math.round(totalVolume).toLocaleString("fr-FR");
+    document.getElementById("stat-volume").textContent = Math.round(kgToDisplayWeight(totalVolume)).toLocaleString("fr-FR");
+    document.getElementById("stat-volume-lbl").textContent = `Volume total (${weightUnitLabel()})`;
     document.getElementById("stat-sets").textContent = totalSets;
 
     // ---- Le plus ameliore ----
@@ -374,7 +376,7 @@
           </div>
           <div>
             <div class="improve-name">${escapeHtml(it.name)}</div>
-            <div class="improve-detail">${Math.round(it.first)} → ${Math.round(it.last)} kg 1RM estimé</div>
+            <div class="improve-detail">${Math.round(kgToDisplayWeight(it.first))} → ${Math.round(kgToDisplayWeight(it.last))} ${weightUnitLabel()} 1RM estimé</div>
           </div>
           <div class="improve-pct">+${Math.round(it.pct)}%</div>
         </div>`).join("");
@@ -403,11 +405,11 @@
     const rows = muscles.map(m => ({
       name: m,
       days: MUSCLE_STATS[m].days.size,
-      value: currentMetric === "sets" ? MUSCLE_STATS[m].sets : Math.round(MUSCLE_STATS[m].volume),
+      value: currentMetric === "sets" ? MUSCLE_STATS[m].sets : Math.round(kgToDisplayWeight(MUSCLE_STATS[m].volume)),
     })).sort((a, b) => b.value - a.value);
 
     const maxVal = Math.max(1, ...rows.map(r => r.value));
-    const unit = currentMetric === "sets" ? "" : " kg";
+    const unit = currentMetric === "sets" ? "" : " " + weightUnitLabel();
 
     tableEl.innerHTML = rows.map(r => `
       <div class="muscle-row">

@@ -453,7 +453,7 @@
         </div>
         <div class="modal-row">
           <div class="modal-field">
-            <label>Kcal / 100g</label>
+            <label id="cf-cal-label">Kcal / 100g</label>
             <input type="number" id="cf-cal" placeholder="350" min="0" step="0.1">
           </div>
           <div class="modal-field">
@@ -491,7 +491,7 @@
           </div>
         </div>
         <div class="computed-preview" id="computed-preview">
-          <div class="cp-item"><div class="cp-v" id="cp-cal">0</div><div class="cp-k">kcal</div></div>
+          <div class="cp-item"><div class="cp-v" id="cp-cal">0</div><div class="cp-k" id="cp-cal-lbl">kcal</div></div>
           <div class="cp-item"><div class="cp-v" id="cp-protein">0 g</div><div class="cp-k">Protéines</div></div>
           <div class="cp-item"><div class="cp-v" id="cp-carbs">0 g</div><div class="cp-k">Glucides</div></div>
           <div class="cp-item"><div class="cp-v" id="cp-fat">0 g</div><div class="cp-k">Lipides</div></div>
@@ -557,7 +557,7 @@
     FAVORITE_MEALS.forEach(f => {
       const chip = document.createElement("div");
       chip.className = "fav-chip";
-      chip.innerHTML = `<div class="fc-name">${f.name}</div><div class="fc-detail">${f.weight_g}g · ${f.calories} kcal</div>`;
+      chip.innerHTML = `<div class="fc-name">${f.name}</div><div class="fc-detail">${f.weight_g}g · ${formatEnergy(f.calories)}</div>`;
       chip.onclick = () => selectFavorite(f);
       row.appendChild(chip);
     });
@@ -642,7 +642,7 @@
       if (data.status === 1 && data.product){
         const n = data.product.nutriments || {};
         document.getElementById("cf-name").value = data.product.product_name || "";
-        if (n["energy-kcal_100g"] != null) document.getElementById("cf-cal").value = Math.round(n["energy-kcal_100g"]);
+        if (n["energy-kcal_100g"] != null) document.getElementById("cf-cal").value = Math.round(kcalToDisplayEnergy(n["energy-kcal_100g"]));
         if (n["proteins_100g"] != null) document.getElementById("cf-protein").value = n["proteins_100g"];
         if (n["carbohydrates_100g"] != null) document.getElementById("cf-carbs").value = n["carbohydrates_100g"];
         if (n["fat_100g"] != null) document.getElementById("cf-fat").value = n["fat_100g"];
@@ -686,7 +686,7 @@
     matches.forEach(f => {
       const row = document.createElement("div");
       row.className = "food-result-item";
-      row.innerHTML = `<div class="food-result-name">${f.name}</div><div class="food-result-kcal">${f.calories_per_100g} kcal/100g</div>`;
+      row.innerHTML = `<div class="food-result-name">${f.name}</div><div class="food-result-kcal">${Math.round(kcalToDisplayEnergy(f.calories_per_100g))} ${energyUnitLabel()}/100g</div>`;
       row.onclick = () => selectFood(f);
       resultsEl.appendChild(row);
     });
@@ -708,7 +708,7 @@
 
     document.getElementById("selected-food-name").textContent = food.name;
     document.getElementById("selected-food-macros").textContent =
-      `${food.calories_per_100g} kcal · ${food.protein_per_100g}g P · ${food.carbs_per_100g}g G · ${food.fat_per_100g}g L (/100g)`;
+      `${Math.round(kcalToDisplayEnergy(food.calories_per_100g))} ${energyUnitLabel()} · ${food.protein_per_100g}g P · ${food.carbs_per_100g}g G · ${food.fat_per_100g}g L (/100g)`;
     document.getElementById("selected-food-box").style.display = "flex";
 
     document.getElementById("weight-section").style.display = "block";
@@ -735,7 +735,8 @@
 
   async function saveCustomFood(){
     const name = document.getElementById("cf-name").value.trim();
-    const cal = parseFloat(document.getElementById("cf-cal").value);
+    const calInput = parseFloat(document.getElementById("cf-cal").value);
+    const cal = displayEnergyToKcal(calInput);
     if (!name || isNaN(cal)){
       alert("Renseigne au moins le nom et les calories pour 100g.");
       return;
@@ -769,7 +770,7 @@
       return;
     }
     const ratio = weight / 100;
-    document.getElementById("cp-cal").textContent = Math.round(selectedFood.calories_per_100g * ratio);
+    document.getElementById("cp-cal").textContent = Math.round(kcalToDisplayEnergy(selectedFood.calories_per_100g * ratio));
     document.getElementById("cp-protein").textContent = (selectedFood.protein_per_100g * ratio).toFixed(1) + " g";
     document.getElementById("cp-carbs").textContent = (selectedFood.carbs_per_100g * ratio).toFixed(1) + " g";
     document.getElementById("cp-fat").textContent = (selectedFood.fat_per_100g * ratio).toFixed(1) + " g";
@@ -818,7 +819,7 @@
 
       const header = document.createElement("div");
       header.className = "meal-group-header";
-      header.innerHTML = `<div class="meal-group-title">${group.label}</div><div class="meal-group-kcal">${items.length ? totalKcal.toLocaleString("fr-FR") + " kcal" : "Pas encore ajouté"}</div>`;
+      header.innerHTML = `<div class="meal-group-title">${group.label}</div><div class="meal-group-kcal">${items.length ? formatEnergy(totalKcal) : "Pas encore ajouté"}</div>`;
       groupEl.appendChild(header);
 
       items.forEach(m => {
@@ -833,7 +834,7 @@
             <div class="food-name">${m.name}</div>
             <div class="food-detail">${weightLabel}</div>
           </div>
-          <div class="food-kcal">${m.calories} kcal</div>
+          <div class="food-kcal">${formatEnergy(m.calories)}</div>
           <button class="food-fav ${isFav ? "active" : ""}" onclick="toggleFavoriteFromMeal('${m.id}')" title="${isFav ? "Retirer des favoris" : "Ajouter aux favoris"}">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="${isFav ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 2 3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
           </button>
@@ -889,10 +890,10 @@
     const remaining = Math.max(0, calorieGoal - consumed);
 
     document.getElementById("big-ring-fg").style.strokeDashoffset = BIG_RING_CIRC * (1 - Math.min(1, consumed / calorieGoal));
-    document.getElementById("remaining-num").textContent = remaining.toLocaleString("fr-FR");
-    document.getElementById("remaining-lbl").innerHTML = `kcal restantes<br>sur ${calorieGoal.toLocaleString("fr-FR")}`;
-    document.getElementById("goal-v").textContent = calorieGoal.toLocaleString("fr-FR");
-    document.getElementById("consumed-v").textContent = consumed.toLocaleString("fr-FR");
+    document.getElementById("remaining-num").textContent = Math.round(kcalToDisplayEnergy(remaining)).toLocaleString("fr-FR");
+    document.getElementById("remaining-lbl").innerHTML = `${energyUnitLabel()} restantes<br>sur ${Math.round(kcalToDisplayEnergy(calorieGoal)).toLocaleString("fr-FR")}`;
+    document.getElementById("goal-v").textContent = formatEnergy(calorieGoal);
+    document.getElementById("consumed-v").textContent = formatEnergy(consumed);
 
     setMacro("protein", protein, proteinGoal);
     setMacro("carbs", carbs, carbsGoal);
@@ -905,6 +906,8 @@
   (async function init(){
     const user = await requireAuth();
     if (!user) return;
+    document.getElementById("cp-cal-lbl").textContent = energyUnitLabel();
+    document.getElementById("cf-cal-label").textContent = `${energyUnitLabel()} / 100g`;
     await loadFoodLibrary();
     await loadFavorites();
     await loadCalories();
