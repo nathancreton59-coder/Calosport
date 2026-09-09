@@ -113,6 +113,22 @@
   .heatmap-legend .heatmap-cell{ width:11px; height:11px; }
   .heatmap-count{ font-family:'Unbounded'; font-weight:700; font-size:19px; }
 
+  /* ---------- bilan mensuel + serie en cours ---------- */
+  .quick-row{ display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
+  .quick-row .card{ flex:1; min-width:220px; margin-bottom:0; }
+  .report-link-card{ display:flex; align-items:center; justify-content:space-between; gap:14px; cursor:pointer; transition: border-color .15s ease; }
+  .report-link-card:hover{ border-color: var(--volt); }
+  .report-link-icon{
+    width:44px; height:44px; border-radius:14px; background: var(--volt-dim);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .report-link-chevron{ color: var(--text-muted); flex-shrink:0; }
+  .streak-card{ display:flex; align-items:center; gap:14px; }
+  .streak-icon{
+    width:44px; height:44px; border-radius:14px; background: var(--flame-dim);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+
   /* ---------- tendances ---------- */
   .trends-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:16px; }
   .trend-card{
@@ -186,6 +202,31 @@
   <div class="main-inner">
     <div class="page-title">Progression</div>
     <div class="page-sub">Ton évolution dans le temps — poids, calories et charges soulevées.</div>
+
+    <div class="quick-row">
+      <div class="card report-link-card" onclick="window.location.href='monthly-report.html'">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="report-link-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V9M13 17v-5M17 17v-9M4 4h16v16H4z"/></svg>
+          </div>
+          <div>
+            <div class="card-title">Bilan mensuel</div>
+            <div class="card-delta">Exercices les plus améliorés, répartition musculaire…</div>
+          </div>
+        </div>
+        <svg class="report-link-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </div>
+      <div class="card streak-card">
+        <div class="streak-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF7A59" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+        </div>
+        <div>
+          <div class="card-title">Série en cours</div>
+          <div class="card-stat flame" id="streak-value">—</div>
+          <div class="card-delta" id="streak-sub"></div>
+        </div>
+      </div>
+    </div>
 
     <div class="card">
       <div class="card-top">
@@ -674,12 +715,36 @@
     document.getElementById("trend-sets").innerHTML = `${curSets} ${trendArrow(curSets, prevSets)}`;
   }
 
+  // ---------- serie en cours (streak) ----------
+  async function renderStreak(){
+    const datesSet = new Set(COMPLETED_WORKOUTS.map(w => w.date));
+    let cursor = new Date();
+    if (!datesSet.has(cursor.toISOString().slice(0, 10))){
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    let streak = 0;
+    while (datesSet.has(cursor.toISOString().slice(0, 10))){
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    const { data: profile } = await supabaseClient
+      .from("profiles").select("weekly_workout_goal").eq("id", currentUser.id).single();
+    const target = profile?.weekly_workout_goal || 3;
+
+    document.getElementById("streak-value").textContent = `${streak} jour${streak > 1 ? "s" : ""}`;
+    document.getElementById("streak-sub").textContent = streak === 0
+      ? `Objectif : ${target} jours d'affilée`
+      : `${Math.min(streak, target)} / ${target} — ${streak >= target ? "objectif atteint 🔥" : "continue !"}`;
+  }
+
   (async function init(){
     const user = await requireAuth();
     if (!user) return;
     await loadWorkoutStatsData();
     renderHeatmap();
     renderTrends();
+    await renderStreak();
     await loadWeightChart();
     await loadCalChart();
     await loadExerciseProgress();

@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Bilan mensuel — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #12161B; --surface: #1B2128; --surface-2: #222A32;
+    --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+    --lime: #D4F252; --lime-dim: #3A4420;
+    --flame: #FF7A59; --flame-dim: #3D2620;
+    --volt: #6FA8FF; --volt-dim: #202B3D;
+    --grape: #A78BFA; --grape-dim: #2E2440;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+  body{ display:flex; min-height:100vh; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width: 264px; flex-shrink:0;
+    background: var(--bg); border-right:1px solid var(--line);
+    padding: 28px 18px; display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{ display:flex; align-items:center; gap:12px; padding: 6px 10px 30px; }
+  .brand-mark{
+    width:38px; height:38px; border-radius:12px; background:var(--lime);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-name{ font-family:'Unbounded'; font-weight:700; font-size:14.5px; line-height:1.25; }
+  .brand-name span{ display:block; font-family:'Inter'; font-weight:600; font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .sidebar-nav{ display:flex; flex-direction:column; gap:4px; }
+  .sidebar-link{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:13px;
+    color: var(--text-muted); text-decoration:none; font-weight:600; font-size:14px;
+  }
+  .sidebar-link .dot{ width:7px; height:7px; border-radius:50%; background: var(--text-muted); flex-shrink:0; }
+  .sidebar-link.active{ background: var(--surface); color: var(--text); }
+  .sidebar-link.home.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
+  .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
+  .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.calendar.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
+  .sidebar-link.library.active .dot, .sidebar-link.progress.active .dot{ background: var(--text); }
+
+  .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
+  .sidebar-logout{
+    width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:13px;
+    background:none; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .sidebar-logout:hover{ background: var(--surface); color: var(--flame); }
+
+  /* ---------- main ---------- */
+  .main{ flex:1; padding: 48px 56px 100px; min-width:0; }
+  .main-inner{ max-width: 900px; }
+
+  .page-head{ display:flex; align-items:center; gap:14px; margin-bottom:8px; }
+  .back-link{
+    width:38px; height:38px; border-radius:12px; background: var(--surface); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; color: var(--lime); flex-shrink:0; text-decoration:none;
+  }
+  .back-link:hover{ border-color: var(--lime); }
+  .page-title{ font-family:'Unbounded'; font-weight:700; font-size:28px; }
+  .page-sub{ font-size:13.5px; color:var(--text-muted); margin: 4px 0 24px 52px; }
+
+  /* ---------- barre de mois ---------- */
+  .month-bar{
+    display:flex; align-items:center; justify-content:center; gap:14px;
+    background: var(--surface); border:1px solid var(--line); border-radius:18px;
+    padding:12px 16px; margin-bottom:20px;
+  }
+  .month-btn{
+    width:34px; height:34px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .month-btn:hover{ border-color:var(--volt); color:var(--volt); }
+  .month-label{ font-family:'Unbounded'; font-weight:700; font-size:16px; min-width:170px; text-align:center; text-transform:capitalize; }
+
+  /* ---------- stats globales ---------- */
+  .stat-row{ display:flex; gap:16px; margin-bottom:20px; }
+  .stat-box{
+    flex:1; background: var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px; text-align:center;
+  }
+  .stat-box .v{ font-family:'Unbounded'; font-weight:800; font-size:24px; }
+  .stat-box .k{ font-size:12px; color:var(--text-muted); margin-top:4px; }
+
+  .card{ background: var(--surface); border:1px solid var(--line); border-radius:22px; padding:24px; margin-bottom:20px; }
+  .card-title{ font-weight:700; font-size:15.5px; margin-bottom:4px; }
+  .card-sub{ font-size:12px; color:var(--text-muted); margin-bottom:16px; }
+
+  /* ---------- le plus ameliore ---------- */
+  .improve-item{
+    display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .improve-item:last-child{ border-bottom:none; padding-bottom:0; }
+  .improve-icon{
+    width:42px; height:42px; border-radius:13px; background: var(--volt-dim); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .improve-name{ font-weight:700; font-size:13.5px; }
+  .improve-detail{ font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+  .improve-pct{ font-family:'Unbounded'; font-weight:700; font-size:15px; color: #6EE787; flex-shrink:0; margin-left:auto; }
+
+  .empty-state{ text-align:center; padding:30px 10px; color: var(--text-muted); font-size:12.5px; }
+
+  /* ---------- repartition musculaire ---------- */
+  .card-top-row{ display:flex; align-items:center; justify-content:space-between; margin-bottom:4px; flex-wrap:wrap; gap:10px; }
+  .toggle-group{ display:flex; gap:6px; }
+  .toggle-btn{
+    padding:7px 12px; border-radius:10px; border:1px solid var(--line); background:var(--bg);
+    color:var(--text-muted); font-weight:700; font-size:11.5px; cursor:pointer;
+  }
+  .toggle-btn.active{ background: var(--volt); border-color: var(--volt); color:#12161B; }
+
+  .muscle-table{ margin-top:16px; }
+  .muscle-row{ display:flex; align-items:center; gap:12px; padding:9px 0; }
+  .muscle-name{ width:110px; flex-shrink:0; font-size:13px; font-weight:600; }
+  .muscle-bar-wrap{ flex:1; height:9px; border-radius:5px; background: var(--surface-2); overflow:hidden; }
+  .muscle-bar{ height:100%; border-radius:5px; background: var(--lime); }
+  .muscle-val{ width:52px; flex-shrink:0; text-align:right; font-size:12.5px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+
+  .radar-wrap{ margin-top:20px; display:flex; justify-content:center; }
+
+  @media (max-width: 720px){
+    .stat-row{ flex-direction:column; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-mark">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </div>
+    <div class="brand-name">Suivi Fitness<span>Calories & sport</span></div>
+  </div>
+
+  <div class="sidebar-nav">
+    <a class="sidebar-link home" href="index.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      Accueil
+    </a>
+    <a class="sidebar-link cal" href="calories.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+      Calories
+    </a>
+    <a class="sidebar-link sport" href="sport.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="2.3" height="6" rx="1"/><rect x="4.3" y="7" width="2" height="10" rx="1"/><line x1="7.3" y1="12" x2="16.7" y2="12"/><rect x="17.7" y="7" width="2" height="10" rx="1"/><rect x="20.2" y="9" width="2.3" height="6" rx="1"/></svg>
+      Sport
+    </a>
+    <a class="sidebar-link calendar" href="calendar.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendrier
+    </a>
+    <a class="sidebar-link progress active" href="progress.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Progression
+    </a>
+    <a class="sidebar-link library" href="library.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Bibliothèques
+    </a>
+    <a class="sidebar-link settings" href="settings.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+      Réglages
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-logout" onclick="logout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Déconnexion
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+    <div class="page-head">
+      <a class="back-link" href="progress.html">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </a>
+      <div class="page-title">Rapport mensuel</div>
+    </div>
+    <div class="page-sub">Le détail de ta progression sur le mois sélectionné.</div>
+
+    <div class="month-bar">
+      <button class="month-btn" onclick="changeMonth(-1)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+      </button>
+      <div class="month-label" id="month-label">—</div>
+      <button class="month-btn" onclick="changeMonth(1)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+      </button>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat-box">
+        <div class="v" id="stat-volume">—</div>
+        <div class="k">Volume total (kg)</div>
+      </div>
+      <div class="stat-box">
+        <div class="v" id="stat-sets">—</div>
+        <div class="k">Séries réalisées</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Le plus amélioré</div>
+      <div class="card-sub">1RM estimé — comparaison entre ta première et ta dernière séance du mois</div>
+      <div id="improve-list"><div class="empty-state">Chargement…</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top-row">
+        <div>
+          <div class="card-title">Répartition musculaire</div>
+          <div class="card-sub" style="margin-bottom:0;">Volume et séries par groupe musculaire ce mois-ci</div>
+        </div>
+        <div class="toggle-group">
+          <div class="toggle-btn active" id="metric-sets" onclick="setMetric('sets')">Séries</div>
+          <div class="toggle-btn" id="metric-volume" onclick="setMetric('volume')">Volume</div>
+        </div>
+      </div>
+      <div class="muscle-table" id="muscle-table"></div>
+      <div class="radar-wrap" id="radar-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  const MONTH_NAMES = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  let viewYear, viewMonth;
+  let currentMetric = "sets"; // "sets" | "volume"
+  let MUSCLE_STATS = {}; // muscle -> { days:Set, sets:Number, volume:Number }
+
+  function changeMonth(delta){
+    viewMonth += delta;
+    if (viewMonth < 0){ viewMonth = 11; viewYear--; }
+    if (viewMonth > 11){ viewMonth = 0; viewYear++; }
+    loadReport();
+  }
+
+  function setMetric(metric){
+    currentMetric = metric;
+    document.getElementById("metric-sets").classList.toggle("active", metric === "sets");
+    document.getElementById("metric-volume").classList.toggle("active", metric === "volume");
+    renderMuscleSection();
+  }
+
+  async function loadReport(){
+    document.getElementById("month-label").textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+    document.getElementById("improve-list").innerHTML = '<div class="empty-state">Chargement…</div>';
+    document.getElementById("muscle-table").innerHTML = "";
+    document.getElementById("radar-wrap").innerHTML = "";
+
+    const monthStart = new Date(viewYear, viewMonth, 1);
+    const monthEnd = new Date(viewYear, viewMonth + 1, 1);
+
+    const { data: workouts } = await supabaseClient
+      .from("workouts").select("id, scheduled_at")
+      .eq("user_id", currentUser.id).eq("completed", true)
+      .gte("scheduled_at", monthStart.toISOString()).lt("scheduled_at", monthEnd.toISOString());
+
+    const workoutList = workouts || [];
+    const workoutDateById = {};
+    workoutList.forEach(w => { if (w.scheduled_at) workoutDateById[w.id] = w.scheduled_at.slice(0, 10); });
+    const workoutIds = workoutList.map(w => w.id);
+
+    if (!workoutIds.length){
+      document.getElementById("stat-volume").textContent = "0";
+      document.getElementById("stat-sets").textContent = "0";
+      document.getElementById("improve-list").innerHTML = '<div class="empty-state">Aucune séance terminée ce mois-ci.</div>';
+      MUSCLE_STATS = {};
+      renderMuscleSection();
+      return;
+    }
+
+    const { data: exercises } = await supabaseClient
+      .from("exercises").select("id, name, workout_id, exercise_library_id").in("workout_id", workoutIds);
+    const exerciseList = exercises || [];
+    const exoIds = exerciseList.map(e => e.id);
+
+    const libIds = [...new Set(exerciseList.map(e => e.exercise_library_id).filter(Boolean))];
+    let libMap = {};
+    if (libIds.length){
+      const { data: lib } = await supabaseClient.from("exercise_library").select("id, muscle_group").in("id", libIds);
+      (lib || []).forEach(l => { libMap[l.id] = l.muscle_group || "Autre"; });
+    }
+
+    const exoMeta = {};
+    exerciseList.forEach(e => {
+      exoMeta[e.id] = {
+        name: e.name,
+        date: workoutDateById[e.workout_id],
+        muscle: e.exercise_library_id ? (libMap[e.exercise_library_id] || "Autre") : "Autre",
+      };
+    });
+
+    let sets = [];
+    if (exoIds.length){
+      const { data: setData } = await supabaseClient
+        .from("workout_sets").select("exercise_id, weight_kg, reps, is_warmup, completed")
+        .in("exercise_id", exoIds).eq("is_warmup", false).eq("completed", true)
+        .not("weight_kg", "is", null).not("reps", "is", null);
+      sets = setData || [];
+    }
+
+    let totalVolume = 0, totalSets = 0;
+    const byExoName = {}; // name -> [{date, oneRM}]
+    MUSCLE_STATS = {}; // muscle -> {days:Set, sets, volume}
+
+    sets.forEach(s => {
+      const meta = exoMeta[s.exercise_id];
+      if (!meta || !meta.date) return;
+      const vol = s.weight_kg * s.reps;
+      totalVolume += vol;
+      totalSets++;
+
+      const oneRM = s.weight_kg * (1 + s.reps / 30);
+      byExoName[meta.name] = byExoName[meta.name] || [];
+      byExoName[meta.name].push({ date: meta.date, oneRM });
+
+      const m = meta.muscle;
+      if (!MUSCLE_STATS[m]) MUSCLE_STATS[m] = { days: new Set(), sets: 0, volume: 0 };
+      MUSCLE_STATS[m].days.add(meta.date);
+      MUSCLE_STATS[m].sets++;
+      MUSCLE_STATS[m].volume += vol;
+    });
+
+    document.getElementById("stat-volume").textContent = Math.round(totalVolume).toLocaleString("fr-FR");
+    document.getElementById("stat-sets").textContent = totalSets;
+
+    // ---- Le plus ameliore ----
+    const improvements = [];
+    Object.keys(byExoName).forEach(name => {
+      const entries = byExoName[name];
+      const dates = [...new Set(entries.map(e => e.date))].sort();
+      if (dates.length < 2) return;
+      const firstDate = dates[0], lastDate = dates[dates.length - 1];
+      const firstBest = Math.max(...entries.filter(e => e.date === firstDate).map(e => e.oneRM));
+      const lastBest = Math.max(...entries.filter(e => e.date === lastDate).map(e => e.oneRM));
+      if (firstBest <= 0) return;
+      const pct = ((lastBest - firstBest) / firstBest) * 100;
+      if (pct > 0.5) improvements.push({ name, first: firstBest, last: lastBest, pct });
+    });
+    improvements.sort((a, b) => b.pct - a.pct);
+    const top5 = improvements.slice(0, 5);
+
+    const improveList = document.getElementById("improve-list");
+    if (!top5.length){
+      improveList.innerHTML = '<div class="empty-state">Pas encore assez de données ce mois-ci pour mesurer une progression (il faut au moins 2 séances sur un même exercice).</div>';
+    } else {
+      improveList.innerHTML = top5.map(it => `
+        <div class="improve-item">
+          <div class="improve-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="2.3" height="6" rx="1"/><rect x="4.3" y="7" width="2" height="10" rx="1"/><line x1="7.3" y1="12" x2="16.7" y2="12"/><rect x="17.7" y="7" width="2" height="10" rx="1"/><rect x="20.2" y="9" width="2.3" height="6" rx="1"/></svg>
+          </div>
+          <div>
+            <div class="improve-name">${escapeHtml(it.name)}</div>
+            <div class="improve-detail">${Math.round(it.first)} → ${Math.round(it.last)} kg 1RM estimé</div>
+          </div>
+          <div class="improve-pct">+${Math.round(it.pct)}%</div>
+        </div>`).join("");
+    }
+
+    renderMuscleSection();
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function renderMuscleSection(){
+    const muscles = Object.keys(MUSCLE_STATS);
+    const tableEl = document.getElementById("muscle-table");
+    const radarEl = document.getElementById("radar-wrap");
+
+    if (!muscles.length){
+      tableEl.innerHTML = '<div class="empty-state">Aucune donnée musculaire ce mois-ci.</div>';
+      radarEl.innerHTML = "";
+      return;
+    }
+
+    const rows = muscles.map(m => ({
+      name: m,
+      days: MUSCLE_STATS[m].days.size,
+      value: currentMetric === "sets" ? MUSCLE_STATS[m].sets : Math.round(MUSCLE_STATS[m].volume),
+    })).sort((a, b) => b.value - a.value);
+
+    const maxVal = Math.max(1, ...rows.map(r => r.value));
+    const unit = currentMetric === "sets" ? "" : " kg";
+
+    tableEl.innerHTML = rows.map(r => `
+      <div class="muscle-row">
+        <div class="muscle-name">${escapeHtml(r.name)}</div>
+        <div class="muscle-bar-wrap"><div class="muscle-bar" style="width:${(r.value / maxVal * 100).toFixed(1)}%;"></div></div>
+        <div class="muscle-val">${r.value.toLocaleString("fr-FR")}${unit}</div>
+      </div>`).join("");
+
+    radarEl.innerHTML = radarChartSvg(rows.map(r => ({ label: r.name, value: r.value })));
+  }
+
+  // ---------- radar chart maison (SVG) ----------
+  function radarChartSvg(points){
+    if (points.length < 3){
+      // pas assez d'axes pour un radar lisible -> pas de graphique, le tableau suffit
+      return "";
+    }
+    const size = 320, center = size / 2, radius = 108;
+    const n = points.length;
+    const maxVal = Math.max(1, ...points.map(p => p.value));
+
+    const angleFor = i => -Math.PI / 2 + (i * 2 * Math.PI) / n;
+
+    // grilles concentriques
+    const rings = [0.25, 0.5, 0.75, 1].map(frac => {
+      const pts = points.map((_, i) => {
+        const a = angleFor(i);
+        const r = radius * frac;
+        return `${(center + r * Math.cos(a)).toFixed(1)},${(center + r * Math.sin(a)).toFixed(1)}`;
+      }).join(" ");
+      return `<polygon points="${pts}" fill="none" stroke="#2A323B" stroke-width="1"/>`;
+    }).join("");
+
+    // axes
+    const axes = points.map((_, i) => {
+      const a = angleFor(i);
+      const x = center + radius * Math.cos(a), y = center + radius * Math.sin(a);
+      return `<line x1="${center}" y1="${center}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#2A323B" stroke-width="1"/>`;
+    }).join("");
+
+    // polygone de donnees
+    const dataCoords = points.map((p, i) => {
+      const a = angleFor(i);
+      const r = (p.value / maxVal) * radius;
+      return { x: center + r * Math.cos(a), y: center + r * Math.sin(a) };
+    });
+    const dataPath = dataCoords.map(c => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+    const dots = dataCoords.map(c => `<circle cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="3" fill="#A78BFA"/>`).join("");
+
+    // labels
+    const labels = points.map((p, i) => {
+      const a = angleFor(i);
+      const lr = radius + 20;
+      const x = center + lr * Math.cos(a), y = center + lr * Math.sin(a);
+      const anchor = Math.abs(Math.cos(a)) < 0.2 ? "middle" : (Math.cos(a) > 0 ? "start" : "end");
+      return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="10.5" fill="#8A93A0" font-family="Inter" text-anchor="${anchor}" dominant-baseline="middle">${escapeHtml(p.label)}</text>`;
+    }).join("");
+
+    return `
+      <svg viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+        ${rings}
+        ${axes}
+        <polygon points="${dataPath}" fill="#A78BFA" fill-opacity="0.35" stroke="#A78BFA" stroke-width="2"/>
+        ${dots}
+        ${labels}
+      </svg>`;
+  }
+
+  (async function init(){
+    const user = await requireAuth();
+    if (!user) return;
+    const now = new Date();
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+    await loadReport();
+  })();
+</script>
+</body>
+</html>
