@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Calendrier — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #12161B; --surface: #1B2128; --surface-2: #222A32;
+    --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+    --lime: #D4F252; --lime-dim: #3A4420;
+    --flame: #FF7A59; --flame-dim: #3D2620;
+    --volt: #6FA8FF; --volt-dim: #202B3D;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+  body{ display:flex; min-height:100vh; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width: 264px; flex-shrink:0;
+    background: var(--bg); border-right:1px solid var(--line);
+    padding: 28px 18px; display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{ display:flex; align-items:center; gap:12px; padding: 6px 10px 30px; }
+  .brand-mark{
+    width:38px; height:38px; border-radius:12px; background:var(--lime);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-name{ font-family:'Unbounded'; font-weight:700; font-size:14.5px; line-height:1.25; }
+  .brand-name span{ display:block; font-family:'Inter'; font-weight:600; font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .sidebar-nav{ display:flex; flex-direction:column; gap:4px; }
+  .sidebar-link{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:13px;
+    color: var(--text-muted); text-decoration:none; font-weight:600; font-size:14px;
+  }
+  .sidebar-link .dot{ width:7px; height:7px; border-radius:50%; background: var(--text-muted); flex-shrink:0; }
+  .sidebar-link.active{ background: var(--surface); color: var(--text); }
+  .sidebar-link.home.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
+  .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
+  .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.calendar.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
+  .sidebar-link.library.active .dot, .sidebar-link.progress.active .dot{ background: var(--text); }
+
+  .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
+  .sidebar-logout{
+    width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:13px;
+    background:none; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .sidebar-logout:hover{ background: var(--surface); color: var(--flame); }
+
+  /* ---------- main ---------- */
+  .main{ flex:1; padding: 48px 56px 100px; min-width:0; }
+  .main-inner{ max-width: 980px; }
+  .page-title{ font-family:'Unbounded'; font-weight:700; font-size:32px; margin-bottom:8px; }
+  .page-sub{ font-size:13.5px; color:var(--text-muted); margin-bottom:28px; }
+
+  /* ---------- barre de navigation mois ---------- */
+  .month-bar{
+    display:flex; align-items:center; justify-content:space-between;
+    background: var(--surface); border:1px solid var(--line); border-radius:20px;
+    padding:14px 16px; margin-bottom:20px;
+  }
+  .month-nav{ display:flex; align-items:center; gap:10px; }
+  .month-btn{
+    width:36px; height:36px; border-radius:11px; border:1px solid var(--line); background:var(--surface-2);
+    color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .month-btn:hover{ border-color:var(--volt); color:var(--volt); }
+  .month-label{ font-family:'Unbounded'; font-weight:700; font-size:17px; min-width:170px; text-align:center; text-transform:capitalize; }
+  .today-btn{
+    border:1px solid var(--line); background:var(--surface-2); color:var(--text-muted);
+    font-family:'Inter'; font-weight:700; font-size:12px; padding:9px 14px; border-radius:11px; cursor:pointer;
+  }
+  .today-btn:hover{ color:var(--text); border-color:var(--text-muted); }
+
+  .month-stats{ display:flex; gap:18px; }
+  .month-stat{ text-align:right; }
+  .month-stat .v{ font-family:'Unbounded'; font-weight:700; font-size:16px; }
+  .month-stat.lime .v{ color:var(--lime); }
+  .month-stat.volt .v{ color:var(--volt); }
+  .month-stat .k{ font-size:10.5px; color:var(--text-muted); margin-top:1px; }
+
+  /* ---------- grille calendrier ---------- */
+  .cal-card{ background: var(--surface); border:1px solid var(--line); border-radius:22px; padding:20px; }
+  .cal-weekdays{
+    display:grid; grid-template-columns: repeat(7, 1fr); gap:8px;
+    margin-bottom:8px; padding: 0 2px;
+  }
+  .cal-weekdays div{ text-align:center; font-size:11px; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.04em; }
+
+  .cal-grid{ display:grid; grid-template-columns: repeat(7, 1fr); gap:8px; }
+  .cal-day{
+    position:relative; background: var(--surface-2); border:1px solid var(--line); border-radius:14px;
+    min-height:92px; padding:8px; cursor:pointer; display:flex; flex-direction:column; gap:6px;
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .cal-day:hover{ border-color: var(--volt); }
+  .cal-day.other-month{ opacity:0.35; }
+  .cal-day.is-today{ border-color: var(--lime); box-shadow: inset 0 0 0 1px var(--lime); }
+  .cal-day-num{ font-family:'Unbounded'; font-weight:700; font-size:13px; color:var(--text); }
+  .cal-day.is-today .cal-day-num{ color: var(--lime); }
+  .cal-day-badges{ display:flex; flex-direction:column; gap:3px; }
+  .cal-badge{
+    font-size:10px; font-weight:700; padding:3px 6px; border-radius:7px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    display:flex; align-items:center; gap:4px;
+  }
+  .cal-badge .pip{ width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+  .cal-badge.done{ background: var(--lime-dim); color: var(--lime); }
+  .cal-badge.done .pip{ background: var(--lime); }
+  .cal-badge.planned{ background: var(--volt-dim); color: var(--volt); }
+  .cal-badge.planned .pip{ background: var(--volt); }
+  .cal-badge.more{ background: var(--line); color: var(--text-muted); }
+
+  .cal-legend{ display:flex; gap:18px; margin-top:16px; font-size:11.5px; color:var(--text-muted); }
+  .cal-legend .item{ display:flex; align-items:center; gap:7px; }
+  .cal-legend .pip{ width:8px; height:8px; border-radius:50%; }
+  .cal-legend .pip.lime{ background:var(--lime); }
+  .cal-legend .pip.volt{ background:var(--volt); }
+
+  @media (max-width: 720px){
+    .cal-day{ min-height:70px; padding:6px; }
+    .cal-badge{ font-size:9px; padding:2px 5px; }
+    .month-stats{ display:none; }
+  }
+
+  /* ---------- modal jour ---------- */
+  .modal-overlay{
+    position:fixed; inset:0; background:rgba(5,7,9,0.65); backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center; padding:20px; z-index:50;
+  }
+  .modal-overlay.open{ display:flex; }
+  .modal-sheet{
+    width:100%; max-width:460px; background: var(--bg); border:1px solid var(--line);
+    border-radius:22px; padding:24px; max-height:82vh; overflow-y:auto;
+  }
+  .modal-title{ font-family:'Unbounded'; font-weight:700; font-size:17px; margin-bottom:4px; text-transform:capitalize; }
+  .modal-sub{ font-size:12px; color:var(--text-muted); margin-bottom:18px; }
+
+  .day-workout{
+    background: var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:14px; margin-bottom:10px;
+  }
+  .day-workout-top{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:6px; }
+  .day-workout-name{ font-weight:700; font-size:14px; }
+  .day-workout-status{
+    font-size:10px; font-weight:700; padding:3px 8px; border-radius:8px; flex-shrink:0;
+  }
+  .day-workout-status.done{ background: var(--lime-dim); color: var(--lime); }
+  .day-workout-status.planned{ background: var(--volt-dim); color: var(--volt); }
+  .day-workout-meta{ font-size:11.5px; color:var(--text-muted); margin-bottom:10px; }
+  .day-workout-actions{ display:flex; gap:8px; }
+  .dw-btn{
+    flex:1; border:1px solid var(--line); background: var(--surface-2); color:var(--text);
+    font-family:'Inter'; font-weight:700; font-size:11.5px; padding:9px; border-radius:10px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .dw-btn:hover{ border-color: var(--volt); color:var(--volt); }
+  .dw-btn.danger:hover{ border-color: var(--flame); color:var(--flame); }
+
+  .day-empty{ text-align:center; padding:24px 10px; color:var(--text-muted); font-size:12.5px; }
+
+  .add-day-btn{
+    width:100%; border:1px dashed var(--line); background:none; color:var(--text-muted);
+    font-family:'Inter'; font-weight:700; font-size:12.5px; padding:12px; border-radius:14px; cursor:pointer;
+    margin-top:6px;
+  }
+  .add-day-btn:hover{ border-color: var(--lime); color: var(--lime); }
+
+  .modal-close{
+    width:100%; margin-top:14px; border:none; background: var(--surface); color:var(--text-muted);
+    font-family:'Inter'; font-weight:700; font-size:13px; padding:12px; border-radius:14px; cursor:pointer;
+  }
+
+  /* ---------- modal creation rapide ---------- */
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:11.5px; color:var(--text-muted); margin-bottom:7px; font-weight:600; }
+  .field input, .field select{
+    width:100%; background: var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:11px 13px; font-size:13.5px; color:var(--text); font-family:'Inter';
+  }
+  .field input:focus, .field select:focus{ outline:none; border-color: var(--volt); }
+  .row2{ display:flex; gap:10px; }
+  .row2 .field{ flex:1; }
+  .submit-btn{
+    width:100%; border:none; border-radius:14px; background: var(--lime); color:#12161B;
+    font-family:'Inter'; font-weight:700; font-size:14px; padding:13px; margin-top:4px; cursor:pointer;
+  }
+  .cancel-link{ text-align:center; margin-top:10px; }
+  .cancel-link a{ font-size:12px; color:var(--text-muted); cursor:pointer; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-mark">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    </div>
+    <div class="brand-name">Suivi Fitness<span>Calories & sport</span></div>
+  </div>
+
+  <div class="sidebar-nav">
+    <a class="sidebar-link home" href="index.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      Accueil
+    </a>
+    <a class="sidebar-link cal" href="calories.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+      Calories
+    </a>
+    <a class="sidebar-link sport" href="sport.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="2.3" height="6" rx="1"/><rect x="4.3" y="7" width="2" height="10" rx="1"/><line x1="7.3" y1="12" x2="16.7" y2="12"/><rect x="17.7" y="7" width="2" height="10" rx="1"/><rect x="20.2" y="9" width="2.3" height="6" rx="1"/></svg>
+      Sport
+    </a>
+    <a class="sidebar-link calendar active" href="calendar.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendrier
+    </a>
+    <a class="sidebar-link progress" href="progress.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Progression
+    </a>
+    <a class="sidebar-link library" href="library.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Bibliothèques
+    </a>
+    <a class="sidebar-link settings" href="settings.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+      Réglages
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-logout" onclick="logout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Déconnexion
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+    <div class="page-title">Calendrier</div>
+    <div class="page-sub">Vue mensuelle de tes séances planifiées et terminées.</div>
+
+    <div class="month-bar">
+      <div class="month-nav">
+        <button class="month-btn" onclick="changeMonth(-1)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <div class="month-label" id="month-label">—</div>
+        <button class="month-btn" onclick="changeMonth(1)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+        <button class="today-btn" onclick="goToday()">Aujourd'hui</button>
+      </div>
+      <div class="month-stats">
+        <div class="month-stat lime">
+          <div class="v" id="stat-done">—</div>
+          <div class="k">terminées</div>
+        </div>
+        <div class="month-stat volt">
+          <div class="v" id="stat-planned">—</div>
+          <div class="k">planifiées</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cal-card">
+      <div class="cal-weekdays">
+        <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+      <div class="cal-legend">
+        <div class="item"><div class="pip lime"></div>Séance terminée</div>
+        <div class="item"><div class="pip volt"></div>Séance planifiée</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal détail d'un jour -->
+<div class="modal-overlay" id="day-overlay">
+  <div class="modal-sheet">
+    <div class="modal-title" id="day-modal-title">—</div>
+    <div class="modal-sub" id="day-modal-sub"></div>
+    <div id="day-modal-body"></div>
+    <button type="button" class="add-day-btn" id="day-add-btn" onclick="openQuickAdd()">+ Ajouter une séance ce jour-là</button>
+    <button type="button" class="modal-close" onclick="closeDayModal()">Fermer</button>
+  </div>
+</div>
+
+<!-- Modal creation rapide -->
+<div class="modal-overlay" id="quickadd-overlay">
+  <div class="modal-sheet" style="max-width:400px;">
+    <div class="modal-title">Nouvelle séance</div>
+    <div class="modal-sub" id="quickadd-sub"></div>
+    <form onsubmit="submitQuickAdd(event)">
+      <div class="field">
+        <label>Nom de la séance</label>
+        <input type="text" id="qa-name" placeholder="Push day, Course à pied…" required>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Heure</label>
+          <input type="time" id="qa-time" value="18:00" required>
+        </div>
+        <div class="field">
+          <label>Durée (min)</label>
+          <input type="number" id="qa-duration" min="1" placeholder="60">
+        </div>
+      </div>
+      <div class="field">
+        <label>Type (optionnel)</label>
+        <input type="text" id="qa-type" placeholder="Musculation, Cardio…">
+      </div>
+      <button type="submit" class="submit-btn">Créer la séance</button>
+      <div class="cancel-link"><a onclick="closeQuickAdd()">Annuler</a></div>
+    </form>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  const MONTH_NAMES = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+  let viewYear, viewMonth; // viewMonth: 0-11
+  let monthWorkouts = [];
+  let selectedDateStr = null;
+
+  function pad(n){ return String(n).padStart(2, "0"); }
+  function dateKey(y,m,d){ return `${y}-${pad(m+1)}-${pad(d)}`; }
+
+  function changeMonth(delta){
+    viewMonth += delta;
+    if (viewMonth < 0){ viewMonth = 11; viewYear--; }
+    if (viewMonth > 11){ viewMonth = 0; viewYear++; }
+    loadMonth();
+  }
+
+  function goToday(){
+    const now = new Date();
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+    loadMonth();
+  }
+
+  async function loadMonth(){
+    document.getElementById("month-label").textContent = `${MONTH_NAMES[viewMonth]} ${viewYear}`;
+
+    const rangeStart = new Date(viewYear, viewMonth, 1);
+    const rangeEnd = new Date(viewYear, viewMonth + 1, 1);
+
+    const { data, error } = await supabaseClient
+      .from("workouts")
+      .select("id, name, workout_type, scheduled_at, completed, duration_min, calories_burned")
+      .eq("user_id", currentUser.id)
+      .gte("scheduled_at", rangeStart.toISOString())
+      .lt("scheduled_at", rangeEnd.toISOString())
+      .order("scheduled_at", { ascending: true });
+
+    if (error){ console.error(error); monthWorkouts = []; } else { monthWorkouts = data || []; }
+
+    document.getElementById("stat-done").textContent = monthWorkouts.filter(w => w.completed).length;
+    document.getElementById("stat-planned").textContent = monthWorkouts.filter(w => !w.completed).length;
+
+    renderGrid();
+  }
+
+  function workoutsByDay(){
+    const map = {};
+    monthWorkouts.forEach(w => {
+      if (!w.scheduled_at) return;
+      const d = new Date(w.scheduled_at);
+      const key = dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+      if (!map[key]) map[key] = [];
+      map[key].push(w);
+    });
+    return map;
+  }
+
+  function renderGrid(){
+    const grid = document.getElementById("cal-grid");
+    grid.innerHTML = "";
+    const byDay = workoutsByDay();
+
+    const firstOfMonth = new Date(viewYear, viewMonth, 1);
+    const startOffset = (firstOfMonth.getDay() + 6) % 7; // lundi = 0
+    const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+    const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
+
+    const todayKey = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
+    const cells = [];
+    // jours du mois précédent (grisés)
+    for (let i = startOffset - 1; i >= 0; i--){
+      const dayNum = daysInPrevMonth - i;
+      cells.push({ dayNum, other: true, y: viewMonth === 0 ? viewYear - 1 : viewYear, m: viewMonth === 0 ? 11 : viewMonth - 1 });
+    }
+    // jours du mois courant
+    for (let d = 1; d <= daysInMonth; d++){
+      cells.push({ dayNum: d, other: false, y: viewYear, m: viewMonth });
+    }
+    // completer jusqu'a un multiple de 7
+    let next = 1;
+    while (cells.length % 7 !== 0){
+      cells.push({ dayNum: next, other: true, y: viewMonth === 11 ? viewYear + 1 : viewYear, m: viewMonth === 11 ? 0 : viewMonth + 1 });
+      next++;
+    }
+
+    cells.forEach(c => {
+      const key = dateKey(c.y, c.m, c.dayNum);
+      const dayWorkouts = byDay[key] || [];
+      const cell = document.createElement("div");
+      cell.className = "cal-day" + (c.other ? " other-month" : "") + (key === todayKey ? " is-today" : "");
+      cell.onclick = () => openDayModal(key, c.y, c.m, c.dayNum);
+
+      let badgesHtml = "";
+      const shown = dayWorkouts.slice(0, 2);
+      shown.forEach(w => {
+        badgesHtml += `<div class="cal-badge ${w.completed ? "done" : "planned"}"><div class="pip"></div>${escapeHtml(w.name || "Séance")}</div>`;
+      });
+      if (dayWorkouts.length > 2){
+        badgesHtml += `<div class="cal-badge more">+${dayWorkouts.length - 2} autre${dayWorkouts.length - 2 > 1 ? "s" : ""}</div>`;
+      }
+
+      cell.innerHTML = `
+        <div class="cal-day-num">${c.dayNum}</div>
+        <div class="cal-day-badges">${badgesHtml}</div>`;
+      grid.appendChild(cell);
+    });
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  function openDayModal(key, y, m, d){
+    selectedDateStr = key;
+    const dateObj = new Date(y, m, d);
+    document.getElementById("day-modal-title").textContent =
+      dateObj.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+
+    const byDay = workoutsByDay();
+    const list = byDay[key] || [];
+    document.getElementById("day-modal-sub").textContent =
+      list.length ? `${list.length} séance${list.length > 1 ? "s" : ""}` : "Aucune séance ce jour-là";
+
+    const body = document.getElementById("day-modal-body");
+    if (!list.length){
+      body.innerHTML = `<div class="day-empty">Rien de prévu. Ajoute une séance ci-dessous.</div>`;
+    } else {
+      body.innerHTML = list.map(w => {
+        const time = w.scheduled_at ? new Date(w.scheduled_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "";
+        return `
+        <div class="day-workout">
+          <div class="day-workout-top">
+            <div class="day-workout-name">${escapeHtml(w.name || "Séance")}</div>
+            <div class="day-workout-status ${w.completed ? "done" : "planned"}">${w.completed ? "Terminée" : "Planifiée"}</div>
+          </div>
+          <div class="day-workout-meta">${time}${w.workout_type ? " · " + escapeHtml(w.workout_type) : ""}${w.duration_min ? " · " + w.duration_min + " min" : ""}${w.completed && w.calories_burned ? " · " + w.calories_burned + " kcal" : ""}</div>
+          <div class="day-workout-actions">
+            <button type="button" class="dw-btn" onclick="goToSport('${w.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>
+              Ouvrir dans Sport
+            </button>
+            <button type="button" class="dw-btn danger" onclick="deleteWorkoutFromCalendar('${w.id}')">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+              Supprimer
+            </button>
+          </div>
+        </div>`;
+      }).join("");
+    }
+
+    document.getElementById("day-overlay").classList.add("open");
+  }
+
+  function closeDayModal(){
+    document.getElementById("day-overlay").classList.remove("open");
+  }
+
+  function goToSport(workoutId){
+    window.location.href = `sport.html?edit=${workoutId}`;
+  }
+
+  async function deleteWorkoutFromCalendar(workoutId){
+    if (!confirm("Supprimer cette séance et tout ce qu'elle contient ?")) return;
+    const { error } = await supabaseClient.from("workouts").delete().eq("id", workoutId);
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadMonth();
+    if (selectedDateStr){
+      const [y,m,d] = selectedDateStr.split("-").map(Number);
+      openDayModal(selectedDateStr, y, m - 1, d);
+    }
+  }
+
+  function openQuickAdd(){
+    const [y,m,d] = selectedDateStr.split("-").map(Number);
+    const dateObj = new Date(y, m - 1, d);
+    document.getElementById("quickadd-sub").textContent =
+      dateObj.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+    document.getElementById("qa-name").value = "";
+    document.getElementById("qa-duration").value = "";
+    document.getElementById("qa-type").value = "";
+    document.getElementById("quickadd-overlay").classList.add("open");
+  }
+
+  function closeQuickAdd(){
+    document.getElementById("quickadd-overlay").classList.remove("open");
+  }
+
+  async function submitQuickAdd(e){
+    e.preventDefault();
+    const name = document.getElementById("qa-name").value.trim();
+    const time = document.getElementById("qa-time").value;
+    const duration = parseInt(document.getElementById("qa-duration").value) || null;
+    const type = document.getElementById("qa-type").value.trim();
+    if (!name || !selectedDateStr) return;
+
+    const scheduledAt = new Date(`${selectedDateStr}T${time}`).toISOString();
+    const { error } = await supabaseClient.from("workouts").insert({
+      user_id: currentUser.id,
+      name,
+      workout_type: type || null,
+      duration_min: duration,
+      scheduled_at: scheduledAt,
+      completed: false
+    });
+    if (error){ alert("Erreur : " + error.message); return; }
+
+    closeQuickAdd();
+    await loadMonth();
+    const [y,m,d] = selectedDateStr.split("-").map(Number);
+    openDayModal(selectedDateStr, y, m - 1, d);
+  }
+
+  (async function init(){
+    const user = await requireAuth();
+    if (!user) return;
+    const now = new Date();
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+    await loadMonth();
+  })();
+</script>
+</body>
+</html>
