@@ -128,6 +128,20 @@
   .heatmap-legend .heatmap-cell{ width:11px; height:11px; }
   .heatmap-count{ font-family:'Unbounded'; font-weight:700; font-size:19px; }
 
+  /* ---------- niveau / XP ---------- */
+  .level-card{ display:flex; align-items:center; gap:18px; }
+  .level-badge{
+    width:64px; height:64px; border-radius:18px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Unbounded'; font-weight:800; font-size:22px; color:#12161B;
+    background: var(--lvl-color, var(--lime));
+  }
+  .level-body{ flex:1; min-width:0; }
+  .level-name{ font-family:'Unbounded'; font-weight:700; font-size:16px; margin-bottom:8px; }
+  .level-bar-track{ height:9px; border-radius:5px; background: var(--surface-2); overflow:hidden; margin-bottom:8px; }
+  .level-bar-fill{ height:100%; border-radius:5px; background: var(--lvl-color, var(--lime)); width:0%; transition: width .4s ease; }
+  .level-sub{ font-size:12px; color: var(--text-muted); }
+
   /* ---------- bilan mensuel + serie en cours ---------- */
   .quick-row{ display:flex; gap:16px; margin-bottom:20px; flex-wrap:wrap; }
   .quick-row .card{ flex:1; min-width:220px; margin-bottom:0; }
@@ -217,6 +231,15 @@
   <div class="main-inner">
     <div class="page-title">Progression</div>
     <div class="page-sub">Ton évolution dans le temps — poids, calories et charges soulevées.</div>
+
+    <div class="card level-card">
+      <div class="level-badge" id="level-badge">—</div>
+      <div class="level-body">
+        <div class="level-name" id="level-name">—</div>
+        <div class="level-bar-track"><div class="level-bar-fill" id="level-bar-fill"></div></div>
+        <div class="level-sub" id="level-sub">—</div>
+      </div>
+    </div>
 
     <div class="quick-row">
       <div class="card report-link-card" onclick="window.location.href='monthly-report.html'">
@@ -735,6 +758,21 @@
     document.getElementById("trend-sets").innerHTML = `${curSets} ${trendArrow(curSets, prevSets)}`;
   }
 
+  // ---------- niveau / XP ----------
+  async function renderLevel(){
+    const { data: profile } = await supabaseClient
+      .from("profiles").select("xp_total").eq("id", currentUser.id).single();
+    const progress = getXpProgress(profile?.xp_total || 0);
+
+    document.getElementById("level-badge").textContent = progress.level;
+    document.getElementById("level-badge").style.setProperty("--lvl-color", progress.color);
+    document.getElementById("level-bar-fill").style.setProperty("--lvl-color", progress.color);
+    document.getElementById("level-name").textContent = progress.name;
+    document.getElementById("level-bar-fill").style.width = progress.pct + "%";
+    const remaining = progress.xpForNextLevel - progress.xpIntoLevel;
+    document.getElementById("level-sub").textContent = `${remaining.toLocaleString("fr-FR")} XP jusqu'à ${progress.nextName}`;
+  }
+
   // ---------- serie en cours (streak) ----------
   async function renderStreak(){
     const datesSet = new Set(COMPLETED_WORKOUTS.map(w => w.date));
@@ -756,6 +794,11 @@
     document.getElementById("streak-sub").textContent = streak === 0
       ? `Objectif : ${target} jours d'affilée`
       : `${Math.min(streak, target)} / ${target} — ${streak >= target ? "objectif atteint 🔥" : "continue !"}`;
+
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (streak === 3) awardXp("streak_3", todayStr, 25);
+    else if (streak === 7) awardXp("streak_7", todayStr, 50);
+    else if (streak === 30) awardXp("streak_30", todayStr, 100);
   }
 
   (async function init(){
@@ -764,6 +807,7 @@
     await loadWorkoutStatsData();
     renderHeatmap();
     renderTrends();
+    await renderLevel();
     await renderStreak();
     await loadWeightChart();
     await loadCalChart();

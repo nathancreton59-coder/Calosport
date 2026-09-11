@@ -1176,13 +1176,35 @@
       exercisesData.push({ id: ex.id, name: ex.name, rest_seconds: ex.rest_seconds || 90, loggedSets });
     }
 
+    const exoNames = exercisesData.map(e => e.name);
+    const priorRecords = {};
+    const { data: userWorkouts } = await supabaseClient.from("workouts").select("id").eq("user_id", currentUser.id);
+    const userWorkoutIds = (userWorkouts || []).map(w => w.id);
+    if (userWorkoutIds.length && exoNames.length){
+      const { data: matchingExos } = await supabaseClient
+        .from("exercises").select("id, name").in("workout_id", userWorkoutIds).in("name", exoNames);
+      const exoIdToName = {};
+      (matchingExos || []).forEach(e => { exoIdToName[e.id] = e.name; });
+      const histExoIds = Object.keys(exoIdToName);
+      if (histExoIds.length){
+        const { data: histSets } = await supabaseClient
+          .from("workout_sets").select("exercise_id, weight_kg")
+          .in("exercise_id", histExoIds).eq("is_warmup", false).eq("completed", true).not("weight_kg", "is", null);
+        (histSets || []).forEach(s => {
+          const name = exoIdToName[s.exercise_id];
+          if (!priorRecords[name] || s.weight_kg > priorRecords[name]) priorRecords[name] = s.weight_kg;
+        });
+      }
+    }
+
     live = {
       workout: currentWorkout,
       exercises: exercisesData,
       currentExoIndex: 0,
       phase: "log",
       startTime: new Date(),
-      timer: null, restRemaining: 0, restTotal: 0
+      timer: null, restRemaining: 0, restTotal: 0,
+      priorRecords, newRecordAwarded: {}
     };
     document.getElementById("live-overlay").classList.add("open");
     renderLiveBody();
@@ -1212,6 +1234,15 @@
     exo.loggedSets[setIdx].reps = reps;
     exo.loggedSets[setIdx].completed = true;
     saveSet(exo, setIdx);
+
+    if (weight != null && weight > 0 && !exo.loggedSets[setIdx].isWarmup){
+      const prior = live.priorRecords[exo.name] || 0;
+      if (weight > prior && !live.newRecordAwarded[exo.name]){
+        live.newRecordAwarded[exo.name] = true;
+        const todayStr = new Date().toISOString().slice(0, 10);
+        awardXp("personal_record", `${exo.name}:${todayStr}`, 40);
+      }
+    }
 
     const isLastSetOfLastExo =
       (live.currentExoIndex === live.exercises.length - 1) &&
@@ -1303,6 +1334,7 @@
     await supabaseClient.from("workouts")
       .update({ completed: true, duration_min: duration, calories_burned: calories })
       .eq("id", live.workout.id);
+    awardXp("workout_completed", live.workout.id, 50);
     document.getElementById("live-overlay").classList.remove("open");
     loadSport();
   }

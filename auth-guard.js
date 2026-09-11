@@ -121,7 +121,72 @@ function updateStatusTime() {
 updateStatusTime();
 setInterval(updateStatusTime, 15000);
 
-// ---------- theme (mode clair / sombre / automatique) ----------
+// ---------- XP & niveaux ----------
+// Niveau 1 = "Nouveau", puis 10 paliers façon LoL à 3 sous-niveaux chacun (30 niveaux),
+// puis "Prestige N" au-delà sans limite.
+const XP_TIERS = ["Bois", "Fer", "Bronze", "Argent", "Or", "Platine", "Diamant", "Champion", "Grand Champion", "Olympien"];
+const XP_TIER_COLORS = ["#8B5E34", "#8A93A0", "#B5651D", "#B0B7C3", "#E5B93B", "#4FD1C5", "#6FA8FF", "#B794F4", "#FF7A59", "#D4F252"];
+const XP_PRESTIGE_COLOR = "#F2D06B";
+
+// XP cumulé nécessaire pour ATTEINDRE le niveau n (n=1 -> 0 XP).
+function xpForLevel(n){
+  if (n <= 1) return 0;
+  return Math.round(100 * Math.pow(n, 1.5));
+}
+
+// Déduit le niveau courant à partir de l'XP total cumulé.
+function levelFromXp(xp){
+  let level = 1;
+  while (xpForLevel(level + 1) <= xp) level++;
+  return level;
+}
+
+// Infos d'affichage (nom, couleur, sous-niveau) pour un niveau donné.
+function getLevelInfo(level){
+  if (level <= 1) return { name: "Nouveau", tier: "nouveau", sub: null, color: "#8A93A0" };
+  const idx = level - 2; // 0-based parmi les 30 niveaux à paliers
+  if (idx < XP_TIERS.length * 3){
+    const tierIdx = Math.floor(idx / 3);
+    const sub = (idx % 3) + 1;
+    return { name: `${XP_TIERS[tierIdx]} ${sub}`, tier: XP_TIERS[tierIdx], sub, color: XP_TIER_COLORS[tierIdx] };
+  }
+  const prestige = idx - XP_TIERS.length * 3 + 1;
+  return { name: `Prestige ${prestige}`, tier: "prestige", sub: null, color: XP_PRESTIGE_COLOR };
+}
+
+// Résumé complet prêt à afficher (niveau courant, progression vers le suivant).
+function getXpProgress(xpTotal){
+  const level = levelFromXp(xpTotal || 0);
+  const currentFloor = xpForLevel(level);
+  const nextCeil = xpForLevel(level + 1);
+  const info = getLevelInfo(level);
+  const nextInfo = getLevelInfo(level + 1);
+  return {
+    level, xpTotal: xpTotal || 0,
+    name: info.name, color: info.color,
+    nextName: nextInfo.name,
+    xpIntoLevel: (xpTotal || 0) - currentFloor,
+    xpForNextLevel: nextCeil - currentFloor,
+    pct: Math.max(0, Math.min(100, Math.round(((xpTotal - currentFloor) / (nextCeil - currentFloor)) * 100))),
+  };
+}
+
+// Attribue de l'XP une seule fois par (source, related_key) — la dédup est gérée
+// côté base (contrainte unique), donc un appel en double ici est sans risque.
+async function awardXp(source, relatedKey, amount){
+  try {
+    const { data, error } = await supabaseClient.rpc("award_xp", {
+      p_source: source, p_related_key: relatedKey, p_amount: amount
+    });
+    if (error){ console.error("awardXp", source, error); return false; }
+    return !!data;
+  } catch (e){
+    console.error("awardXp", source, e);
+    return false;
+  }
+}
+
+
 // Un petit script inline en tête de chaque page lit déjà le cache localStorage
 // pour appliquer le thème avant l'affichage (évite le flash). Cette fonction,
 // appelée après le chargement du profil, applique la préférence réelle et

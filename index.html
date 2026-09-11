@@ -575,6 +575,9 @@
     const waterMl = (waterLogs || []).reduce((s, w) => s + (w.amount_ml || 0), 0);
     const waterScore = Math.min(100, Math.round((waterMl / waterGoal) * 100));
 
+    if (nutritionScore >= 85) awardXp("calorie_goal", todayStr, 30);
+    if (waterScore >= 100) awardXp("water_goal", todayStr, 20);
+
     // Régularité : jours consécutifs (jusqu'à aujourd'hui) avec au moins un repas ou une séance
     const since = new Date(); since.setDate(since.getDate() - 13);
     const { data: recentMeals } = await supabaseClient.from("meals").select("logged_at").eq("user_id", user.id).gte("logged_at", since.toISOString());
