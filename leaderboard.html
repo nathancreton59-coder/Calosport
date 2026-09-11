@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <script>(function(){try{var t=localStorage.getItem("calosport-theme-resolved")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
-<title>Amis — Suivi fitness</title>
+<title>Classement — Suivi fitness</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="calosport-icon.svg">
 <link rel="alternate icon" href="calosport-icon-32.png">
@@ -76,56 +76,31 @@
   .page-title{ font-family:'Unbounded'; font-weight:700; font-size:32px; margin-bottom:8px; }
   .page-sub{ font-size:13.5px; color:var(--text-muted); margin-bottom:24px; }
 
-  .username-banner{
-    background: var(--volt-dim); border:1px solid var(--volt); border-radius:16px;
-    padding:14px 16px; margin-bottom:24px; font-size:12.5px; color: var(--text); display:flex;
-    align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  .tab-row{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab-btn{
+    border:1px solid var(--line); background: var(--surface); color: var(--text-muted);
+    font-family:'Inter'; font-weight:700; font-size:13px; padding:10px 18px; border-radius:12px; cursor:pointer;
   }
-  .username-banner a{ color: var(--volt); font-weight:700; text-decoration:none; white-space:nowrap; }
+  .tab-btn.active{ background: var(--lime); border-color: var(--lime); color:#12161B; }
 
-  /* ---------- recherche ---------- */
-  .search-row{ display:flex; gap:10px; margin-bottom:12px; }
-  .search-row input{
-    flex:1; background: var(--surface); border:1px solid var(--line); border-radius:14px;
-    padding:12px 16px; font-size:14px; color:var(--text); font-family:'Inter';
-  }
-  .search-row input:focus{ outline:none; border-color: var(--volt); }
-  .search-btn{
-    border:none; background: var(--lime); color:#12161B; font-family:'Inter'; font-weight:700;
-    font-size:13.5px; padding:0 22px; border-radius:14px; cursor:pointer;
-  }
-
-  .section-title{
-    font-size:12px; font-weight:700; color: var(--text-muted); text-transform:uppercase;
-    letter-spacing:0.05em; margin:26px 0 10px;
-  }
-  .card-list{ background: var(--surface); border:1px solid var(--line); border-radius:20px; overflow:hidden; }
-  .person-row{ display:flex; align-items:center; gap:14px; padding:14px 18px; border-bottom:1px solid var(--line); }
-  .person-row:last-child{ border-bottom:none; }
-  .person-avatar{
-    width:42px; height:42px; border-radius:50%; background: var(--surface-2); color: var(--text-muted);
-    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0;
+  .rank-list{ background: var(--surface); border:1px solid var(--line); border-radius:20px; overflow:hidden; }
+  .rank-row{ display:flex; align-items:center; gap:14px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .rank-row:last-child{ border-bottom:none; }
+  .rank-row.me{ background: var(--lime-dim); }
+  .rank-pos{ width:28px; flex-shrink:0; text-align:center; font-family:'Unbounded'; font-weight:800; font-size:15px; color: var(--text-muted); }
+  .rank-avatar{
+    width:40px; height:40px; border-radius:50%; background: var(--surface-2); color: var(--text-muted);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0;
     font-family:'Unbounded';
   }
-  .person-body{ flex:1; min-width:0; }
-  .person-name{ font-weight:700; font-size:13.5px; }
-  .person-sub{ font-size:11.5px; color: var(--text-muted); margin-top:2px; display:flex; align-items:center; gap:6px; }
-  .level-chip{
-    font-size:10px; font-weight:700; padding:2px 7px; border-radius:7px; color:#12161B; flex-shrink:0;
-  }
-  .person-actions{ display:flex; gap:8px; flex-shrink:0; }
-  .pbtn{
-    border:none; border-radius:11px; font-family:'Inter'; font-weight:700; font-size:12px;
-    padding:8px 13px; cursor:pointer; white-space:nowrap;
-  }
-  .pbtn.add{ background: var(--lime); color:#12161B; }
-  .pbtn.accept{ background: var(--lime); color:#12161B; }
-  .pbtn.decline{ background: var(--surface-2); color: var(--text-muted); border:1px solid var(--line); }
-  .pbtn.remove{ background: var(--surface-2); color: var(--flame); border:1px solid var(--line); }
-  .pbtn:disabled{ opacity:0.5; cursor:default; }
+  .rank-body{ flex:1; min-width:0; }
+  .rank-name{ font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:7px; }
+  .rank-me-tag{ font-size:9.5px; font-weight:700; color:#12161B; background: var(--lime); padding:2px 6px; border-radius:6px; }
+  .rank-sub{ font-size:11px; color: var(--text-muted); margin-top:2px; }
+  .rank-xp{ font-family:'Unbounded'; font-weight:700; font-size:14px; color: var(--lime); flex-shrink:0; }
 
-  .empty-state{ text-align:center; padding:26px 14px; color: var(--text-muted); font-size:12.5px; }
-  .search-msg{ font-size:12px; color: var(--text-muted); padding: 4px 2px 2px; }
+  .empty-state{ text-align:center; padding:40px 20px; color: var(--text-muted); font-size:13px; }
+  .empty-state a{ color: var(--volt); font-weight:700; text-decoration:none; }
 </style>
 </head>
 <body>
@@ -164,12 +139,12 @@
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Progression
     </a>
-    <a class="sidebar-link friends active" href="friends.html">
+    <a class="sidebar-link friends" href="friends.html">
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Amis
     </a>
-    <a class="sidebar-link leaderboard" href="leaderboard.html">
+    <a class="sidebar-link leaderboard active" href="leaderboard.html">
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h1.5M17 6h3a2 2 0 0 1 0 4h-1.5"/></svg>
       Classement
@@ -196,28 +171,15 @@
 
 <div class="main">
   <div class="main-inner">
-    <div class="page-title">Amis</div>
-    <div class="page-sub">Ajoute des amis pour bientôt comparer vos progrès.</div>
+    <div class="page-title">Classement</div>
+    <div class="page-sub">Compare ta progression avec tes amis.</div>
 
-    <div class="username-banner" id="username-banner" style="display:none;">
-      <span>Définis ton pseudo pour que tes amis puissent te trouver.</span>
-      <a href="settings.html">Aller dans Réglages →</a>
+    <div class="tab-row">
+      <button class="tab-btn active" id="tab-total" onclick="switchTab('total')">XP total</button>
+      <button class="tab-btn" id="tab-week" onclick="switchTab('week')">Cette semaine</button>
     </div>
 
-    <div class="search-row">
-      <input type="text" id="search-input" placeholder="Rechercher un pseudo…" onkeydown="if(event.key==='Enter')searchUsers()">
-      <button class="search-btn" onclick="searchUsers()">Rechercher</button>
-    </div>
-    <div id="search-results"></div>
-
-    <div class="section-title" id="incoming-title" style="display:none;">Demandes reçues</div>
-    <div class="card-list" id="incoming-list" style="display:none;"></div>
-
-    <div class="section-title" id="outgoing-title" style="display:none;">Demandes envoyées</div>
-    <div class="card-list" id="outgoing-list" style="display:none;"></div>
-
-    <div class="section-title">Mes amis</div>
-    <div class="card-list" id="friends-list">
+    <div class="rank-list" id="rank-list">
       <div class="empty-state">Chargement…</div>
     </div>
   </div>
@@ -226,143 +188,84 @@
 <script src="config.js"></script>
 <script src="auth-guard.js"></script>
 <script>
+  let ME = null;
+  let FRIENDS_ACCEPTED = [];
+  let currentTab = "total";
+
   function initial(name){ return (name || "?").trim().charAt(0).toUpperCase(); }
-
-  function levelChip(xpTotal){
-    const p = getXpProgress(xpTotal || 0);
-    return `<span class="level-chip" style="background:${p.color};">Niv. ${p.level}</span>`;
-  }
-
-  async function searchUsers(){
-    const q = document.getElementById("search-input").value.trim();
-    const resultsEl = document.getElementById("search-results");
-    if (!q){ resultsEl.innerHTML = ""; return; }
-
-    const { data, error } = await supabaseClient.rpc("search_users_by_username", { p_query: q });
-    if (error){ resultsEl.innerHTML = `<div class="search-msg">Erreur : ${error.message}</div>`; return; }
-
-    if (!data || !data.length){
-      resultsEl.innerHTML = `<div class="search-msg">Aucun utilisateur trouvé pour "${escapeHtml(q)}".</div>`;
-      return;
-    }
-
-    resultsEl.innerHTML = `<div class="card-list">` + data.map(u => `
-      <div class="person-row">
-        <div class="person-avatar">${initial(u.full_name || u.username)}</div>
-        <div class="person-body">
-          <div class="person-name">${escapeHtml(u.full_name || u.username)}</div>
-          <div class="person-sub">@${escapeHtml(u.username)}</div>
-        </div>
-        <div class="person-actions">
-          <button class="pbtn add" onclick="sendRequest('${u.username}', this)">Ajouter</button>
-        </div>
-      </div>`).join("") + `</div>`;
-  }
-
   function escapeHtml(str){
     const d = document.createElement("div");
     d.textContent = str;
     return d.innerHTML;
   }
 
-  async function sendRequest(username, btnEl){
-    btnEl.disabled = true;
-    const { data, error } = await supabaseClient.rpc("send_friend_request", { p_username: username });
-    if (error || !data || !data.ok){
-      alert((data && data.error) || (error && error.message) || "Erreur lors de l'envoi.");
-      btnEl.disabled = false;
-      return;
-    }
-    btnEl.textContent = "Envoyée ✓";
-    await loadFriends();
+  function switchTab(tab){
+    currentTab = tab;
+    document.getElementById("tab-total").classList.toggle("active", tab === "total");
+    document.getElementById("tab-week").classList.toggle("active", tab === "week");
+    renderRanking();
   }
 
-  async function acceptRequest(friendshipId){
-    const { error } = await supabaseClient.rpc("accept_friend_request", { p_friendship_id: friendshipId });
-    if (error){ alert("Erreur : " + error.message); return; }
-    await loadFriends();
-  }
+  async function renderRanking(){
+    const listEl = document.getElementById("rank-list");
 
-  async function removeFriendship(friendshipId){
-    const { error } = await supabaseClient.rpc("delete_friendship", { p_friendship_id: friendshipId });
-    if (error){ alert("Erreur : " + error.message); return; }
-    await loadFriends();
-  }
-
-  async function loadFriends(){
-    const { data, error } = await supabaseClient.rpc("get_friends_list");
-    if (error){
-      document.getElementById("friends-list").innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`;
+    if (!FRIENDS_ACCEPTED.length){
+      listEl.innerHTML = `<div class="empty-state">Ajoute des amis pour démarrer un classement.<br><a href="friends.html">Aller dans Amis →</a></div>`;
       return;
     }
 
-    const list = data || [];
-    const accepted = list.filter(f => f.status === "accepted");
-    const incoming = list.filter(f => f.status === "pending" && f.is_incoming_request);
-    const outgoing = list.filter(f => f.status === "pending" && !f.is_incoming_request);
-
-    const rowBase = (f) => `
-      <div class="person-avatar">${initial(f.full_name || f.username)}</div>
-      <div class="person-body">
-        <div class="person-name">${escapeHtml(f.full_name || f.username)}</div>
-        <div class="person-sub">@${escapeHtml(f.username)} ${levelChip(f.xp_total)}</div>
-      </div>`;
-
-    if (incoming.length){
-      document.getElementById("incoming-title").style.display = "block";
-      document.getElementById("incoming-list").style.display = "block";
-      document.getElementById("incoming-list").innerHTML = incoming.map(f => `
-        <div class="person-row">
-          ${rowBase(f)}
-          <div class="person-actions">
-            <button class="pbtn accept" onclick="acceptRequest('${f.friendship_id}')">Accepter</button>
-            <button class="pbtn decline" onclick="removeFriendship('${f.friendship_id}')">Refuser</button>
-          </div>
-        </div>`).join("");
+    let rows;
+    if (currentTab === "total"){
+      rows = [ME, ...FRIENDS_ACCEPTED].map(p => ({ ...p, value: p.xp_total || 0 }));
     } else {
-      document.getElementById("incoming-title").style.display = "none";
-      document.getElementById("incoming-list").style.display = "none";
+      const weekStart = getWeekKey() + "T00:00:00";
+      const { data, error } = await supabaseClient.rpc("get_friends_weekly_xp", { p_since: weekStart });
+      if (error){
+        listEl.innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`;
+        return;
+      }
+      const xpByUser = {};
+      (data || []).forEach(r => { xpByUser[r.user_id] = r.weekly_xp; });
+      rows = [ME, ...FRIENDS_ACCEPTED].map(p => ({ ...p, value: xpByUser[p.id] || 0 }));
     }
 
-    if (outgoing.length){
-      document.getElementById("outgoing-title").style.display = "block";
-      document.getElementById("outgoing-list").style.display = "block";
-      document.getElementById("outgoing-list").innerHTML = outgoing.map(f => `
-        <div class="person-row">
-          ${rowBase(f)}
-          <div class="person-actions">
-            <button class="pbtn decline" onclick="removeFriendship('${f.friendship_id}')">Annuler</button>
-          </div>
-        </div>`).join("");
-    } else {
-      document.getElementById("outgoing-title").style.display = "none";
-      document.getElementById("outgoing-list").style.display = "none";
-    }
+    rows.sort((a, b) => b.value - a.value);
 
-    const friendsEl = document.getElementById("friends-list");
-    if (!accepted.length){
-      friendsEl.innerHTML = `<div class="empty-state">Pas encore d'amis — recherche un pseudo ci-dessus pour envoyer une demande.</div>`;
-    } else {
-      friendsEl.innerHTML = accepted.map(f => `
-        <div class="person-row">
-          ${rowBase(f)}
-          <div class="person-actions">
-            <button class="pbtn remove" onclick="removeFriendship('${f.friendship_id}')">Retirer</button>
+    const medals = ["🥇", "🥈", "🥉"];
+    listEl.innerHTML = rows.map((p, i) => {
+      const isMe = p.id === ME.id;
+      const levelInfo = getLevelInfo(levelFromXp(p.xp_total || 0));
+      return `
+        <div class="rank-row ${isMe ? "me" : ""}">
+          <div class="rank-pos">${medals[i] || (i + 1)}</div>
+          <div class="rank-avatar">${initial(p.full_name || p.username)}</div>
+          <div class="rank-body">
+            <div class="rank-name">${escapeHtml(p.full_name || p.username)} ${isMe ? '<span class="rank-me-tag">Toi</span>' : ""}</div>
+            <div class="rank-sub">${levelInfo.name}</div>
           </div>
-        </div>`).join("");
-    }
+          <div class="rank-xp">${p.value.toLocaleString("fr-FR")} XP</div>
+        </div>`;
+    }).join("");
   }
 
   (async function init(){
     const user = await requireAuth();
     if (!user) return;
 
-    const { data: profile } = await supabaseClient.from("profiles").select("username").eq("id", user.id).single();
-    if (!profile || !profile.username){
-      document.getElementById("username-banner").style.display = "flex";
-    }
+    const { data: myProfile } = await supabaseClient
+      .from("profiles").select("id, username, full_name, xp_total").eq("id", user.id).single();
+    ME = myProfile || { id: user.id, username: null, full_name: user.email, xp_total: 0 };
 
-    await loadFriends();
+    const { data: friendsData, error } = await supabaseClient.rpc("get_friends_list");
+    if (error){
+      document.getElementById("rank-list").innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`;
+      return;
+    }
+    FRIENDS_ACCEPTED = (friendsData || [])
+      .filter(f => f.status === "accepted")
+      .map(f => ({ id: f.friend_id, username: f.username, full_name: f.full_name, xp_total: f.xp_total }));
+
+    await renderRanking();
   })();
 </script>
 </body>
