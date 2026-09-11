@@ -66,6 +66,7 @@
   .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
   .sidebar-link.library.active .dot{ background: var(--text); }
   .sidebar-link.progress.active .dot{ background: var(--text); }
+  .sidebar-link.feed.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
 
   .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
   .sidebar-logout{
@@ -202,6 +203,11 @@
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Progression
+    </a>
+    <a class="sidebar-link feed" href="feed.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+      Flux
     </a>
     <a class="sidebar-link friends" href="friends.html">
       <div class="dot"></div>

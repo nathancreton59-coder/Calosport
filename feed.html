@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <script>(function(){try{var t=localStorage.getItem("calosport-theme-resolved")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
-<title>Classement — Suivi fitness</title>
+<title>Flux — Suivi fitness</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="icon" type="image/svg+xml" href="calosport-icon.svg">
 <link rel="alternate icon" href="calosport-icon-32.png">
@@ -60,9 +60,9 @@
   .sidebar-link.calendar.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
   .sidebar-link.friends.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
   .sidebar-link.leaderboard.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
+  .sidebar-link.feed.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
   .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
   .sidebar-link.library.active .dot, .sidebar-link.progress.active .dot{ background: var(--text); }
-  .sidebar-link.feed.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
 
   .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
   .sidebar-logout{
@@ -73,34 +73,58 @@
 
   /* ---------- main ---------- */
   .main{ flex:1; padding: 48px 56px 100px; min-width:0; }
-  .main-inner{ max-width: 680px; }
+  .main-inner{ max-width: 640px; }
   .page-title{ font-family:'Unbounded'; font-weight:700; font-size:32px; margin-bottom:8px; }
-  .page-sub{ font-size:13.5px; color:var(--text-muted); margin-bottom:24px; }
+  .page-sub{ font-size:13.5px; color:var(--text-muted); margin-bottom:22px; }
 
-  .tab-row{ display:flex; gap:8px; margin-bottom:20px; }
+  .tab-row{ display:flex; gap:8px; margin-bottom:22px; }
   .tab-btn{
     border:1px solid var(--line); background: var(--surface); color: var(--text-muted);
     font-family:'Inter'; font-weight:700; font-size:13px; padding:10px 18px; border-radius:12px; cursor:pointer;
   }
   .tab-btn.active{ background: var(--lime); border-color: var(--lime); color:#12161B; }
 
-  .rank-list{ background: var(--surface); border:1px solid var(--line); border-radius:20px; overflow:hidden; }
-  .rank-row{ display:flex; align-items:center; gap:14px; padding:14px 18px; border-bottom:1px solid var(--line); }
-  .rank-row:last-child{ border-bottom:none; }
-  .rank-row.me{ background: var(--lime-dim); }
-  .rank-pos{ width:28px; flex-shrink:0; text-align:center; font-family:'Unbounded'; font-weight:800; font-size:15px; color: var(--text-muted); }
-  .rank-avatar{
+  .feed-card{ background: var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px; margin-bottom:16px; }
+  .feed-top{ display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+  .feed-avatar{
     width:40px; height:40px; border-radius:50%; background: var(--surface-2); color: var(--text-muted);
     display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0;
     font-family:'Unbounded';
   }
-  .rank-body{ flex:1; min-width:0; }
-  .rank-name{ font-weight:700; font-size:13.5px; display:flex; align-items:center; gap:7px; }
-  .rank-me-tag{ font-size:9.5px; font-weight:700; color:#12161B; background: var(--lime); padding:2px 6px; border-radius:6px; }
-  .rank-sub{ font-size:11px; color: var(--text-muted); margin-top:2px; }
-  .rank-xp{ font-family:'Unbounded'; font-weight:700; font-size:14px; color: var(--lime); flex-shrink:0; }
+  .feed-who{ flex:1; min-width:0; }
+  .feed-name{ font-weight:700; font-size:13.5px; }
+  .feed-date{ font-size:11px; color: var(--text-muted); margin-top:1px; }
 
-  .empty-state{ text-align:center; padding:40px 20px; color: var(--text-muted); font-size:13px; }
+  .feed-title{ font-weight:700; font-size:16px; margin-bottom:4px; }
+  .feed-exos{ font-size:12.5px; color: var(--text-muted); line-height:1.5; margin-bottom:16px;
+    overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
+
+  .feed-stats{ display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:14px; }
+  .feed-stat .k{ font-size:10.5px; color: var(--text-muted); margin-bottom:3px; }
+  .feed-stat .v{ font-weight:700; font-size:14px; }
+
+  .feed-actions{ display:flex; align-items:center; gap:22px; padding-top:12px; border-top:1px solid var(--line); }
+  .feed-action{
+    display:flex; align-items:center; gap:7px; background:none; border:none; cursor:pointer;
+    color: var(--text-muted); font-family:'Inter'; font-weight:600; font-size:13px; padding:0;
+  }
+  .feed-action.reacted{ color: var(--lime); }
+  .feed-action svg{ flex-shrink:0; }
+
+  .comments-box{ margin-top:14px; padding-top:14px; border-top:1px solid var(--line); display:none; }
+  .comments-box.open{ display:block; }
+  .comment-row{ font-size:12.5px; margin-bottom:10px; }
+  .comment-row b{ font-weight:700; }
+  .comment-time{ font-size:10.5px; color: var(--text-muted); margin-left:6px; }
+  .comment-input-row{ display:flex; gap:8px; margin-top:8px; }
+  .comment-input-row input{
+    flex:1; background: var(--surface-2); border:1px solid var(--line); border-radius:12px;
+    padding:9px 13px; font-size:12.5px; color:var(--text); font-family:'Inter';
+  }
+  .comment-input-row input:focus{ outline:none; border-color: var(--volt); }
+  .comment-send{ border:none; background: var(--volt); color:#12161B; font-weight:700; font-size:12px; padding:0 16px; border-radius:12px; cursor:pointer; }
+
+  .empty-state{ text-align:center; padding:50px 20px; color: var(--text-muted); font-size:13px; }
   .empty-state a{ color: var(--volt); font-weight:700; text-decoration:none; }
 </style>
 </head>
@@ -140,7 +164,7 @@
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Progression
     </a>
-    <a class="sidebar-link feed" href="feed.html">
+    <a class="sidebar-link feed active" href="feed.html">
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
       Flux
@@ -150,7 +174,7 @@
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
       Amis
     </a>
-    <a class="sidebar-link leaderboard active" href="leaderboard.html">
+    <a class="sidebar-link leaderboard" href="leaderboard.html">
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h1.5M17 6h3a2 2 0 0 1 0 4h-1.5"/></svg>
       Classement
@@ -177,15 +201,15 @@
 
 <div class="main">
   <div class="main-inner">
-    <div class="page-title">Classement</div>
-    <div class="page-sub">Compare ta progression avec tes amis.</div>
+    <div class="page-title">Flux</div>
+    <div class="page-sub">Tes séances et celles de tes amis.</div>
 
     <div class="tab-row">
-      <button class="tab-btn active" id="tab-total" onclick="switchTab('total')">XP total</button>
-      <button class="tab-btn" id="tab-week" onclick="switchTab('week')">Cette semaine</button>
+      <button class="tab-btn" id="tab-self" onclick="switchScope('self')">Seulement vous</button>
+      <button class="tab-btn active" id="tab-friends" onclick="switchScope('friends')">Amis</button>
     </div>
 
-    <div class="rank-list" id="rank-list">
+    <div id="feed-list">
       <div class="empty-state">Chargement…</div>
     </div>
   </div>
@@ -194,9 +218,8 @@
 <script src="config.js"></script>
 <script src="auth-guard.js"></script>
 <script>
-  let ME = null;
-  let FRIENDS_ACCEPTED = [];
-  let currentTab = "total";
+  let scope = "friends";
+  let MY_ID = null;
 
   function initial(name){ return (name || "?").trim().charAt(0).toUpperCase(); }
   function escapeHtml(str){
@@ -204,74 +227,139 @@
     d.textContent = str;
     return d.innerHTML;
   }
-
-  function switchTab(tab){
-    currentTab = tab;
-    document.getElementById("tab-total").classList.toggle("active", tab === "total");
-    document.getElementById("tab-week").classList.toggle("active", tab === "week");
-    renderRanking();
+  function relativeDate(iso){
+    const d = new Date(iso);
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
   }
 
-  async function renderRanking(){
-    const listEl = document.getElementById("rank-list");
+  function switchScope(s){
+    scope = s;
+    document.getElementById("tab-self").classList.toggle("active", s === "self");
+    document.getElementById("tab-friends").classList.toggle("active", s === "friends");
+    loadFeed();
+  }
 
-    if (!FRIENDS_ACCEPTED.length){
-      listEl.innerHTML = `<div class="empty-state">Ajoute des amis pour démarrer un classement.<br><a href="friends.html">Aller dans Amis →</a></div>`;
+  async function loadFeed(){
+    const listEl = document.getElementById("feed-list");
+    listEl.innerHTML = `<div class="empty-state">Chargement…</div>`;
+
+    const { data, error } = await supabaseClient.rpc("get_feed", { p_scope: scope, p_limit: 30 });
+    if (error){
+      listEl.innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`;
       return;
     }
 
-    let rows;
-    if (currentTab === "total"){
-      rows = [ME, ...FRIENDS_ACCEPTED].map(p => ({ ...p, value: p.xp_total || 0 }));
-    } else {
-      const weekStart = getWeekKey() + "T00:00:00";
-      const { data, error } = await supabaseClient.rpc("get_friends_weekly_xp", { p_since: weekStart });
-      if (error){
-        listEl.innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`;
-        return;
-      }
-      const xpByUser = {};
-      (data || []).forEach(r => { xpByUser[r.user_id] = r.weekly_xp; });
-      rows = [ME, ...FRIENDS_ACCEPTED].map(p => ({ ...p, value: xpByUser[p.id] || 0 }));
+    if (!data || !data.length){
+      listEl.innerHTML = scope === "self"
+        ? `<div class="empty-state">Termine une séance pour la voir apparaître ici.</div>`
+        : `<div class="empty-state">Aucune activité pour l'instant.<br><a href="friends.html">Ajoute des amis →</a></div>`;
+      return;
     }
 
-    rows.sort((a, b) => b.value - a.value);
-
-    const medals = ["🥇", "🥈", "🥉"];
-    listEl.innerHTML = rows.map((p, i) => {
-      const isMe = p.id === ME.id;
-      const levelInfo = getLevelInfo(levelFromXp(p.xp_total || 0));
+    listEl.innerHTML = data.map(item => {
+      const displayName = item.full_name || item.username || "Quelqu'un";
       return `
-        <div class="rank-row ${isMe ? "me" : ""}">
-          <div class="rank-pos">${medals[i] || (i + 1)}</div>
-          <div class="rank-avatar">${initial(p.full_name || p.username)}</div>
-          <div class="rank-body">
-            <div class="rank-name">${escapeHtml(p.full_name || p.username)} ${isMe ? '<span class="rank-me-tag">Toi</span>' : ""}</div>
-            <div class="rank-sub">${levelInfo.name}</div>
+      <div class="feed-card" id="card-${item.workout_id}">
+        <div class="feed-top">
+          <div class="feed-avatar">${initial(displayName)}</div>
+          <div class="feed-who">
+            <div class="feed-name">${escapeHtml(displayName)}</div>
+            <div class="feed-date">${relativeDate(item.scheduled_at)}</div>
           </div>
-          <div class="rank-xp">${p.value.toLocaleString("fr-FR")} XP</div>
-        </div>`;
+        </div>
+        <div class="feed-title">${escapeHtml(item.muscle_groups)}</div>
+        <div class="feed-exos">${escapeHtml(item.exercise_names)}</div>
+        <div class="feed-stats">
+          <div class="feed-stat"><div class="k">Durée</div><div class="v">${item.duration_min ? item.duration_min + " min" : "—"}</div></div>
+          <div class="feed-stat"><div class="k">${energyUnitLabel()}</div><div class="v">${item.calories_burned ? Math.round(kcalToDisplayEnergy(item.calories_burned)) : "—"}</div></div>
+          <div class="feed-stat"><div class="k">Volume</div><div class="v">${Math.round(kgToDisplayWeight(item.volume_kg)).toLocaleString("fr-FR")} ${weightUnitLabel()}</div></div>
+          <div class="feed-stat"><div class="k">Records</div><div class="v">${item.records_count || 0}</div></div>
+        </div>
+        <div class="feed-actions">
+          <button class="feed-action ${item.my_reaction ? "reacted" : ""}" id="react-btn-${item.workout_id}" onclick="reactTo('${item.workout_id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="${item.my_reaction ? "currentColor" : "none"}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11.5V7a2 2 0 0 1 4 0v4M11 11V4a2 2 0 0 1 4 0v7M15 10.5V6a2 2 0 0 1 4 0v9a7 7 0 0 1-7 7h-2c-2.5 0-3.5-.5-5-2l-3.5-4a1.5 1.5 0 0 1 2.4-1.8L7 17"/></svg>
+            <span id="react-count-${item.workout_id}">${item.reactions_count || 0}</span>
+          </button>
+          <button class="feed-action" onclick="toggleComments('${item.workout_id}')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-8.38 8.38H8.5L3 21l1.12-4.5A8.38 8.38 0 1 1 21 11.5z"/></svg>
+            <span id="comment-count-${item.workout_id}">${item.comments_count || 0}</span>
+          </button>
+        </div>
+        <div class="comments-box" id="comments-${item.workout_id}">
+          <div id="comments-list-${item.workout_id}"></div>
+          <div class="comment-input-row">
+            <input type="text" id="comment-input-${item.workout_id}" placeholder="Écrire un commentaire…" maxlength="500" onkeydown="if(event.key==='Enter')sendComment('${item.workout_id}')">
+            <button class="comment-send" onclick="sendComment('${item.workout_id}')">Envoyer</button>
+          </div>
+        </div>
+      </div>`;
     }).join("");
+  }
+
+  async function reactTo(workoutId){
+    const { data, error } = await supabaseClient.rpc("toggle_workout_reaction", { p_workout_id: workoutId });
+    if (error) return;
+    const btn = document.getElementById(`react-btn-${workoutId}`);
+    const countEl = document.getElementById(`react-count-${workoutId}`);
+    let count = parseInt(countEl.textContent) || 0;
+    if (data){
+      btn.classList.add("reacted");
+      btn.querySelector("svg").setAttribute("fill", "currentColor");
+      countEl.textContent = count + 1;
+    } else {
+      btn.classList.remove("reacted");
+      btn.querySelector("svg").setAttribute("fill", "none");
+      countEl.textContent = Math.max(0, count - 1);
+    }
+  }
+
+  const loadedComments = {};
+
+  async function toggleComments(workoutId){
+    const box = document.getElementById(`comments-${workoutId}`);
+    box.classList.toggle("open");
+    if (box.classList.contains("open") && !loadedComments[workoutId]){
+      await refreshComments(workoutId);
+    }
+  }
+
+  async function refreshComments(workoutId){
+    const { data, error } = await supabaseClient.rpc("get_workout_comments", { p_workout_id: workoutId });
+    const listEl = document.getElementById(`comments-list-${workoutId}`);
+    if (error){ listEl.innerHTML = `<div class="comment-row">Erreur de chargement.</div>`; return; }
+    loadedComments[workoutId] = true;
+    if (!data || !data.length){
+      listEl.innerHTML = `<div class="comment-row" style="color:var(--text-muted);">Aucun commentaire pour l'instant.</div>`;
+      return;
+    }
+    listEl.innerHTML = data.map(c => `
+      <div class="comment-row">
+        <b>${escapeHtml(c.full_name || c.username)}</b> ${escapeHtml(c.body)}
+        <span class="comment-time">${new Date(c.created_at).toLocaleDateString("fr-FR")}</span>
+      </div>`).join("");
+  }
+
+  async function sendComment(workoutId){
+    const input = document.getElementById(`comment-input-${workoutId}`);
+    const body = input.value.trim();
+    if (!body) return;
+    const { data, error } = await supabaseClient.rpc("add_workout_comment", { p_workout_id: workoutId, p_body: body });
+    if (error || !data || !data.ok){
+      alert((data && data.error) || (error && error.message) || "Erreur lors de l'envoi.");
+      return;
+    }
+    input.value = "";
+    loadedComments[workoutId] = false;
+    await refreshComments(workoutId);
+    const countEl = document.getElementById(`comment-count-${workoutId}`);
+    countEl.textContent = (parseInt(countEl.textContent) || 0) + 1;
   }
 
   (async function init(){
     const user = await requireAuth();
     if (!user) return;
-
-    const { data: myProfile } = await supabaseClient
-      .from("profiles").select("id, username, full_name, xp_total").eq("id", user.id).single();
-    ME = myProfile || { id: user.id, username: null, full_name: user.email, xp_total: 0 };
-
-    const { data: friendsData, error } = await supabaseClient.rpc("get_friends_list");
-    if (error){
-      document.getElementById("rank-list").innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`;
-      return;
-    }
-    FRIENDS_ACCEPTED = (friendsData || [])
-      .filter(f => f.status === "accepted")
-      .map(f => ({ id: f.friend_id, username: f.username, full_name: f.full_name, xp_total: f.xp_total }));
-
-    await renderRanking();
+    MY_ID = user.id;
+    await loadFeed();
   })();
 </script>
 </body>

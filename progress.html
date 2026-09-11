@@ -64,6 +64,7 @@
   .sidebar-link.leaderboard.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
   .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
   .sidebar-link.library.active .dot, .sidebar-link.progress.active .dot{ background: var(--text); }
+  .sidebar-link.feed.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
 
   .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
   .sidebar-logout{
@@ -226,6 +227,11 @@
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Progression
+    </a>
+    <a class="sidebar-link feed" href="feed.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
+      Flux
     </a>
     <a class="sidebar-link friends" href="friends.html">
       <div class="dot"></div>
@@ -427,6 +433,20 @@
         <select id="exo-progress-select" onchange="renderExerciseChart()"></select>
       </div>
       <div class="chart-wrap" id="exo-chart"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Volume par muscle</div>
+          <div class="card-stat" id="muscle-max" style="color:var(--grape,#A78BFA);">—</div>
+          <div class="card-delta" id="muscle-max-label">Meilleur mois</div>
+        </div>
+      </div>
+      <div class="exo-select-row">
+        <select id="muscle-progress-select" onchange="renderMuscleChart()"></select>
+      </div>
+      <div class="chart-wrap" id="muscle-chart"></div>
     </div>
   </div>
 </div>
@@ -641,6 +661,89 @@
       const max = Math.max(...points.map(p => p.value));
       document.getElementById("exo-max").textContent = max.toFixed(1) + " " + weightUnitLabel();
       document.getElementById("exo-max-label").textContent = `Meilleure charge sur ${name}`;
+    }
+  }
+
+  // ---------- volume par muscle dans le temps ----------
+  let muscleHistoryData = {}; // muscle -> [{label, value}] (volume mensuel, en kg)
+  const MONTH_SHORT = ["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+
+  async function loadMuscleProgress(){
+    const { data: workouts } = await supabaseClient
+      .from("workouts").select("id, scheduled_at")
+      .eq("user_id", currentUser.id).eq("completed", true);
+    const workoutById = {};
+    (workouts || []).forEach(w => workoutById[w.id] = w.scheduled_at);
+    const workoutIds = (workouts || []).map(w => w.id);
+    if (!workoutIds.length){ populateMuscleSelect(); return; }
+
+    const { data: exercises } = await supabaseClient
+      .from("exercises").select("id, workout_id, exercise_library_id").in("workout_id", workoutIds);
+    const exoList = exercises || [];
+    const exoIds = exoList.map(e => e.id);
+    if (!exoIds.length){ populateMuscleSelect(); return; }
+
+    const libIds = [...new Set(exoList.map(e => e.exercise_library_id).filter(Boolean))];
+    let libMap = {};
+    if (libIds.length){
+      const { data: lib } = await supabaseClient.from("exercise_library").select("id, muscle_group").in("id", libIds);
+      (lib || []).forEach(l => { libMap[l.id] = l.muscle_group || "Autre"; });
+    }
+    const exoMeta = {};
+    exoList.forEach(e => {
+      exoMeta[e.id] = {
+        date: workoutById[e.workout_id],
+        muscle: e.exercise_library_id ? (libMap[e.exercise_library_id] || "Autre") : "Autre",
+      };
+    });
+
+    const { data: sets } = await supabaseClient
+      .from("workout_sets").select("exercise_id, weight_kg, reps, is_warmup, completed")
+      .in("exercise_id", exoIds).eq("is_warmup", false).eq("completed", true)
+      .not("weight_kg", "is", null).not("reps", "is", null);
+
+    const byMuscleByMonth = {}; // muscle -> "YYYY-MM" -> volume (kg)
+    (sets || []).forEach(s => {
+      const meta = exoMeta[s.exercise_id];
+      if (!meta || !meta.date) return;
+      const monthKey = meta.date.slice(0, 7);
+      byMuscleByMonth[meta.muscle] = byMuscleByMonth[meta.muscle] || {};
+      byMuscleByMonth[meta.muscle][monthKey] = (byMuscleByMonth[meta.muscle][monthKey] || 0) + s.weight_kg * s.reps;
+    });
+
+    muscleHistoryData = {};
+    Object.keys(byMuscleByMonth).forEach(muscle => {
+      muscleHistoryData[muscle] = Object.keys(byMuscleByMonth[muscle]).sort().map(monthKey => {
+        const [y, m] = monthKey.split("-").map(Number);
+        return { label: `${MONTH_SHORT[m - 1]} ${y}`, value: byMuscleByMonth[muscle][monthKey] };
+      });
+    });
+
+    populateMuscleSelect();
+  }
+
+  function populateMuscleSelect(){
+    const select = document.getElementById("muscle-progress-select");
+    const muscles = Object.keys(muscleHistoryData).sort();
+    if (!muscles.length){
+      select.innerHTML = `<option>Aucune donnée musculaire</option>`;
+      document.getElementById("muscle-chart").innerHTML = '<div class="chart-empty">Termine des séances avec des poids pour voir ce graphique.</div>';
+      document.getElementById("muscle-max").textContent = "—";
+      return;
+    }
+    select.innerHTML = muscles.map(m => `<option value="${m}">${m}</option>`).join("");
+    renderMuscleChart();
+  }
+
+  function renderMuscleChart(){
+    const muscle = document.getElementById("muscle-progress-select").value;
+    const rawPoints = muscleHistoryData[muscle] || [];
+    const points = rawPoints.map(p => ({ label: p.label, value: kgToDisplayWeight(p.value) }));
+    document.getElementById("muscle-chart").innerHTML = lineChartSvg(points, "#A78BFA");
+    if (points.length){
+      const max = Math.max(...points.map(p => p.value));
+      document.getElementById("muscle-max").textContent = Math.round(max).toLocaleString("fr-FR") + " " + weightUnitLabel();
+      document.getElementById("muscle-max-label").textContent = `Meilleur mois — ${muscle}`;
     }
   }
 
@@ -866,6 +969,7 @@
     await loadWeightChart();
     await loadCalChart();
     await loadExerciseProgress();
+    await loadMuscleProgress();
   })();
 </script>
 </body>
