@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem("calosport-theme-resolved")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<title>Amis — Suivi fitness</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="calosport-icon.svg">
+<link rel="alternate icon" href="calosport-icon-32.png">
+<link rel="apple-touch-icon" href="calosport-icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg: #12161B; --surface: #1B2128; --surface-2: #222A32;
+    --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+    --lime: #D4F252; --lime-dim: #3A4420;
+    --flame: #FF7A59; --flame-dim: #3D2620;
+    --volt: #6FA8FF; --volt-dim: #202B3D;
+  }
+  *{ box-sizing:border-box; }
+  /* ---------- mode clair ---------- */
+  :root[data-theme="light"]{
+    --bg: #EFF1EA; --surface: #FFFFFF; --surface-2: #F3F4EE;
+    --text: #14181D; --text-muted: #667085; --line: #E1E3DC;
+    --lime: #6F9A16; --lime-dim: #EAF3D2;
+    --flame: #D9522E; --flame-dim: #FBE4DC;
+    --volt: #2F63C7; --volt-dim: #E3EBFB;
+  }
+  html[data-theme="light"], html[data-theme="light"] body{ background: var(--bg); }
+  html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+  body{ display:flex; min-height:100vh; }
+
+  /* ---------- sidebar ---------- */
+  .sidebar{
+    width: 264px; flex-shrink:0;
+    background: var(--bg); border-right:1px solid var(--line);
+    padding: 28px 18px; display:flex; flex-direction:column;
+    position:sticky; top:0; height:100vh;
+  }
+  .sidebar-brand{ display:flex; align-items:center; gap:12px; padding: 6px 10px 30px; }
+  .brand-mark{
+    width:38px; height:38px; border-radius:12px; background:var(--lime);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-name{ font-family:'Unbounded'; font-weight:700; font-size:14.5px; line-height:1.25; }
+  .brand-name span{ display:block; font-family:'Inter'; font-weight:600; font-size:11px; color:var(--text-muted); margin-top:2px; }
+
+  .sidebar-nav{ display:flex; flex-direction:column; gap:4px; }
+  .sidebar-link{
+    display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:13px;
+    color: var(--text-muted); text-decoration:none; font-weight:600; font-size:14px;
+  }
+  .sidebar-link .dot{ width:7px; height:7px; border-radius:50%; background: var(--text-muted); flex-shrink:0; }
+  .sidebar-link.active{ background: var(--surface); color: var(--text); }
+  .sidebar-link.home.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
+  .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
+  .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.calendar.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.friends.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
+  .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
+  .sidebar-link.library.active .dot, .sidebar-link.progress.active .dot{ background: var(--text); }
+
+  .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
+  .sidebar-logout{
+    width:100%; display:flex; align-items:center; gap:10px; padding:11px 14px; border-radius:13px;
+    background:none; border:none; color:var(--text-muted); font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer;
+  }
+  .sidebar-logout:hover{ background: var(--surface); color: var(--flame); }
+
+  /* ---------- main ---------- */
+  .main{ flex:1; padding: 48px 56px 100px; min-width:0; }
+  .main-inner{ max-width: 680px; }
+  .page-title{ font-family:'Unbounded'; font-weight:700; font-size:32px; margin-bottom:8px; }
+  .page-sub{ font-size:13.5px; color:var(--text-muted); margin-bottom:24px; }
+
+  .username-banner{
+    background: var(--volt-dim); border:1px solid var(--volt); border-radius:16px;
+    padding:14px 16px; margin-bottom:24px; font-size:12.5px; color: var(--text); display:flex;
+    align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .username-banner a{ color: var(--volt); font-weight:700; text-decoration:none; white-space:nowrap; }
+
+  /* ---------- recherche ---------- */
+  .search-row{ display:flex; gap:10px; margin-bottom:12px; }
+  .search-row input{
+    flex:1; background: var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:12px 16px; font-size:14px; color:var(--text); font-family:'Inter';
+  }
+  .search-row input:focus{ outline:none; border-color: var(--volt); }
+  .search-btn{
+    border:none; background: var(--lime); color:#12161B; font-family:'Inter'; font-weight:700;
+    font-size:13.5px; padding:0 22px; border-radius:14px; cursor:pointer;
+  }
+
+  .section-title{
+    font-size:12px; font-weight:700; color: var(--text-muted); text-transform:uppercase;
+    letter-spacing:0.05em; margin:26px 0 10px;
+  }
+  .card-list{ background: var(--surface); border:1px solid var(--line); border-radius:20px; overflow:hidden; }
+  .person-row{ display:flex; align-items:center; gap:14px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .person-row:last-child{ border-bottom:none; }
+  .person-avatar{
+    width:42px; height:42px; border-radius:50%; background: var(--surface-2); color: var(--text-muted);
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:15px; flex-shrink:0;
+    font-family:'Unbounded';
+  }
+  .person-body{ flex:1; min-width:0; }
+  .person-name{ font-weight:700; font-size:13.5px; }
+  .person-sub{ font-size:11.5px; color: var(--text-muted); margin-top:2px; display:flex; align-items:center; gap:6px; }
+  .level-chip{
+    font-size:10px; font-weight:700; padding:2px 7px; border-radius:7px; color:#12161B; flex-shrink:0;
+  }
+  .person-actions{ display:flex; gap:8px; flex-shrink:0; }
+  .pbtn{
+    border:none; border-radius:11px; font-family:'Inter'; font-weight:700; font-size:12px;
+    padding:8px 13px; cursor:pointer; white-space:nowrap;
+  }
+  .pbtn.add{ background: var(--lime); color:#12161B; }
+  .pbtn.accept{ background: var(--lime); color:#12161B; }
+  .pbtn.decline{ background: var(--surface-2); color: var(--text-muted); border:1px solid var(--line); }
+  .pbtn.remove{ background: var(--surface-2); color: var(--flame); border:1px solid var(--line); }
+  .pbtn:disabled{ opacity:0.5; cursor:default; }
+
+  .empty-state{ text-align:center; padding:26px 14px; color: var(--text-muted); font-size:12.5px; }
+  .search-msg{ font-size:12px; color: var(--text-muted); padding: 4px 2px 2px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-mark">
+      <svg width="20" height="20" viewBox="0 0 200 200"><circle cx="100" cy="100" r="62" fill="none" stroke="#12161B" stroke-width="20" stroke-linecap="round" stroke-dasharray="300 90" transform="rotate(38 100 100)"/><g transform="translate(124,99) scale(2.25)" fill="#12161B"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></g></svg>
+    </div>
+    <div class="brand-name">Suivi Fitness<span>Calories & sport</span></div>
+  </div>
+
+  <div class="sidebar-nav">
+    <a class="sidebar-link home" href="index.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      Accueil
+    </a>
+    <a class="sidebar-link cal" href="calories.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+      Calories
+    </a>
+    <a class="sidebar-link sport" href="sport.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="2.3" height="6" rx="1"/><rect x="4.3" y="7" width="2" height="10" rx="1"/><line x1="7.3" y1="12" x2="16.7" y2="12"/><rect x="17.7" y="7" width="2" height="10" rx="1"/><rect x="20.2" y="9" width="2.3" height="6" rx="1"/></svg>
+      Sport
+    </a>
+    <a class="sidebar-link calendar" href="calendar.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="3"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendrier
+    </a>
+    <a class="sidebar-link progress" href="progress.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
+      Progression
+    </a>
+    <a class="sidebar-link friends active" href="friends.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Amis
+    </a>
+    <a class="sidebar-link library" href="library.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Bibliothèques
+    </a>
+    <a class="sidebar-link settings" href="settings.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="12" cy="19" r="1.6"/></svg>
+      Réglages
+    </a>
+  </div>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-logout" onclick="logout()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+      Déconnexion
+    </button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+    <div class="page-title">Amis</div>
+    <div class="page-sub">Ajoute des amis pour bientôt comparer vos progrès.</div>
+
+    <div class="username-banner" id="username-banner" style="display:none;">
+      <span>Définis ton pseudo pour que tes amis puissent te trouver.</span>
+      <a href="settings.html">Aller dans Réglages →</a>
+    </div>
+
+    <div class="search-row">
+      <input type="text" id="search-input" placeholder="Rechercher un pseudo…" onkeydown="if(event.key==='Enter')searchUsers()">
+      <button class="search-btn" onclick="searchUsers()">Rechercher</button>
+    </div>
+    <div id="search-results"></div>
+
+    <div class="section-title" id="incoming-title" style="display:none;">Demandes reçues</div>
+    <div class="card-list" id="incoming-list" style="display:none;"></div>
+
+    <div class="section-title" id="outgoing-title" style="display:none;">Demandes envoyées</div>
+    <div class="card-list" id="outgoing-list" style="display:none;"></div>
+
+    <div class="section-title">Mes amis</div>
+    <div class="card-list" id="friends-list">
+      <div class="empty-state">Chargement…</div>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="auth-guard.js"></script>
+<script>
+  function initial(name){ return (name || "?").trim().charAt(0).toUpperCase(); }
+
+  function levelChip(xpTotal){
+    const p = getXpProgress(xpTotal || 0);
+    return `<span class="level-chip" style="background:${p.color};">Niv. ${p.level}</span>`;
+  }
+
+  async function searchUsers(){
+    const q = document.getElementById("search-input").value.trim();
+    const resultsEl = document.getElementById("search-results");
+    if (!q){ resultsEl.innerHTML = ""; return; }
+
+    const { data, error } = await supabaseClient.rpc("search_users_by_username", { p_query: q });
+    if (error){ resultsEl.innerHTML = `<div class="search-msg">Erreur : ${error.message}</div>`; return; }
+
+    if (!data || !data.length){
+      resultsEl.innerHTML = `<div class="search-msg">Aucun utilisateur trouvé pour "${escapeHtml(q)}".</div>`;
+      return;
+    }
+
+    resultsEl.innerHTML = `<div class="card-list">` + data.map(u => `
+      <div class="person-row">
+        <div class="person-avatar">${initial(u.full_name || u.username)}</div>
+        <div class="person-body">
+          <div class="person-name">${escapeHtml(u.full_name || u.username)}</div>
+          <div class="person-sub">@${escapeHtml(u.username)}</div>
+        </div>
+        <div class="person-actions">
+          <button class="pbtn add" onclick="sendRequest('${u.username}', this)">Ajouter</button>
+        </div>
+      </div>`).join("") + `</div>`;
+  }
+
+  function escapeHtml(str){
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+
+  async function sendRequest(username, btnEl){
+    btnEl.disabled = true;
+    const { data, error } = await supabaseClient.rpc("send_friend_request", { p_username: username });
+    if (error || !data || !data.ok){
+      alert((data && data.error) || (error && error.message) || "Erreur lors de l'envoi.");
+      btnEl.disabled = false;
+      return;
+    }
+    btnEl.textContent = "Envoyée ✓";
+    await loadFriends();
+  }
+
+  async function acceptRequest(friendshipId){
+    const { error } = await supabaseClient.rpc("accept_friend_request", { p_friendship_id: friendshipId });
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadFriends();
+  }
+
+  async function removeFriendship(friendshipId){
+    const { error } = await supabaseClient.rpc("delete_friendship", { p_friendship_id: friendshipId });
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadFriends();
+  }
+
+  async function loadFriends(){
+    const { data, error } = await supabaseClient.rpc("get_friends_list");
+    if (error){
+      document.getElementById("friends-list").innerHTML = `<div class="empty-state">Erreur : ${error.message}</div>`;
+      return;
+    }
+
+    const list = data || [];
+    const accepted = list.filter(f => f.status === "accepted");
+    const incoming = list.filter(f => f.status === "pending" && f.is_incoming_request);
+    const outgoing = list.filter(f => f.status === "pending" && !f.is_incoming_request);
+
+    const rowBase = (f) => `
+      <div class="person-avatar">${initial(f.full_name || f.username)}</div>
+      <div class="person-body">
+        <div class="person-name">${escapeHtml(f.full_name || f.username)}</div>
+        <div class="person-sub">@${escapeHtml(f.username)} ${levelChip(f.xp_total)}</div>
+      </div>`;
+
+    if (incoming.length){
+      document.getElementById("incoming-title").style.display = "block";
+      document.getElementById("incoming-list").style.display = "block";
+      document.getElementById("incoming-list").innerHTML = incoming.map(f => `
+        <div class="person-row">
+          ${rowBase(f)}
+          <div class="person-actions">
+            <button class="pbtn accept" onclick="acceptRequest('${f.friendship_id}')">Accepter</button>
+            <button class="pbtn decline" onclick="removeFriendship('${f.friendship_id}')">Refuser</button>
+          </div>
+        </div>`).join("");
+    } else {
+      document.getElementById("incoming-title").style.display = "none";
+      document.getElementById("incoming-list").style.display = "none";
+    }
+
+    if (outgoing.length){
+      document.getElementById("outgoing-title").style.display = "block";
+      document.getElementById("outgoing-list").style.display = "block";
+      document.getElementById("outgoing-list").innerHTML = outgoing.map(f => `
+        <div class="person-row">
+          ${rowBase(f)}
+          <div class="person-actions">
+            <button class="pbtn decline" onclick="removeFriendship('${f.friendship_id}')">Annuler</button>
+          </div>
+        </div>`).join("");
+    } else {
+      document.getElementById("outgoing-title").style.display = "none";
+      document.getElementById("outgoing-list").style.display = "none";
+    }
+
+    const friendsEl = document.getElementById("friends-list");
+    if (!accepted.length){
+      friendsEl.innerHTML = `<div class="empty-state">Pas encore d'amis — recherche un pseudo ci-dessus pour envoyer une demande.</div>`;
+    } else {
+      friendsEl.innerHTML = accepted.map(f => `
+        <div class="person-row">
+          ${rowBase(f)}
+          <div class="person-actions">
+            <button class="pbtn remove" onclick="removeFriendship('${f.friendship_id}')">Retirer</button>
+          </div>
+        </div>`).join("");
+    }
+  }
+
+  (async function init(){
+    const user = await requireAuth();
+    if (!user) return;
+
+    const { data: profile } = await supabaseClient.from("profiles").select("username").eq("id", user.id).single();
+    if (!profile || !profile.username){
+      document.getElementById("username-banner").style.display = "flex";
+    }
+
+    await loadFriends();
+  })();
+</script>
+</body>
+</html>

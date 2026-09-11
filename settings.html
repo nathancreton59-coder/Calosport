@@ -60,6 +60,7 @@
   .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
   .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
   .sidebar-link.calendar.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
+  .sidebar-link.friends.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
   .sidebar-link.settings.active .dot{ background: var(--text); }
   .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
   .sidebar-link.library.active .dot{ background: var(--text); }
@@ -200,6 +201,11 @@
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Progression
+    </a>
+    <a class="sidebar-link friends" href="friends.html">
+      <div class="dot"></div>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Amis
     </a>
     <a class="sidebar-link library" href="library.html">
       <div class="dot"></div>
@@ -412,6 +418,10 @@
       <label>Nom affiché</label>
       <input type="text" id="edit-name-input" autocomplete="off">
     </div>
+    <div class="field">
+      <label>Pseudo (pour que tes amis te trouvent)</label>
+      <input type="text" id="edit-username-input" autocomplete="off" placeholder="ex. julien92">
+    </div>
     <div class="modal-actions">
       <button type="button" class="modal-btn cancel" onclick="closeModal('edit-profile-overlay')">Annuler</button>
       <button type="button" class="modal-btn confirm" onclick="saveProfileName()">Enregistrer</button>
@@ -505,15 +515,19 @@
   async function saveProfileName(){
     const name = document.getElementById("edit-name-input").value.trim();
     if (!name) return;
+    const usernameRaw = document.getElementById("edit-username-input").value.trim();
+    const username = usernameRaw ? usernameRaw.toLowerCase().replace(/[^a-z0-9_.]/g, "") : null;
     const msg = document.getElementById("edit-profile-msg");
-    const { error: e1 } = await supabaseClient.from("profiles").update({ full_name: name }).eq("id", currentUser.id);
+
+    const { error: e1 } = await supabaseClient.from("profiles").update({ full_name: name, username }).eq("id", currentUser.id);
     const { error: e2 } = await supabaseClient.auth.updateUser({ data: { full_name: name } });
     if (e1 || e2){
-      msg.textContent = "Erreur : " + (e1 || e2).message;
+      const err = e1 || e2;
+      msg.textContent = err.message && err.message.includes("duplicate") ? "Ce pseudo est déjà pris." : "Erreur : " + err.message;
       msg.className = "modal-msg";
       return;
     }
-    document.getElementById("profile-name-preview").textContent = name;
+    document.getElementById("profile-name-preview").textContent = username ? `${name} · @${username}` : name;
     msg.textContent = "Profil mis à jour ✓";
     msg.className = "modal-msg ok";
     setTimeout(() => closeModal("edit-profile-overlay"), 700);
@@ -688,8 +702,10 @@
 
     const { data: profile } = await supabaseClient.from("profiles").select("*").eq("id", user.id).single();
     if (profile){
-      document.getElementById("profile-name-preview").textContent = profile.full_name || user.email || "—";
+      document.getElementById("profile-name-preview").textContent =
+        profile.full_name ? (profile.username ? `${profile.full_name} · @${profile.username}` : profile.full_name) : (user.email || "—");
       document.getElementById("edit-name-input").value = profile.full_name || "";
+      document.getElementById("edit-username-input").value = profile.username || "";
 
       document.getElementById("notif-master").checked = profile.notifications_enabled !== false;
       document.getElementById("notif-meals").checked = profile.notif_meals !== false;
