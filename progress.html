@@ -81,6 +81,24 @@
   }
   .card-top{ display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:6px; flex-wrap:wrap; gap:10px; }
   .card-title{ font-weight:700; font-size:15px; }
+  .card-sub{ font-size:12px; color: var(--text-muted); margin-top:2px; }
+
+  /* ---------- quetes ---------- */
+  .quest-section-label{
+    font-size:11px; font-weight:700; color: var(--text-muted); text-transform:uppercase;
+    letter-spacing:0.04em; margin:16px 0 6px;
+  }
+  .quest-row{ display:flex; align-items:center; gap:12px; padding:10px 0; border-bottom:1px solid var(--line); }
+  .quest-row:last-child{ border-bottom:none; }
+  .quest-check{
+    width:22px; height:22px; border-radius:50%; border:2px solid var(--line); flex-shrink:0;
+    display:flex; align-items:center; justify-content:center; font-size:12px; color:#12161B;
+  }
+  .quest-check.done{ background: var(--lime); border-color: var(--lime); }
+  .quest-title{ flex:1; font-size:13px; font-weight:600; }
+  .quest-title.done{ color: var(--text-muted); text-decoration:line-through; }
+  .quest-progress{ font-size:11px; color: var(--text-muted); margin-right:4px; flex-shrink:0; }
+  .quest-xp{ font-size:11px; font-weight:700; color: var(--lime); flex-shrink:0; }
   .card-stat{ font-family:'Unbounded'; font-weight:700; font-size:20px; }
   .card-stat.lime{ color: var(--lime); }
   .card-stat.flame{ color: var(--flame); }
@@ -239,6 +257,15 @@
         <div class="level-bar-track"><div class="level-bar-fill" id="level-bar-fill"></div></div>
         <div class="level-sub" id="level-sub">—</div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Quêtes</div>
+      <div class="card-sub">Complète des objectifs pour gagner de l'XP bonus.</div>
+      <div class="quest-section-label">Aujourd'hui</div>
+      <div id="quests-daily"></div>
+      <div class="quest-section-label">Cette semaine</div>
+      <div id="quests-weekly"></div>
     </div>
 
     <div class="quick-row">
@@ -758,6 +785,20 @@
     document.getElementById("trend-sets").innerHTML = `${curSets} ${trendArrow(curSets, prevSets)}`;
   }
 
+  // ---------- quetes ----------
+  async function renderQuests(){
+    const quests = await evaluateQuests();
+    const rowHtml = q => `
+      <div class="quest-row">
+        <div class="quest-check ${q.completed ? "done" : ""}">${q.completed ? "✓" : ""}</div>
+        <div class="quest-title ${q.completed ? "done" : ""}">${q.title}</div>
+        ${q.target > 1 ? `<div class="quest-progress">${q.current}/${q.target}</div>` : ""}
+        <div class="quest-xp">+${q.xp} XP</div>
+      </div>`;
+    document.getElementById("quests-daily").innerHTML = quests.filter(q => q.type === "daily").map(rowHtml).join("");
+    document.getElementById("quests-weekly").innerHTML = quests.filter(q => q.type === "weekly").map(rowHtml).join("");
+  }
+
   // ---------- niveau / XP ----------
   async function renderLevel(){
     const { data: profile } = await supabaseClient
@@ -808,6 +849,7 @@
     renderHeatmap();
     renderTrends();
     await renderLevel();
+    await renderQuests();
     await renderStreak();
     await loadWeightChart();
     await loadCalChart();

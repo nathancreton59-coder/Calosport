@@ -186,8 +186,66 @@ async function awardXp(source, relatedKey, amount){
   }
 }
 
+// ---------- quêtes ----------
+// S'appuient entièrement sur les événements déjà enregistrés dans xp_events —
+// aucune table supplémentaire nécessaire. "target" = nombre de jours distincts
+// (identifiés par related_key) requis dans la période pour valider la quête.
+const QUEST_DEFS = [
+  { code: "daily_workout", type: "daily", title: "Termine une séance", xp: 20, source: "workout_completed", target: 1 },
+  { code: "daily_calorie", type: "daily", title: "Reste dans ton objectif calorique", xp: 15, source: "calorie_goal", target: 1 },
+  { code: "daily_water", type: "daily", title: "Bois ton objectif d'eau", xp: 10, source: "water_goal", target: 1 },
+  { code: "weekly_3_workouts", type: "weekly", title: "Termine 3 séances", xp: 80, source: "workout_completed", target: 3 },
+  { code: "weekly_pr", type: "weekly", title: "Bats un record personnel", xp: 50, source: "personal_record", target: 1 },
+  { code: "weekly_5_calorie", type: "weekly", title: "5 jours dans ton objectif calorique", xp: 60, source: "calorie_goal", target: 5 },
+  { code: "weekly_5_water", type: "weekly", title: "Bois ton eau 5 jours", xp: 50, source: "water_goal", target: 5 },
+];
 
-// Un petit script inline en tête de chaque page lit déjà le cache localStorage
+// Date (lundi) du début de la semaine en cours, utilisée comme clé de période.
+function getWeekKey(){
+  const d = new Date();
+  const day = (d.getDay() + 6) % 7; // lundi = 0
+  d.setDate(d.getDate() - day);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().slice(0, 10);
+}
+
+// Calcule l'état de toutes les quêtes et attribue automatiquement l'XP bonus
+// des quêtes qui viennent d'être validées (la contrainte unique de xp_events
+// empêche tout doublon même si cette fonction est appelée plusieurs fois).
+async function evaluateQuests(){
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const weekKey = getWeekKey();
+
+  const { data: todayEvents } = await supabaseClient
+    .from("xp_events").select("source, related_key")
+    .eq("user_id", currentUser.id)
+    .gte("created_at", todayStr + "T00:00:00")
+    .lte("created_at", todayStr + "T23:59:59.999");
+
+  const { data: weekEvents } = await supabaseClient
+    .from("xp_events").select("source, related_key")
+    .eq("user_id", currentUser.id)
+    .gte("created_at", weekKey + "T00:00:00");
+
+  const results = [];
+  for (const q of QUEST_DEFS){
+    const periodKey = q.type === "daily" ? todayStr : weekKey;
+    const periodEvents = q.type === "daily" ? (todayEvents || []) : (weekEvents || []);
+    const matching = periodEvents.filter(e => e.source === q.source);
+    const uniqueCount = new Set(matching.map(e => e.related_key)).size;
+
+    const questKey = `${q.code}:${periodKey}`;
+    let completed = periodEvents.some(e => e.source === "quest" && e.related_key === questKey);
+    if (!completed && uniqueCount >= q.target){
+      await awardXp("quest", questKey, q.xp);
+      completed = true;
+    }
+    results.push({ ...q, current: Math.min(uniqueCount, q.target), completed });
+  }
+  return results;
+}
+
+
 // pour appliquer le thème avant l'affichage (évite le flash). Cette fonction,
 // appelée après le chargement du profil, applique la préférence réelle et
 // met le cache à jour pour la prochaine visite / les autres pages.
