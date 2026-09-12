@@ -78,11 +78,9 @@
   .sidebar-link.cal.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
   .sidebar-link.sport.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
   .sidebar-link.calendar.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
-  .sidebar-link.friends.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
-  .sidebar-link.leaderboard.active .dot{ background: var(--lime); box-shadow:0 0 6px rgba(212,242,82,0.6); }
+  .sidebar-link.social.active .dot{ background: var(--flame); box-shadow:0 0 6px rgba(255,122,89,0.6); }
   .sidebar-link.settings{ margin-top:8px; padding-top:14px; border-top:1px solid var(--line); }
   .sidebar-link.library.active .dot{ background: var(--text); }
-  .sidebar-link.feed.active .dot{ background: var(--volt); box-shadow:0 0 6px rgba(111,168,255,0.6); }
   .sidebar-link.progress.active .dot{ background: var(--text); }
 
   .sidebar-footer{ margin-top:auto; padding-top:16px; border-top:1px solid var(--line); }
@@ -346,6 +344,48 @@
     color: var(--flame); cursor:pointer; flex-shrink:0;
   }
   .add-time-link{ font-size:12px; color: var(--volt); font-weight:700; cursor:pointer; margin-top:8px; display:inline-block; }
+  /* ---------- navigation mobile (bas d'ecran) ---------- */
+  .bottom-nav{
+    display:none;
+    position:fixed; bottom:0; left:0; right:0; z-index:40;
+    background: var(--bg); border-top:1px solid var(--line);
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    justify-content:space-around; align-items:center;
+  }
+  .bn-item{
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    color: var(--text-muted); text-decoration:none; background:none; border:none;
+    font-family:'Inter'; font-size:10px; font-weight:600; padding:4px 6px; cursor:pointer;
+  }
+  .bn-item.active{ color: var(--lime); }
+  .bn-item svg{ flex-shrink:0; }
+
+  .more-overlay{
+    position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(6,8,10,0.75); z-index:50;
+    display:none; align-items:flex-end; justify-content:center;
+  }
+  .more-overlay.open{ display:flex; }
+  .more-sheet{
+    width:100%; max-width:480px; background: var(--bg); border:1px solid var(--line);
+    border-radius:22px 22px 0 0; padding:20px; max-height:70vh; overflow-y:auto;
+  }
+  .more-sheet-title{ font-family:'Unbounded'; font-weight:700; font-size:16px; margin-bottom:14px; }
+  .more-item{
+    display:flex; align-items:center; gap:14px; padding:13px 8px; color:var(--text);
+    text-decoration:none; font-weight:600; font-size:14px; border-bottom:1px solid var(--line);
+  }
+  .more-item:last-child{ border-bottom:none; }
+  .more-close{
+    width:100%; margin-top:12px; border:none; background:var(--surface); color:var(--text-muted);
+    font-family:'Inter'; font-weight:700; padding:12px; border-radius:14px; cursor:pointer;
+  }
+
+  @media (max-width: 768px){
+    .sidebar{ display:none; }
+    .main{ padding: 24px 16px 90px; }
+    .main-inner{ max-width:none; }
+    .bottom-nav{ display:flex; }
+  }
 </style>
 </head>
 <body>
@@ -384,20 +424,10 @@
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>
       Progression
     </a>
-    <a class="sidebar-link feed" href="feed.html">
-      <div class="dot"></div>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1"/></svg>
-      Flux
-    </a>
-    <a class="sidebar-link friends" href="friends.html">
+    <a class="sidebar-link social" href="social.html">
       <div class="dot"></div>
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-      Amis
-    </a>
-    <a class="sidebar-link leaderboard" href="leaderboard.html">
-      <div class="dot"></div>
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4z"/><path d="M7 6H4a2 2 0 0 0 0 4h1.5M17 6h3a2 2 0 0 1 0 4h-1.5"/></svg>
-      Classement
+      Social
     </a>
     <a class="sidebar-link library" href="library.html">
       <div class="dot"></div>
@@ -416,6 +446,35 @@
       <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
       Déconnexion
     </button>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <a class="bn-item" href="index.html"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+    Accueil
+  </a>
+  <a class="bn-item active" href="calories.html"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c1 3-2 4-2 7a4 4 0 0 0 8 0c0-1-.5-2-1-2 .5 2-1 3-2 2 1-2-1-3-1-5 0-1 .5-2 1-3-2 0-3.5 1-3 3-2 0-3 2-3 4a6 6 0 0 0 6 6"/></svg>
+    Nutrition
+  </a>
+  <a class="bn-item" href="sport.html"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="9" width="2.3" height="6" rx="1"/><rect x="4.3" y="7" width="2" height="10" rx="1"/><line x1="7.3" y1="12" x2="16.7" y2="12"/><rect x="17.7" y="7" width="2" height="10" rx="1"/><rect x="20.2" y="9" width="2.3" height="6" rx="1"/></svg>
+    Sport
+  </a>
+  <a class="bn-item" href="social.html"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Social
+  </a>
+  <button class="bn-item" onclick="openMoreMenu()"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+    Plus
+  </button>
+</nav>
+
+<div class="more-overlay" id="more-overlay">
+  <div class="more-sheet">
+    <div class="more-sheet-title">Plus</div>
+    <a class="more-item" href="calendar.html">📅 Calendrier</a>
+    <a class="more-item" href="progress.html">📈 Progression</a>
+    <a class="more-item" href="library.html">📚 Bibliothèques</a>
+    <a class="more-item" href="settings.html">⚙️ Réglages</a>
+    <button class="more-close" onclick="closeMoreMenu()">Fermer</button>
   </div>
 </div>
 
@@ -656,6 +715,10 @@
 
 <script src="config.js"></script>
 <script src="auth-guard.js"></script>
+<script>
+  function openMoreMenu(){ document.getElementById("more-overlay").classList.add("open"); }
+  function closeMoreMenu(){ document.getElementById("more-overlay").classList.remove("open"); }
+</script>
 <script>
   const BIG_RING_CIRC = 502;   // 2 * PI * 80
   const MACRO_RING_CIRC = 132; // 2 * PI * 21
