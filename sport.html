@@ -412,10 +412,11 @@
   .live-exo-meta{ font-size:12.5px; color:var(--text-muted); margin-bottom:20px; }
 
   .set-row{
-    display:flex; align-items:center; gap:10px;
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
     background: var(--surface); border:1px solid var(--line); border-radius:16px;
     padding:12px 14px; margin-bottom:10px;
   }
+  .set-row .rpe-row{ flex-basis:100%; margin-top:2px; }
   .set-row.done{ border-color: var(--volt); }
   .set-num{
     width:28px; height:28px; border-radius:9px; background: var(--volt-dim); color: var(--volt);
@@ -505,9 +506,38 @@
     .main-inner{ max-width:none; }
     .bottom-nav{ display:flex; }
   }
+  /* ---------- semaine de decharge ---------- */
+  .deload-toggle-row{
+    display:flex; align-items:flex-start; gap:10px; cursor:pointer; font-size:12.5px;
+    color: var(--text-muted); line-height:1.5; font-weight:600;
+  }
+  .deload-toggle-row input{ width:18px; height:18px; accent-color: var(--volt); flex-shrink:0; margin-top:1px; }
+  .deload-banner{
+    background: var(--volt-dim); border:1px solid var(--volt); color: var(--text);
+    border-radius:14px; padding:12px 16px; font-size:12.5px; font-weight:600; margin-bottom:16px;
+  }
+
+  /* ---------- RPE par serie ---------- */
+  .rpe-row{ display:flex; align-items:center; gap:6px; margin-top:8px; }
+  .rpe-label{ font-size:10.5px; color: var(--text-muted); font-weight:700; flex-shrink:0; }
+  .rpe-btn{
+    width:26px; height:26px; border-radius:8px; border:1px solid var(--line); background: var(--surface-2);
+    color: var(--text-muted); font-family:'Inter'; font-weight:700; font-size:11px; cursor:pointer; flex-shrink:0;
+  }
+  .rpe-btn.active{ background: var(--flame); border-color: var(--flame); color:#12161B; }
+
+  /* ---------- alerte record en direct ---------- */
+  .pr-toast{
+    position:fixed; top:24px; left:50%; transform: translateX(-50%) translateY(-30px);
+    background: var(--lime); color:#12161B; font-family:'Unbounded'; font-weight:700; font-size:14px;
+    padding:14px 24px; border-radius:16px; box-shadow:0 10px 30px rgba(0,0,0,0.4); z-index:200;
+    opacity:0; transition: opacity .3s ease, transform .3s ease; pointer-events:none; white-space:nowrap;
+  }
+  .pr-toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
+<div class="pr-toast" id="pr-toast"></div>
 
 <div class="sidebar">
   <div class="sidebar-brand">
@@ -691,6 +721,13 @@
           <input type="number" id="w-calories" placeholder="300" min="0">
         </div>
 
+        <div class="modal-field deload-field">
+          <label class="deload-toggle-row">
+            <input type="checkbox" id="w-deload">
+            <span>🔵 Semaine de décharge — réduis volontairement tes charges d'environ 40% cette séance</span>
+          </label>
+        </div>
+
         <div class="modal-field">
           <label>Exercices</label>
           <div id="exo-rows"></div>
@@ -771,6 +808,7 @@
     document.getElementById("workout-modal-title").textContent = "Nouvelle séance";
     document.getElementById("workout-modal-submit").textContent = "Créer la séance";
     document.getElementById("w-id").value = "";
+    document.getElementById("w-deload").checked = false;
     document.getElementById("workout-modal-overlay").classList.add("open");
     const today = new Date();
     document.getElementById("w-date").value = today.toISOString().slice(0,10);
@@ -786,6 +824,7 @@
     document.getElementById("w-type").value = "";
     document.getElementById("w-duration").value = "";
     document.getElementById("w-calories").value = "";
+    document.getElementById("w-deload").checked = false;
     document.getElementById("exo-rows").innerHTML = "";
     exoRowCount = 0;
     plannedSetsByRow = {};
@@ -806,6 +845,7 @@
     document.getElementById("w-type").value = workout.workout_type || "";
     document.getElementById("w-duration").value = workout.duration_min || "";
     document.getElementById("w-calories").value = workout.calories_burned ? Math.round(kcalToDisplayEnergy(workout.calories_burned)) : "";
+    document.getElementById("w-deload").checked = !!workout.is_deload;
     if (workout.scheduled_at){
       const d = new Date(workout.scheduled_at);
       document.getElementById("w-date").value = d.toISOString().slice(0,10);
@@ -1012,12 +1052,13 @@
     const date = document.getElementById("w-date").value;
     const time = document.getElementById("w-time").value;
     const scheduledAt = new Date(`${date}T${time}`).toISOString();
+    const isDeload = document.getElementById("w-deload").checked;
 
     let workout;
     if (editId){
       const { data, error } = await supabaseClient
         .from("workouts")
-        .update({ name, workout_type: type || null, duration_min: duration, calories_burned: calories, scheduled_at: scheduledAt })
+        .update({ name, workout_type: type || null, duration_min: duration, calories_burned: calories, scheduled_at: scheduledAt, is_deload: isDeload })
         .eq("id", editId)
         .select().single();
       if (error){ alert("Erreur : " + error.message); return; }
@@ -1032,7 +1073,7 @@
           user_id: currentUser.id,
           name, workout_type: type || null,
           duration_min: duration, calories_burned: calories,
-          scheduled_at: scheduledAt, completed: false
+          scheduled_at: scheduledAt, completed: false, is_deload: isDeload
         })
         .select().single();
       if (error){ alert("Erreur : " + error.message); return; }
@@ -1295,11 +1336,11 @@
     const s = exo.loggedSets[setIdx];
     if (s.dbId){
       await supabaseClient.from("workout_sets")
-        .update({ weight_kg: s.weight_kg, reps: s.reps, completed: true, completed_at: new Date().toISOString() })
+        .update({ weight_kg: s.weight_kg, reps: s.reps, rpe: s.rpe, completed: true, completed_at: new Date().toISOString() })
         .eq("id", s.dbId);
     } else {
       const { data } = await supabaseClient.from("workout_sets")
-        .insert({ exercise_id: exo.id, set_number: s.set_number, is_warmup: !!s.isWarmup, weight_kg: s.weight_kg, reps: s.reps, completed: true, completed_at: new Date().toISOString() })
+        .insert({ exercise_id: exo.id, set_number: s.set_number, is_warmup: !!s.isWarmup, weight_kg: s.weight_kg, reps: s.reps, rpe: s.rpe, completed: true, completed_at: new Date().toISOString() })
         .select().single();
       if (data) s.dbId = data.id;
     }
@@ -1311,8 +1352,10 @@
     const weightInput = parseFloat(row.querySelector(".set-weight").value) || null;
     const weight = weightInput != null ? displayWeightToKg(weightInput) : null;
     const reps = parseInt(row.querySelector(".set-reps").value) || null;
+    const rpe = row.dataset.rpe ? parseInt(row.dataset.rpe) : null;
     exo.loggedSets[setIdx].weight_kg = weight;
     exo.loggedSets[setIdx].reps = reps;
+    exo.loggedSets[setIdx].rpe = rpe;
     exo.loggedSets[setIdx].completed = true;
     saveSet(exo, setIdx);
 
@@ -1322,6 +1365,7 @@
         live.newRecordAwarded[exo.name] = true;
         const todayStr = new Date().toISOString().slice(0, 10);
         awardXp("personal_record", `${exo.name}:${todayStr}`, 40);
+        showPRToast(`🏆 Nouveau record sur ${exo.name} !`);
       }
     }
 
@@ -1334,6 +1378,20 @@
     } else {
       startRest(exo.rest_seconds || 90, setIdx);
     }
+  }
+
+  function showPRToast(message){
+    const el = document.getElementById("pr-toast");
+    el.textContent = message;
+    el.classList.add("show");
+    clearTimeout(window._prToastTimeout);
+    window._prToastTimeout = setTimeout(() => el.classList.remove("show"), 2800);
+  }
+
+  function setRpe(setIdx, value){
+    const row = document.getElementById("set-row-" + setIdx);
+    row.dataset.rpe = value;
+    row.querySelectorAll(".rpe-btn").forEach(b => b.classList.toggle("active", parseInt(b.textContent) === value));
   }
 
   function startRest(seconds, justCompletedSetIdx){
@@ -1461,7 +1519,7 @@
     }
 
     const setsHtml = exo.loggedSets.map((s, i) => `
-      <div class="set-row ${s.completed ? "done" : ""}" id="set-row-${i}">
+      <div class="set-row ${s.completed ? "done" : ""}" id="set-row-${i}" data-rpe="${s.rpe ?? ""}">
         <div class="set-num">${s.isWarmup ? "É" + (s.set_number ?? i + 1) : (s.set_number ?? i + 1)}</div>
         <div class="set-input-group">
           <div class="grp"><span class="u">${weightUnitLabel()}</span><input type="number" class="set-weight" step="0.5" value="${s.weight_kg != null ? kgToDisplayWeight(s.weight_kg).toFixed(1) : ""}" ${s.completed ? "disabled" : ""}></div>
@@ -1472,9 +1530,15 @@
             ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#12161B" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'
             : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>'}
         </button>
+        ${!s.isWarmup ? `
+        <div class="rpe-row">
+          <span class="rpe-label">RPE</span>
+          ${[6, 7, 8, 9, 10].map(v => `<button type="button" class="rpe-btn ${s.rpe === v ? "active" : ""}" onclick="setRpe(${i}, ${v})" ${s.completed ? "disabled" : ""}>${v}</button>`).join("")}
+        </div>` : ""}
       </div>`).join("");
 
     body.innerHTML = `
+      ${live.workout.is_deload ? '<div class="deload-banner">🔵 Semaine de décharge — vise environ 40% de charge en moins que d\'habitude</div>' : ""}
       <div class="live-exo-name">${exo.name}</div>
       <div class="live-exo-meta">${exo.loggedSets.length} séries cibles · ${exo.rest_seconds}s de repos</div>
       ${setsHtml}`;
