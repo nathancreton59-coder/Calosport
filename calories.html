@@ -410,6 +410,28 @@
     font-weight:700; font-size:12px; padding:9px 14px; border-radius:11px; cursor:pointer;
   }
   .suggest-empty{ text-align:center; padding:22px 10px; color: var(--text-muted); font-size:12.5px; margin-top:14px; }
+
+  /* ---------- recettes ---------- */
+  .recipe-header-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:26px 0 10px; flex-wrap:wrap; }
+  .recipe-create-btn{
+    border:1px solid var(--line); background: var(--surface-2); color: var(--text); font-family:'Inter';
+    font-weight:700; font-size:12px; padding:9px 14px; border-radius:11px; cursor:pointer; white-space:nowrap;
+  }
+  .recipe-row{ display:flex; align-items:center; gap:14px; padding:14px 18px; border-bottom:1px solid var(--line); }
+  .recipe-row:last-child{ border-bottom:none; }
+  .recipe-icon{
+    width:38px; height:38px; border-radius:12px; background: var(--lime-dim); color: var(--lime);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; font-size:16px;
+  }
+  .recipe-body{ flex:1; min-width:0; }
+  .recipe-name{ font-weight:700; font-size:13.5px; }
+  .recipe-meta{ font-size:11.5px; color: var(--text-muted); margin-top:2px; }
+  .recipe-actions{ display:flex; gap:8px; flex-shrink:0; }
+  .picker-row{ display:flex; align-items:center; gap:12px; padding:11px 14px; border-bottom:1px solid var(--line); }
+  .picker-row:last-child{ border-bottom:none; }
+  .picker-row input[type=checkbox]{ width:18px; height:18px; accent-color: var(--lime); flex-shrink:0; }
+  .picker-name{ flex:1; font-size:13px; font-weight:600; }
+  .picker-meta{ font-size:11px; color: var(--text-muted); }
 </style>
 </head>
 <body>
@@ -596,6 +618,14 @@
         <div class="section-title">Repas du jour</div>
         <div id="meals-container">Chargement des repas…</div>
       </div>
+
+      <div class="recipe-header-row">
+        <div class="section-title" style="margin:0;">Mes recettes</div>
+        <button class="recipe-create-btn" onclick="openCreateRecipeModal()">+ Créer depuis les repas du jour</button>
+      </div>
+      <div class="card-list" id="recipes-list">
+        <div class="empty-state">Chargement…</div>
+      </div>
     </div>
     </div>
 
@@ -745,6 +775,28 @@
       <button type="button" class="modal-btn save" onclick="saveSupplement()">Enregistrer</button>
     </div>
     <div class="modal-msg" id="supp-msg" style="font-size:12px; margin-top:10px; color:var(--flame); text-align:center;"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="recipe-overlay">
+  <div class="modal-sheet">
+    <div class="modal-title">Créer une recette</div>
+    <p style="font-size:12px; color:var(--text-muted); margin:0 0 16px; line-height:1.5;">
+      Choisis les repas d'aujourd'hui à regrouper sous un nom réutilisable.
+    </p>
+    <div class="modal-field">
+      <label>Nom de la recette</label>
+      <input type="text" id="recipe-name" placeholder="Ex. Mon petit-déj protéiné">
+    </div>
+    <div class="modal-field">
+      <label>Repas à inclure</label>
+      <div id="recipe-meal-picker" class="card-list"></div>
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn cancel" onclick="closeRecipeOverlay()">Annuler</button>
+      <button type="button" class="modal-btn save" onclick="saveRecipe()">Enregistrer</button>
+    </div>
+    <div class="modal-msg" id="recipe-msg" style="font-size:12px; margin-top:10px; color:var(--flame); text-align:center;"></div>
   </div>
 </div>
 
@@ -1476,6 +1528,122 @@
     await loadCalories();
   }
 
+  // ---------- recettes ----------
+  let RECIPES = [];
+
+  function closeRecipeOverlay(){ document.getElementById("recipe-overlay").classList.remove("open"); }
+  function openRecipeOverlay(){ document.getElementById("recipe-overlay").classList.add("open"); }
+
+  function openCreateRecipeModal(){
+    document.getElementById("recipe-name").value = "";
+    document.getElementById("recipe-msg").textContent = "";
+    const picker = document.getElementById("recipe-meal-picker");
+
+    if (!TODAYS_MEALS.length){
+      picker.innerHTML = `<div class="empty-state">Ajoute d'abord des repas aujourd'hui pour pouvoir en faire une recette.</div>`;
+    } else {
+      picker.innerHTML = TODAYS_MEALS.map(m => `
+        <div class="picker-row">
+          <input type="checkbox" value="${m.id}" checked>
+          <div class="picker-name">${escapeMealHtml(m.name)}</div>
+          <div class="picker-meta">${m.weight_g ? m.weight_g + "g · " : ""}${formatEnergy(m.calories)}</div>
+        </div>`).join("");
+    }
+    openRecipeOverlay();
+  }
+
+  async function saveRecipe(){
+    const name = document.getElementById("recipe-name").value.trim();
+    const msg = document.getElementById("recipe-msg");
+    const checked = [...document.querySelectorAll("#recipe-meal-picker input[type=checkbox]:checked")].map(c => c.value);
+
+    if (!name){ msg.textContent = "Donne un nom à ta recette."; return; }
+    if (!checked.length){ msg.textContent = "Sélectionne au moins un repas."; return; }
+
+    const items = TODAYS_MEALS.filter(m => checked.includes(m.id));
+
+    const { data: recipe, error: e1 } = await supabaseClient
+      .from("recipes").insert({ user_id: currentUser.id, name }).select().single();
+    if (e1){ msg.textContent = "Erreur : " + e1.message; return; }
+
+    const rows = items.map(m => ({
+      recipe_id: recipe.id,
+      food_library_id: m.food_library_id || null,
+      name: m.name, weight_g: m.weight_g || 0,
+      calories: m.calories || 0, protein_g: m.protein_g || 0, carbs_g: m.carbs_g || 0, fat_g: m.fat_g || 0,
+    }));
+    const { error: e2 } = await supabaseClient.from("recipe_items").insert(rows);
+    if (e2){ msg.textContent = "Erreur : " + e2.message; return; }
+
+    closeRecipeOverlay();
+    await loadRecipes();
+  }
+
+  async function loadRecipes(){
+    const { data: recipes } = await supabaseClient
+      .from("recipes").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false });
+    const list = recipes || [];
+    if (!list.length){ RECIPES = []; renderRecipes(); return; }
+
+    const { data: items } = await supabaseClient
+      .from("recipe_items").select("*").in("recipe_id", list.map(r => r.id));
+
+    RECIPES = list.map(r => {
+      const its = (items || []).filter(i => i.recipe_id === r.id);
+      const totals = its.reduce((a, i) => ({
+        cal: a.cal + (i.calories || 0), protein: a.protein + (i.protein_g || 0),
+        carbs: a.carbs + (i.carbs_g || 0), fat: a.fat + (i.fat_g || 0),
+      }), { cal: 0, protein: 0, carbs: 0, fat: 0 });
+      return { ...r, items: its, totals };
+    });
+    renderRecipes();
+  }
+
+  function renderRecipes(){
+    const el = document.getElementById("recipes-list");
+    if (!RECIPES.length){
+      el.innerHTML = `<div class="empty-state">Aucune recette pour l'instant — regroupe les repas d'une journée pour en créer une.</div>`;
+      return;
+    }
+    el.innerHTML = RECIPES.map(r => `
+      <div class="recipe-row">
+        <div class="recipe-icon">🍽️</div>
+        <div class="recipe-body">
+          <div class="recipe-name">${escapeMealHtml(r.name)}</div>
+          <div class="recipe-meta">${r.items.length} aliment${r.items.length > 1 ? "s" : ""} · ${formatEnergy(r.totals.cal)} · ${Math.round(r.totals.protein)}g P · ${Math.round(r.totals.carbs)}g G · ${Math.round(r.totals.fat)}g L</div>
+        </div>
+        <div class="recipe-actions">
+          <button class="icon-btn" onclick="logRecipe('${r.id}')" title="Ajouter au journal">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+          </button>
+          <button class="icon-btn danger" onclick="deleteRecipe('${r.id}')" title="Supprimer">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+          </button>
+        </div>
+      </div>`).join("");
+  }
+
+  async function logRecipe(recipeId){
+    const recipe = RECIPES.find(r => r.id === recipeId);
+    if (!recipe) return;
+    for (const it of recipe.items){
+      await supabaseClient.from("meals").insert({
+        user_id: currentUser.id,
+        food_library_id: it.food_library_id,
+        name: it.name, weight_g: it.weight_g, meal_type: "Recette",
+        calories: it.calories, protein_g: it.protein_g, carbs_g: it.carbs_g, fat_g: it.fat_g,
+      });
+    }
+    await loadCalories();
+  }
+
+  async function deleteRecipe(recipeId){
+    if (!confirm("Supprimer cette recette ?")) return;
+    const { error } = await supabaseClient.from("recipes").delete().eq("id", recipeId);
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadRecipes();
+  }
+
   (async function init(){
     const user = await requireAuth();
     if (!user) return;
@@ -1485,6 +1653,7 @@
     await loadFavorites();
     await loadCalories();
     await loadSupplements();
+    await loadRecipes();
   })();
 </script>
 </body>
