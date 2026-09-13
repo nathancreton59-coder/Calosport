@@ -386,6 +386,30 @@
     .main-inner{ max-width:none; }
     .bottom-nav{ display:flex; }
   }
+  /* ---------- suggestion de repas ---------- */
+  .suggest-card{
+    background: var(--surface); border:1px solid var(--line); border-radius:20px; padding:20px; margin-bottom:28px;
+  }
+  .suggest-head{ display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .suggest-btn{
+    border:none; background: var(--lime); color:#12161B; font-family:'Inter'; font-weight:700;
+    font-size:13px; padding:11px 18px; border-radius:13px; cursor:pointer; white-space:nowrap; flex-shrink:0;
+  }
+  .suggest-remaining{
+    display:flex; gap:16px; flex-wrap:wrap; margin-top:16px; padding:14px; background: var(--surface-2);
+    border-radius:14px; font-size:12px; color: var(--text-muted);
+  }
+  .suggest-remaining b{ color: var(--text); font-family:'Unbounded'; font-size:13px; }
+  .suggest-item{
+    border:1px solid var(--line); border-radius:16px; padding:16px; margin-top:14px;
+  }
+  .suggest-item-title{ font-weight:700; font-size:14px; margin-bottom:6px; }
+  .suggest-item-macros{ font-size:11.5px; color: var(--text-muted); margin-bottom:12px; }
+  .suggest-add-btn{
+    border:1px solid var(--lime); background: var(--lime-dim); color: var(--lime); font-family:'Inter';
+    font-weight:700; font-size:12px; padding:9px 14px; border-radius:11px; cursor:pointer;
+  }
+  .suggest-empty{ text-align:center; padding:22px 10px; color: var(--text-muted); font-size:12.5px; margin-top:14px; }
 </style>
 </head>
 <body>
@@ -555,6 +579,17 @@
             </div>
           </div>
         </div>
+      </div>
+
+      <div class="suggest-card">
+        <div class="suggest-head">
+          <div>
+            <div class="card-title">💡 Suggestion de repas</div>
+            <div class="card-sub">Des combinaisons issues de tes aliments habituels, ajustées à ce qu'il te reste aujourd'hui.</div>
+          </div>
+          <button class="suggest-btn" onclick="openSuggestions()">Que manger ?</button>
+        </div>
+        <div id="suggest-results"></div>
       </div>
 
       <div>
@@ -1276,6 +1311,169 @@
 
     renderSuppToday();
     renderSuppMyList();
+  }
+
+  // ---------- suggestion de repas intelligente ----------
+  async function getRemainingTargets(){
+    const { data: profile } = await supabaseClient
+      .from("profiles").select("calorie_goal, protein_goal_g, carbs_goal_g, fat_goal_g").eq("id", currentUser.id).single();
+    const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+    const { data: meals } = await supabaseClient
+      .from("meals").select("calories, protein_g, carbs_g, fat_g")
+      .eq("user_id", currentUser.id).gte("logged_at", todayStart.toISOString());
+
+    const consumed = (meals || []).reduce((a, m) => ({
+      cal: a.cal + (m.calories || 0), protein: a.protein + (m.protein_g || 0),
+      carbs: a.carbs + (m.carbs_g || 0), fat: a.fat + (m.fat_g || 0)
+    }), { cal: 0, protein: 0, carbs: 0, fat: 0 });
+
+    return {
+      cal: Math.max(0, (profile?.calorie_goal ?? 2400) - consumed.cal),
+      protein: Math.max(0, (profile?.protein_goal_g ?? 120) - consumed.protein),
+      carbs: Math.max(0, (profile?.carbs_goal_g ?? 160) - consumed.carbs),
+      fat: Math.max(0, (profile?.fat_goal_g ?? 70) - consumed.fat),
+    };
+  }
+
+  async function getFrequentFoods(){
+    const { data: history } = await supabaseClient
+      .from("meals").select("food_library_id")
+      .eq("user_id", currentUser.id).not("food_library_id", "is", null)
+      .order("logged_at", { ascending: false }).limit(300);
+
+    const freq = {};
+    (history || []).forEach(m => { freq[m.food_library_id] = (freq[m.food_library_id] || 0) + 1; });
+    const topIds = Object.keys(freq).sort((a, b) => freq[b] - freq[a]).slice(0, 25);
+    if (!topIds.length) return [];
+
+    const { data: foods } = await supabaseClient.from("food_library").select("*").in("id", topIds);
+    return (foods || [])
+      .map(f => ({
+        id: f.id, name: f.name,
+        kcalG: f.calories_per_100g / 100,
+        proteinG: f.protein_per_100g / 100,
+        carbsG: f.carbs_per_100g / 100,
+        fatG: f.fat_per_100g / 100,
+      }))
+      .filter(f => f.kcalG > 0.2); // écarte les aliments quasi sans calories (eau, condiments...)
+  }
+
+  function scoreAgainst(remaining, protein, carbs, fat){
+    return Math.abs(protein - remaining.protein) / Math.max(remaining.protein, 1)
+         + Math.abs(carbs - remaining.carbs) / Math.max(remaining.carbs, 1)
+         + Math.abs(fat - remaining.fat) / Math.max(remaining.fat, 1);
+  }
+
+  function buildSuggestions(foods, remaining){
+    const singles = [];
+    foods.forEach(f => {
+      const weight = remaining.cal / f.kcalG;
+      if (weight < 20 || weight > 800) return;
+      const protein = f.proteinG * weight, carbs = f.carbsG * weight, fat = f.fatG * weight;
+      singles.push({
+        type: "single", score: scoreAgainst(remaining, protein, carbs, fat),
+        items: [{ id: f.id, name: f.name, weight: Math.round(weight), kcalG: f.kcalG, proteinG: f.proteinG, carbsG: f.carbsG, fatG: f.fatG }],
+        totals: { cal: f.kcalG * weight, protein, carbs, fat },
+      });
+    });
+
+    const pairs = [];
+    for (let i = 0; i < foods.length; i++){
+      for (let j = i + 1; j < foods.length; j++){
+        const f1 = foods[i], f2 = foods[j];
+        const det = f1.kcalG * f2.proteinG - f2.kcalG * f1.proteinG;
+        if (Math.abs(det) < 0.0005) continue;
+        const w1 = (remaining.cal * f2.proteinG - remaining.protein * f2.kcalG) / det;
+        const w2 = (f1.kcalG * remaining.protein - f1.proteinG * remaining.cal) / det;
+        if (w1 < 15 || w1 > 600 || w2 < 15 || w2 > 600) continue;
+        const carbs = w1 * f1.carbsG + w2 * f2.carbsG;
+        const fat = w1 * f1.fatG + w2 * f2.fatG;
+        pairs.push({
+          type: "pair", score: scoreAgainst(remaining, remaining.protein, carbs, fat),
+          items: [
+            { id: f1.id, name: f1.name, weight: Math.round(w1), kcalG: f1.kcalG, proteinG: f1.proteinG, carbsG: f1.carbsG, fatG: f1.fatG },
+            { id: f2.id, name: f2.name, weight: Math.round(w2), kcalG: f2.kcalG, proteinG: f2.proteinG, carbsG: f2.carbsG, fatG: f2.fatG },
+          ],
+          totals: { cal: remaining.cal, protein: remaining.protein, carbs, fat },
+        });
+      }
+    }
+
+    pairs.sort((a, b) => a.score - b.score);
+    singles.sort((a, b) => a.score - b.score);
+
+    // dédoublonne les paires qui partagent un aliment avec une meilleure paire déjà retenue
+    const topPairs = [];
+    const usedNames = new Set();
+    for (const p of pairs){
+      const names = p.items.map(it => it.name);
+      if (names.some(n => usedNames.has(n))) continue;
+      topPairs.push(p);
+      names.forEach(n => usedNames.add(n));
+      if (topPairs.length >= 3) break;
+    }
+
+    return [...topPairs, ...singles.slice(0, 2)].slice(0, 5);
+  }
+
+  async function openSuggestions(){
+    const resultsEl = document.getElementById("suggest-results");
+    resultsEl.innerHTML = `<div class="suggest-empty">Analyse de tes calories et macros restantes…</div>`;
+
+    const remaining = await getRemainingTargets();
+
+    if (remaining.cal < 60){
+      resultsEl.innerHTML = `<div class="suggest-empty">Tu as déjà atteint (ou presque) ton objectif calorique aujourd'hui 🎉</div>`;
+      return;
+    }
+
+    const foods = await getFrequentFoods();
+    if (foods.length < 2){
+      resultsEl.innerHTML = `<div class="suggest-empty">Ajoute quelques repas au fil des jours pour débloquer des suggestions personnalisées basées sur tes habitudes.</div>`;
+      return;
+    }
+
+    const suggestions = buildSuggestions(foods, remaining);
+    if (!suggestions.length){
+      resultsEl.innerHTML = `<div class="suggest-empty">Pas de combinaison satisfaisante trouvée avec tes aliments habituels — ajoute un peu de variété à ta bibliothèque pour de meilleures suggestions.</div>`;
+      return;
+    }
+
+    const remainingHtml = `
+      <div class="suggest-remaining">
+        <div>Reste <b>${Math.round(kcalToDisplayEnergy(remaining.cal))} ${energyUnitLabel()}</b></div>
+        <div>Protéines <b>${Math.round(remaining.protein)} g</b></div>
+        <div>Glucides <b>${Math.round(remaining.carbs)} g</b></div>
+        <div>Lipides <b>${Math.round(remaining.fat)} g</b></div>
+      </div>`;
+
+    resultsEl.innerHTML = remainingHtml + suggestions.map((s, idx) => {
+      const title = s.items.map(it => `${escapeMealHtml(it.name)} (${it.weight}g)`).join(" + ");
+      return `
+      <div class="suggest-item">
+        <div class="suggest-item-title">${title}</div>
+        <div class="suggest-item-macros">${Math.round(kcalToDisplayEnergy(s.totals.cal))} ${energyUnitLabel()} · ${Math.round(s.totals.protein)}g P · ${Math.round(s.totals.carbs)}g G · ${Math.round(s.totals.fat)}g L</div>
+        <button class="suggest-add-btn" onclick='logSuggestion(${JSON.stringify(s.items)})'>+ Ajouter ${s.items.length > 1 ? "au journal" : ""}</button>
+      </div>`;
+    }).join("");
+  }
+
+  async function logSuggestion(items){
+    for (const it of items){
+      await supabaseClient.from("meals").insert({
+        user_id: currentUser.id,
+        food_library_id: it.id || null,
+        name: it.name,
+        weight_g: it.weight,
+        meal_type: "Suggestion",
+        calories: Math.round(it.kcalG * it.weight),
+        protein_g: Math.round(it.proteinG * it.weight * 10) / 10,
+        carbs_g: Math.round(it.carbsG * it.weight * 10) / 10,
+        fat_g: Math.round(it.fatG * it.weight * 10) / 10,
+      });
+    }
+    document.getElementById("suggest-results").innerHTML = `<div class="suggest-empty">Ajouté à ton journal ✓</div>`;
+    await loadCalories();
   }
 
   (async function init(){
