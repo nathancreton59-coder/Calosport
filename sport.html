@@ -723,6 +723,13 @@
 
         <div class="modal-field deload-field">
           <label class="deload-toggle-row">
+            <input type="checkbox" id="w-completed">
+            <span>✅ Marquer directement cette séance comme terminée (pour logger une séance déjà faite, sans passer par le mode live)</span>
+          </label>
+        </div>
+
+        <div class="modal-field deload-field">
+          <label class="deload-toggle-row">
             <input type="checkbox" id="w-deload">
             <span>🔵 Semaine de décharge — réduis volontairement tes charges d'environ 40% cette séance</span>
           </label>
@@ -808,6 +815,7 @@
     document.getElementById("workout-modal-title").textContent = "Nouvelle séance";
     document.getElementById("workout-modal-submit").textContent = "Créer la séance";
     document.getElementById("w-id").value = "";
+    document.getElementById("w-completed").checked = false;
     document.getElementById("w-deload").checked = false;
     document.getElementById("workout-modal-overlay").classList.add("open");
     const today = new Date();
@@ -824,6 +832,7 @@
     document.getElementById("w-type").value = "";
     document.getElementById("w-duration").value = "";
     document.getElementById("w-calories").value = "";
+    document.getElementById("w-completed").checked = false;
     document.getElementById("w-deload").checked = false;
     document.getElementById("exo-rows").innerHTML = "";
     exoRowCount = 0;
@@ -845,6 +854,7 @@
     document.getElementById("w-type").value = workout.workout_type || "";
     document.getElementById("w-duration").value = workout.duration_min || "";
     document.getElementById("w-calories").value = workout.calories_burned ? Math.round(kcalToDisplayEnergy(workout.calories_burned)) : "";
+    document.getElementById("w-completed").checked = !!workout.completed;
     document.getElementById("w-deload").checked = !!workout.is_deload;
     if (workout.scheduled_at){
       const d = new Date(workout.scheduled_at);
@@ -1023,7 +1033,7 @@
         <div class="ecp-set-num">${i + 1}</div>
         <input type="number" min="0" placeholder="10" value="${s.reps}"
                onchange="updatePlannedSetField('${id}', ${isWarmup}, ${i}, 'reps', this.value)">
-        <input type="number" min="0" step="0.5" placeholder="0" value="${s.weight}"
+        <input type="number" min="0" step="0.1" placeholder="0" value="${s.weight}"
                onchange="updatePlannedSetField('${id}', ${isWarmup}, ${i}, 'weight', this.value)">
         <button type="button" class="ecp-set-remove" onclick="removePlannedSet('${id}', ${isWarmup}, ${i})">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
@@ -1053,12 +1063,13 @@
     const time = document.getElementById("w-time").value;
     const scheduledAt = new Date(`${date}T${time}`).toISOString();
     const isDeload = document.getElementById("w-deload").checked;
+    const isCompleted = document.getElementById("w-completed").checked;
 
     let workout;
     if (editId){
       const { data, error } = await supabaseClient
         .from("workouts")
-        .update({ name, workout_type: type || null, duration_min: duration, calories_burned: calories, scheduled_at: scheduledAt, is_deload: isDeload })
+        .update({ name, workout_type: type || null, duration_min: duration, calories_burned: calories, scheduled_at: scheduledAt, is_deload: isDeload, completed: isCompleted })
         .eq("id", editId)
         .select().single();
       if (error){ alert("Erreur : " + error.message); return; }
@@ -1073,7 +1084,7 @@
           user_id: currentUser.id,
           name, workout_type: type || null,
           duration_min: duration, calories_burned: calories,
-          scheduled_at: scheduledAt, completed: false, is_deload: isDeload
+          scheduled_at: scheduledAt, completed: isCompleted, is_deload: isDeload
         })
         .select().single();
       if (error){ alert("Erreur : " + error.message); return; }
@@ -1142,7 +1153,8 @@
               exercise_id: ex.id, set_number: i + 1, is_warmup: true,
               weight_kg: s.weight !== "" ? parseFloat(s.weight) : null,
               reps: s.reps !== "" ? parseInt(s.reps) : null,
-              completed: false
+              completed: isCompleted,
+              completed_at: isCompleted ? scheduledAt : null
             });
           });
           plan.working.forEach((s, i) => {
@@ -1150,7 +1162,8 @@
               exercise_id: ex.id, set_number: i + 1, is_warmup: false,
               weight_kg: s.weight !== "" ? parseFloat(s.weight) : null,
               reps: s.reps !== "" ? parseInt(s.reps) : null,
-              completed: false
+              completed: isCompleted,
+              completed_at: isCompleted ? scheduledAt : null
             });
           });
         });
@@ -1159,6 +1172,10 @@
           if (setsError) alert("Séance créée, mais erreur sur les séries planifiées : " + setsError.message);
         }
       }
+    }
+
+    if (isCompleted){
+      awardXp("workout_completed", workout.id, 50);
     }
 
     closeWorkoutModal();
@@ -1522,7 +1539,7 @@
       <div class="set-row ${s.completed ? "done" : ""}" id="set-row-${i}" data-rpe="${s.rpe ?? ""}">
         <div class="set-num">${s.isWarmup ? "É" + (s.set_number ?? i + 1) : (s.set_number ?? i + 1)}</div>
         <div class="set-input-group">
-          <div class="grp"><span class="u">${weightUnitLabel()}</span><input type="number" class="set-weight" step="0.5" value="${s.weight_kg != null ? kgToDisplayWeight(s.weight_kg).toFixed(1) : ""}" ${s.completed ? "disabled" : ""}></div>
+          <div class="grp"><span class="u">${weightUnitLabel()}</span><input type="number" class="set-weight" step="0.1" value="${s.weight_kg != null ? kgToDisplayWeight(s.weight_kg).toFixed(1) : ""}" ${s.completed ? "disabled" : ""}></div>
           <div class="grp"><span class="u">reps</span><input type="number" class="set-reps" value="${s.reps ?? ""}" ${s.completed ? "disabled" : ""}></div>
         </div>
         <button type="button" class="set-validate ${s.completed ? "done" : ""}" onclick="validateSet(${i})" ${s.completed ? "disabled" : ""}>
