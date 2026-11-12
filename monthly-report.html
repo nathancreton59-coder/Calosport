@@ -188,6 +188,29 @@
     .main-inner{ max-width:none; }
     .bottom-nav{ display:flex; }
   }
+
+  /* ---------- export PDF (impression) ---------- */
+  .pdf-btn{
+    margin-left:auto; flex-shrink:0; background: var(--surface); border:1px solid var(--line); color: var(--text);
+    border-radius:12px; padding:10px 14px; font-family:'Inter'; font-weight:700; font-size:12.5px; cursor:pointer;
+  }
+  .pdf-btn:hover{ border-color: var(--volt); color: var(--volt); }
+  @media print{
+    @page{ margin: 14mm; }
+    :root, :root[data-theme="light"], :root[data-theme="dark"]{
+      --bg: #FFFFFF; --surface: #FFFFFF; --surface-2: #F3F4EE;
+      --text: #14181D; --text-muted: #5B6472; --line: #D8DAD3;
+      --lime: #5E8412; --lime-dim: #EAF3D2; --flame: #D9522E; --flame-dim: #FBE4DC;
+      --volt: #2F63C7; --volt-dim: #E3EBFB;
+    }
+    *{ -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    html, body{ background:#FFFFFF !important; }
+    body{ display:block !important; min-height:0 !important; }
+    .sidebar, .bottom-nav, .more-overlay, .back-link, .month-btn, .pdf-btn{ display:none !important; }
+    .main{ padding:0 !important; }
+    .main-inner{ max-width:none !important; }
+    .card, .stat-card, .trend-card, section{ break-inside: avoid; page-break-inside: avoid; }
+  }
 </style>
 </head>
 <body>
@@ -287,6 +310,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
       </a>
       <div class="page-title">Rapport mensuel</div>
+      <button class="pdf-btn" onclick="exportReportPdf()">📄 Exporter en PDF</button>
     </div>
     <div class="page-sub">Le détail de ta progression sur le mois sélectionné.</div>
 
@@ -582,6 +606,16 @@
     viewMonth = now.getMonth();
     await loadReport();
   })();
+</script>
+<script>
+  // Ouvre la fenêtre d'impression du navigateur : choisir « Enregistrer au format PDF » comme destination
+  function exportReportPdf(){
+    const previousTitle = document.title;
+    const label = (document.getElementById("month-label") || {}).textContent || "";
+    document.title = "Calosport — Bilan " + label.trim();
+    window.print();
+    setTimeout(() => { document.title = previousTitle; }, 1000);
+  }
 </script>
 </body>
 </html>

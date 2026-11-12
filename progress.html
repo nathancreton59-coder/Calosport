@@ -177,6 +177,71 @@
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
   }
 
+  /* ---------- objectif de poids / prévision ---------- */
+  .forecast-box{ margin-top:14px; background: var(--bg); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .forecast-main{ font-weight:700; font-size:13.5px; }
+  .forecast-sub{ font-size:11.5px; color: var(--text-muted); margin-top:4px; line-height:1.5; }
+  .forecast-goal-row{ display:flex; gap:8px; margin-top:12px; align-items:center; }
+  .forecast-goal-row label{ font-size:11.5px; color: var(--text-muted); font-weight:600; flex:1; }
+  .forecast-goal-row input{
+    width:96px; background: var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:9px; font-size:13px; color: var(--text); font-family:'Inter'; text-align:center;
+  }
+  .forecast-goal-row button, .ghost-btn{
+    background: var(--surface-2); color: var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:9px 12px; font-weight:700; font-size:12px; cursor:pointer; font-family:'Inter';
+  }
+
+  /* ---------- mesures corporelles ---------- */
+  .measure-chips{ display:grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap:8px; margin-top:14px; }
+  .measure-chip{ background: var(--bg); border:1px solid var(--line); border-radius:12px; padding:10px; cursor:pointer; }
+  .measure-chip.active{ border-color: var(--volt); }
+  .measure-chip .l{ font-size:10.5px; color: var(--text-muted); font-weight:600; }
+  .measure-chip .v{ font-family:'Unbounded'; font-weight:700; font-size:13.5px; margin-top:4px; }
+  .measure-chip .d{ font-size:10.5px; margin-top:3px; color: var(--text-muted); }
+  .measure-undo{
+    background:none; border:none; color: var(--text-muted); font-family:'Inter'; font-size:11.5px;
+    text-decoration:underline; cursor:pointer; padding:0; margin-top:10px;
+  }
+
+  /* ---------- photos de progression ---------- */
+  .photo-compare{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:14px; }
+  .photo-slot select, .photo-actions input[type="date"]{
+    width:100%; background: var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:9px; font-size:12px; color: var(--text); font-family:'Inter';
+  }
+  .photo-slot select{ margin-bottom:8px; }
+  .photo-frame{
+    aspect-ratio: 3 / 4; background: var(--bg); border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    display:flex; align-items:center; justify-content:center; color: var(--text-muted); font-size:11.5px; text-align:center;
+  }
+  .photo-frame img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-frame span{ padding:12px; }
+  .photo-cap{ font-size:11px; color: var(--text-muted); margin-top:6px; text-align:center; }
+  .photo-summary{ font-size:12.5px; font-weight:700; text-align:center; margin-top:12px; }
+  .photo-actions{ display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; align-items:center; }
+  .photo-actions input[type="date"]{ width:auto; flex:1; min-width:130px; }
+  .photo-add-btn{
+    flex:2; min-width:160px; background: var(--lime); color:#12161B; border:none; border-radius:12px;
+    padding:11px 14px; font-weight:700; font-size:13px; cursor:pointer; font-family:'Inter'; text-align:center;
+  }
+
+  /* ---------- succès / badges ---------- */
+  .badge-grid{ display:grid; grid-template-columns: repeat(auto-fill, minmax(138px, 1fr)); gap:8px; margin-top:14px; }
+  .badge-tile{ background: var(--bg); border:1px solid var(--line); border-radius:14px; padding:12px; }
+  .badge-tile.unlocked{ border-color: var(--lime); }
+  .badge-tile .ico{ font-size:22px; line-height:1; }
+  .badge-tile.locked .ico{ filter: grayscale(1); opacity:.45; }
+  .badge-tile .n{ font-weight:700; font-size:12.5px; margin-top:8px; }
+  .badge-tile .d{ font-size:10.5px; color: var(--text-muted); margin-top:3px; line-height:1.35; }
+  .badge-tile .bar{ height:5px; border-radius:3px; background: var(--surface-2); overflow:hidden; margin-top:8px; }
+  .badge-tile .bar div{ height:100%; background: var(--volt); border-radius:3px; }
+  .badge-tile .ok{ font-size:10.5px; font-weight:700; color: var(--lime); margin-top:8px; }
+  .badge-more{
+    width:100%; margin-top:10px; background:none; border:1.5px dashed var(--line); border-radius:12px;
+    color: var(--text-muted); font-family:'Inter'; font-weight:700; font-size:12px; padding:9px; cursor:pointer;
+  }
+
   /* ---------- tendances ---------- */
   .trends-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:14px; margin-top:16px; }
   .trend-card{
@@ -325,7 +390,7 @@
 <div class="main">
   <div class="main-inner">
     <div class="page-title">Progression</div>
-    <div class="page-sub">Ton évolution dans le temps — poids, calories et charges soulevées.</div>
+    <div class="page-sub">Ton évolution dans le temps — poids, mesures, photos, calories et charges soulevées.</div>
 
     <div class="card level-card">
       <div class="level-badge" id="level-badge">—</div>
@@ -343,10 +408,24 @@
       <div id="quests-daily"></div>
       <div class="quest-section-label">Cette semaine</div>
       <div id="quests-weekly"></div>
+      <div class="quest-section-label" id="quests-challenge-label" style="display:none;">Défis de la semaine — ils changent chaque lundi</div>
+      <div id="quests-challenge"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Succès</div>
+          <div class="card-sub" id="badge-count">—</div>
+        </div>
+        <button class="ghost-btn" onclick="shareProgressImage()">📤 Partager ma progression</button>
+      </div>
+      <div class="badge-grid" id="badge-grid"></div>
+      <button class="badge-more" id="badge-more" onclick="toggleAllBadges()" style="display:none;">Voir tous les succès</button>
     </div>
 
     <div class="quick-row">
-      <div class="card report-link-card" onclick="window.location.href='monthly-report.html'">
+      <div class="card report-link-card\" onclick="window.location.href='monthly-report.html'">
         <div style="display:flex; align-items:center; gap:14px;">
           <div class="report-link-icon">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6FA8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V9M13 17v-5M17 17v-9M4 4h16v16H4z"/></svg>
@@ -463,6 +542,62 @@
         <input type="number" id="weight-input" step="0.1" placeholder="Ton poids aujourd'hui">
         <button onclick="logWeight()">Enregistrer</button>
       </div>
+      <div class="forecast-box">
+        <div class="forecast-main" id="forecast-main">🎯 Prévision d'objectif</div>
+        <div class="forecast-sub" id="forecast-sub">Indique ton poids objectif pour estimer la date à laquelle tu l'atteindras.</div>
+        <div class="forecast-goal-row">
+          <label for="target-weight-input" id="target-weight-label">Poids objectif</label>
+          <input type="number" id="target-weight-input" step="0.1" min="0">
+          <button onclick="saveTargetWeight()">Enregistrer</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Mesures corporelles</div>
+          <div class="card-stat volt" id="measure-current">—</div>
+          <div class="card-delta" id="measure-delta">Touche une mesure pour voir son évolution.</div>
+        </div>
+      </div>
+      <div class="measure-chips" id="measure-chips"></div>
+      <div class="chart-wrap" id="measure-chart"></div>
+      <div class="quick-log">
+        <input type="number" id="measure-input" step="0.1" min="0" placeholder="Nouvelle mesure">
+        <button onclick="logMeasure()">Enregistrer</button>
+      </div>
+      <button class="measure-undo" id="measure-undo" onclick="deleteLastMeasure()" style="display:none;">Supprimer la dernière mesure</button>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <div>
+          <div class="card-title">Photos de progression</div>
+          <div class="card-delta" id="photo-sub">Compare ton avant / après côte à côte. Tes photos restent privées.</div>
+        </div>
+      </div>
+      <div class="photo-compare">
+        <div class="photo-slot">
+          <select id="photo-select-a" onchange="renderPhotoCompare()"></select>
+          <div class="photo-frame" id="photo-frame-a"><span>Avant</span></div>
+          <div class="photo-cap" id="photo-cap-a"></div>
+        </div>
+        <div class="photo-slot">
+          <select id="photo-select-b" onchange="renderPhotoCompare()"></select>
+          <div class="photo-frame" id="photo-frame-b"><span>Après</span></div>
+          <div class="photo-cap" id="photo-cap-b"></div>
+        </div>
+      </div>
+      <div class="photo-summary" id="photo-summary"></div>
+      <div class="photo-actions">
+        <input type="date" id="photo-date" title="Date de la photo">
+        <label class="photo-add-btn">📷 Ajouter une photo
+          <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="uploadProgressPhoto(this)">
+        </label>
+        <button class="ghost-btn" id="photo-delete-btn" onclick="deleteProgressPhoto()" style="display:none;">Supprimer la photo de droite</button>
+      </div>
+      <div class="card-delta" id="photo-status" style="margin-top:8px;"></div>
     </div>
 
     <div class="card">
@@ -590,8 +725,9 @@
   async function loadWeightChart(){
     const { data } = await supabaseClient
       .from("weight_logs").select("*").eq("user_id", currentUser.id)
-      .order("logged_at", { ascending: true }).limit(90);
-    const logs = data || [];
+      .order("logged_at", { ascending: false }).limit(180);
+    const logs = (data || []).slice().reverse(); // les 180 pesées les plus récentes, de la plus ancienne à la plus récente
+    weightLogsCache = logs;
     const points = logs.map(l => ({ label: shortDate(l.logged_at), value: kgToDisplayWeight(parseFloat(l.weight_kg)) }));
 
     document.getElementById("weight-chart").innerHTML = lineChartSvg(points, "#D4F252");
@@ -611,6 +747,370 @@
       document.getElementById("weight-current").textContent = "—";
       document.getElementById("weight-delta").textContent = "Ajoute ta première pesée ci-dessous";
     }
+    renderForecast();
+  }
+
+  // ---------- objectif de poids + prévision de date ----------
+  let weightLogsCache = [];
+  let targetWeightKg = null;
+  let targetWeightAvailable = true;
+  const longDate = d => d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
+  async function loadTargetWeight(){
+    const { data, error } = await supabaseClient
+      .from("profiles").select("target_weight_kg").eq("id", currentUser.id).single();
+    targetWeightAvailable = !error;
+    targetWeightKg = (data && data.target_weight_kg != null) ? parseFloat(data.target_weight_kg) : null;
+  }
+
+  async function saveTargetWeight(){
+    const raw = document.getElementById("target-weight-input").value;
+    const val = parseFloat(raw);
+    const kg = (raw === "" || !val || val <= 0) ? null : displayWeightToKg(val);
+    const { error } = await supabaseClient.from("profiles").update({ target_weight_kg: kg }).eq("id", currentUser.id);
+    if (error){ alert("Impossible d'enregistrer l'objectif (schema_v22.sql a-t-il été exécuté dans Supabase ?) : " + error.message); return; }
+    targetWeightKg = kg;
+    targetWeightAvailable = true;
+    renderForecast();
+  }
+
+  // Tendance : droite de régression sur les pesées des 6 dernières semaines (kg par jour)
+  function weightTrend(logs){
+    const now = Date.now();
+    const pts = logs
+      .map(l => ({ t: (new Date(l.logged_at).getTime() - now) / 86400000, w: parseFloat(l.weight_kg) }))
+      .filter(p => p.t >= -42 && !isNaN(p.w));
+    if (pts.length < 3) return null;
+    const span = pts[pts.length - 1].t - pts[0].t;
+    if (span < 7) return null;
+    const n = pts.length;
+    const mt = pts.reduce((s, p) => s + p.t, 0) / n;
+    const mw = pts.reduce((s, p) => s + p.w, 0) / n;
+    let num = 0, den = 0;
+    pts.forEach(p => { num += (p.t - mt) * (p.w - mw); den += (p.t - mt) * (p.t - mt); });
+    if (!den) return null;
+    const slope = num / den;
+    return { slope, today: mw - slope * mt, count: n, spanDays: Math.round(span) };
+  }
+
+  function renderForecast(){
+    const main = document.getElementById("forecast-main");
+    const sub = document.getElementById("forecast-sub");
+    const input = document.getElementById("target-weight-input");
+    const unit = weightUnitLabel();
+    document.getElementById("target-weight-label").textContent = `Poids objectif (${unit})`;
+    if (document.activeElement !== input){
+      input.value = targetWeightKg != null ? kgToDisplayWeight(targetWeightKg).toFixed(1) : "";
+    }
+
+    if (!targetWeightAvailable){
+      main.textContent = "🎯 Prévision d'objectif";
+      sub.textContent = "Exécute schema_v22.sql dans Supabase pour activer cette fonction.";
+      return;
+    }
+    if (targetWeightKg == null){
+      main.textContent = "🎯 Prévision d'objectif";
+      sub.textContent = "Indique ton poids objectif pour estimer la date à laquelle tu l'atteindras.";
+      return;
+    }
+    if (!weightLogsCache.length){
+      main.textContent = `🎯 Objectif : ${formatWeight(targetWeightKg)}`;
+      sub.textContent = "Enregistre tes pesées pour obtenir une prévision.";
+      return;
+    }
+
+    const last = parseFloat(weightLogsCache[weightLogsCache.length - 1].weight_kg);
+    const trend = weightTrend(weightLogsCache);
+    const current = trend ? trend.today : last;
+    const diff = targetWeightKg - current;
+    const fmtDiff = Math.abs(kgToDisplayWeight(targetWeightKg - last)).toFixed(1) + " " + unit;
+
+    if (Math.abs(targetWeightKg - last) < 0.25){
+      main.textContent = `🎉 Objectif atteint : ${formatWeight(targetWeightKg)}`;
+      sub.textContent = "Tu es à ton poids objectif. Tu peux en fixer un nouveau ci-dessous.";
+      return;
+    }
+    if (!trend){
+      main.textContent = `🎯 Objectif : ${formatWeight(targetWeightKg)} — encore ${fmtDiff}`;
+      sub.textContent = "Il faut au moins 3 pesées réparties sur une semaine (dans les 6 dernières semaines) pour calculer une prévision.";
+      return;
+    }
+
+    const perWeek = trend.slope * 7;
+    const sign = perWeek > 0 ? "+" : perWeek < 0 ? "−" : "";
+    const rateTxt = `${sign}${Math.abs(kgToDisplayWeight(perWeek)).toFixed(2)} ${unit}/semaine`;
+    const basis = `Tendance : ${rateTxt}, calculée sur ${trend.count} pesées en ${trend.spanDays} jours.`;
+
+    if (Math.abs(perWeek) < 0.05){
+      main.textContent = `🎯 Objectif : ${formatWeight(targetWeightKg)} — encore ${fmtDiff}`;
+      sub.textContent = `Ton poids est stable en ce moment, impossible d'estimer une date. ${basis}`;
+      return;
+    }
+    if (diff * trend.slope <= 0){
+      main.textContent = `🎯 Objectif : ${formatWeight(targetWeightKg)} — encore ${fmtDiff}`;
+      sub.textContent = `Au rythme actuel, tu t'éloignes de ton objectif. ${basis}`;
+      return;
+    }
+
+    const days = Math.ceil(diff / trend.slope);
+    if (days > 730){
+      main.textContent = `🎯 Objectif ${formatWeight(targetWeightKg)} : dans plus de 2 ans à ce rythme`;
+      sub.textContent = `Encore ${fmtDiff}. ${basis}`;
+      return;
+    }
+    const eta = new Date(); eta.setDate(eta.getDate() + days);
+    const weeks = Math.round(days / 7);
+    main.textContent = `🎯 Objectif ${formatWeight(targetWeightKg)} vers le ${longDate(eta)}`;
+    sub.textContent = `Encore ${fmtDiff}, soit environ ${weeks <= 1 ? days + " jours" : weeks + " semaines"} à ce rythme. ${basis}`
+      + (Math.abs(perWeek) > 1 ? " Ce rythme est rapide : il est difficile à tenir dans la durée." : "");
+  }
+
+  // ---------- mesures corporelles ----------
+  const MEASURE_TYPES = [
+    { key: "waist", label: "Tour de taille", unit: "cm" },
+    { key: "chest", label: "Poitrine", unit: "cm" },
+    { key: "shoulders", label: "Épaules", unit: "cm" },
+    { key: "arm", label: "Bras", unit: "cm" },
+    { key: "hips", label: "Hanches", unit: "cm" },
+    { key: "thigh", label: "Cuisse", unit: "cm" },
+    { key: "calf", label: "Mollet", unit: "cm" },
+    { key: "body_fat", label: "Masse grasse", unit: "%" },
+  ];
+  let measureLogs = [];
+  let measureAvailable = true;
+  let currentMeasure = "waist";
+
+  async function loadMeasures(){
+    const { data, error } = await supabaseClient
+      .from("body_measurements").select("*").eq("user_id", currentUser.id)
+      .order("measured_at", { ascending: true });
+    measureAvailable = !error;
+    measureLogs = data || [];
+    renderMeasures();
+  }
+
+  function selectMeasure(key){ currentMeasure = key; renderMeasures(); }
+
+  function renderMeasures(){
+    const fmt = v => (Math.round(v * 10) / 10).toLocaleString("fr-FR");
+    const byType = {};
+    measureLogs.forEach(m => { (byType[m.measure_type] = byType[m.measure_type] || []).push(m); });
+
+    document.getElementById("measure-chips").innerHTML = MEASURE_TYPES.map(t => {
+      const list = byType[t.key] || [];
+      const lastV = list.length ? parseFloat(list[list.length - 1].value) : null;
+      let delta = "";
+      if (list.length > 1){
+        const d = lastV - parseFloat(list[0].value);
+        delta = `${d > 0 ? "+" : d < 0 ? "−" : ""}${fmt(Math.abs(d))} ${t.unit}`;
+      }
+      return `<div class="measure-chip ${t.key === currentMeasure ? "active" : ""}" onclick="selectMeasure('${t.key}')">
+        <div class="l">${t.label}</div>
+        <div class="v">${lastV != null ? fmt(lastV) + " " + t.unit : "—"}</div>
+        <div class="d">${delta || "&nbsp;"}</div>
+      </div>`;
+    }).join("");
+
+    const type = MEASURE_TYPES.find(t => t.key === currentMeasure);
+    const list = byType[currentMeasure] || [];
+    document.getElementById("measure-input").placeholder = `${type.label} (${type.unit})`;
+    document.getElementById("measure-undo").style.display = list.length ? "inline-block" : "none";
+
+    if (!measureAvailable){
+      document.getElementById("measure-current").textContent = "—";
+      document.getElementById("measure-delta").textContent = "Exécute schema_v22.sql dans Supabase pour activer les mesures.";
+      document.getElementById("measure-chart").innerHTML = "";
+      return;
+    }
+    if (!list.length){
+      document.getElementById("measure-current").textContent = "—";
+      document.getElementById("measure-delta").textContent = `${type.label} : aucune mesure pour l'instant. Ajoute la première ci-dessous.`;
+      document.getElementById("measure-chart").innerHTML = "";
+      return;
+    }
+    const lastV = parseFloat(list[list.length - 1].value);
+    document.getElementById("measure-current").textContent = `${fmt(lastV)} ${type.unit}`;
+    if (list.length > 1){
+      const d = lastV - parseFloat(list[0].value);
+      document.getElementById("measure-delta").textContent =
+        `${type.label} · ${d > 0 ? "+" : d < 0 ? "−" : ""}${fmt(Math.abs(d))} ${type.unit} depuis le ${shortDate(list[0].measured_at)}`;
+      document.getElementById("measure-chart").innerHTML =
+        lineChartSvg(list.map(m => ({ label: shortDate(m.measured_at), value: parseFloat(m.value) })), "#6FA8FF");
+    } else {
+      document.getElementById("measure-delta").textContent = `${type.label} · première mesure le ${shortDate(list[0].measured_at)}`;
+      document.getElementById("measure-chart").innerHTML = "";
+    }
+  }
+
+  async function logMeasure(){
+    const val = parseFloat(document.getElementById("measure-input").value);
+    if (!val || val <= 0) return;
+    const { error } = await supabaseClient.from("body_measurements")
+      .insert({ user_id: currentUser.id, measure_type: currentMeasure, value: val });
+    if (error){ alert("Impossible d'enregistrer la mesure (schema_v22.sql a-t-il été exécuté dans Supabase ?) : " + error.message); return; }
+    document.getElementById("measure-input").value = "";
+    await loadMeasures();
+  }
+
+  async function deleteLastMeasure(){
+    const list = measureLogs.filter(m => m.measure_type === currentMeasure);
+    if (!list.length) return;
+    const last = list[list.length - 1];
+    const type = MEASURE_TYPES.find(t => t.key === currentMeasure);
+    if (!confirm(`Supprimer la dernière mesure « ${type.label} » (${last.value} ${type.unit}) ?`)) return;
+    const { error } = await supabaseClient.from("body_measurements").delete().eq("id", last.id);
+    if (error){ alert("Erreur : " + error.message); return; }
+    await loadMeasures();
+  }
+
+  // ---------- photos de progression ----------
+  const PHOTO_BUCKET = "progress-photos";
+  let progressPhotos = [];
+  const photoUrlCache = {};
+
+  function localDateStr(d){
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+  function photoLabel(p){
+    const d = new Date(p.taken_at + "T12:00:00").toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric" });
+    return p.weight_kg != null ? `${d} · ${formatWeight(parseFloat(p.weight_kg))}` : d;
+  }
+
+  async function loadProgressPhotos(keepSelection){
+    const dateInput = document.getElementById("photo-date");
+    if (!dateInput.value) dateInput.value = localDateStr(new Date());
+    const status = document.getElementById("photo-status");
+
+    const { data, error } = await supabaseClient
+      .from("progress_photos").select("*").eq("user_id", currentUser.id)
+      .order("taken_at", { ascending: true }).order("created_at", { ascending: true });
+    if (error){
+      status.textContent = "Exécute schema_v22.sql dans Supabase pour activer les photos.";
+      return;
+    }
+    progressPhotos = data || [];
+
+    const selA = document.getElementById("photo-select-a");
+    const selB = document.getElementById("photo-select-b");
+    const prevA = selA.value, prevB = selB.value;
+    const options = progressPhotos.map(p => `<option value="${p.id}">${photoLabel(p)}</option>`).join("");
+    selA.innerHTML = options || "<option value=''>Avant</option>";
+    selB.innerHTML = options || "<option value=''>Après</option>";
+    if (progressPhotos.length){
+      const has = id => progressPhotos.some(p => p.id === id);
+      selA.value = (keepSelection && has(prevA)) ? prevA : progressPhotos[0].id;
+      selB.value = (keepSelection && has(prevB)) ? prevB : progressPhotos[progressPhotos.length - 1].id;
+    }
+    document.getElementById("photo-delete-btn").style.display = progressPhotos.length ? "inline-block" : "none";
+    await renderPhotoCompare();
+  }
+
+  async function signedPhotoUrl(p){
+    if (photoUrlCache[p.id]) return photoUrlCache[p.id];
+    const { data } = await supabaseClient.storage.from(PHOTO_BUCKET).createSignedUrl(p.storage_path, 3600);
+    if (data && data.signedUrl) photoUrlCache[p.id] = data.signedUrl;
+    return photoUrlCache[p.id] || null;
+  }
+
+  async function renderPhotoCompare(){
+    const sides = [["a", "Avant"], ["b", "Après"]];
+    const picked = {};
+    for (const [side, placeholder] of sides){
+      const id = document.getElementById("photo-select-" + side).value;
+      const p = progressPhotos.find(x => x.id === id);
+      picked[side] = p || null;
+      const frame = document.getElementById("photo-frame-" + side);
+      const cap = document.getElementById("photo-cap-" + side);
+      if (!p){
+        frame.innerHTML = `<span>${placeholder}<br>Aucune photo</span>`;
+        cap.textContent = "";
+        continue;
+      }
+      const url = await signedPhotoUrl(p);
+      frame.innerHTML = url ? `<img src="${url}" alt="Photo du ${photoLabel(p)}">` : "<span>Photo introuvable</span>";
+      cap.textContent = photoLabel(p);
+    }
+
+    const summary = document.getElementById("photo-summary");
+    const a = picked.a, b = picked.b;
+    if (a && b && a.id !== b.id){
+      const days = Math.round((new Date(b.taken_at) - new Date(a.taken_at)) / 86400000);
+      let txt = `${Math.abs(days)} jour${Math.abs(days) > 1 ? "s" : ""} d'écart`;
+      if (a.weight_kg != null && b.weight_kg != null){
+        const d = parseFloat(b.weight_kg) - parseFloat(a.weight_kg);
+        txt += ` · ${d > 0 ? "+" : d < 0 ? "−" : ""}${Math.abs(kgToDisplayWeight(d)).toFixed(1)} ${weightUnitLabel()}`;
+      }
+      summary.textContent = txt;
+    } else {
+      summary.textContent = progressPhotos.length === 1 ? "Ajoute une deuxième photo pour comparer." : "";
+    }
+  }
+
+  // Réduit la photo avant l'envoi (1280 px max, JPEG) pour économiser le stockage
+  function resizeImage(file, maxSide, quality){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+        URL.revokeObjectURL(objectUrl);
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error("Conversion impossible")), "image/jpeg", quality);
+      };
+      img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Image illisible")); };
+      img.src = objectUrl;
+    });
+  }
+
+  async function uploadProgressPhoto(input){
+    const file = input.files && input.files[0];
+    if (!file) return;
+    const status = document.getElementById("photo-status");
+    status.textContent = "Envoi de la photo…";
+    try {
+      const blob = await resizeImage(file, 1280, 0.82);
+      const takenAt = document.getElementById("photo-date").value || localDateStr(new Date());
+      const path = `${currentUser.id}/${takenAt}-${Date.now()}.jpg`;
+      const { error: upErr } = await supabaseClient.storage.from(PHOTO_BUCKET)
+        .upload(path, blob, { contentType: "image/jpeg", upsert: false });
+      if (upErr) throw upErr;
+
+      // Poids associé : la pesée la plus proche de la date de la photo (à 3 jours près)
+      let weightKg = null, best = Infinity;
+      const target = new Date(takenAt + "T12:00:00").getTime();
+      weightLogsCache.forEach(l => {
+        const gap = Math.abs(new Date(l.logged_at).getTime() - target) / 86400000;
+        if (gap <= 3 && gap < best){ best = gap; weightKg = parseFloat(l.weight_kg); }
+      });
+
+      const { error } = await supabaseClient.from("progress_photos")
+        .insert({ user_id: currentUser.id, storage_path: path, taken_at: takenAt, weight_kg: weightKg });
+      if (error){
+        await supabaseClient.storage.from(PHOTO_BUCKET).remove([path]);
+        throw error;
+      }
+      status.textContent = "Photo ajoutée.";
+      await loadProgressPhotos(false);
+    } catch (err){
+      status.textContent = "Échec de l'envoi (schema_v22.sql a-t-il été exécuté dans Supabase ?) : " + (err.message || err);
+    }
+    input.value = "";
+  }
+
+  async function deleteProgressPhoto(){
+    const id = document.getElementById("photo-select-b").value;
+    const p = progressPhotos.find(x => x.id === id);
+    if (!p) return;
+    if (!confirm(`Supprimer définitivement la photo du ${photoLabel(p)} ?`)) return;
+    await supabaseClient.storage.from(PHOTO_BUCKET).remove([p.storage_path]);
+    const { error } = await supabaseClient.from("progress_photos").delete().eq("id", p.id);
+    if (error){ alert("Erreur : " + error.message); return; }
+    delete photoUrlCache[p.id];
+    document.getElementById("photo-status").textContent = "Photo supprimée.";
+    await loadProgressPhotos(false);
   }
 
   async function logWeight(){
@@ -975,6 +1475,9 @@
       </div>`;
     document.getElementById("quests-daily").innerHTML = quests.filter(q => q.type === "daily").map(rowHtml).join("");
     document.getElementById("quests-weekly").innerHTML = quests.filter(q => q.type === "weekly").map(rowHtml).join("");
+    const challenges = quests.filter(q => q.type === "challenge");
+    document.getElementById("quests-challenge-label").style.display = challenges.length ? "block" : "none";
+    document.getElementById("quests-challenge").innerHTML = challenges.map(rowHtml).join("");
   }
 
   // ---------- niveau / XP ----------
@@ -982,6 +1485,7 @@
     const { data: profile } = await supabaseClient
       .from("profiles").select("xp_total").eq("id", currentUser.id).single();
     const progress = getXpProgress(profile?.xp_total || 0);
+    currentLevelInfo = progress;
 
     document.getElementById("level-badge").textContent = progress.level;
     document.getElementById("level-badge").style.setProperty("--lvl-color", progress.color);
@@ -1020,6 +1524,193 @@
     else if (streak === 30) awardXp("streak_30", todayStr, 100);
   }
 
+  // ---------- succès / badges ----------
+  let currentLevelInfo = null;
+  let badgeStats = null;
+  let badgeResults = [];
+  let showAllBadges = false;
+
+  const BADGES = [
+    { icon: "🏁", name: "Premier pas", desc: "Terminer 1 séance", stat: "workouts", target: 1 },
+    { icon: "💪", name: "Régulier", desc: "Terminer 10 séances", stat: "workouts", target: 10 },
+    { icon: "🏋️", name: "Assidu", desc: "Terminer 50 séances", stat: "workouts", target: 50 },
+    { icon: "🦾", name: "Machine", desc: "Terminer 100 séances", stat: "workouts", target: 100 },
+    { icon: "👑", name: "Légende", desc: "Terminer 250 séances", stat: "workouts", target: 250 },
+    { icon: "🔥", name: "En feu", desc: "3 jours d'entraînement d'affilée", stat: "bestStreak", target: 3 },
+    { icon: "⚡", name: "Semaine parfaite", desc: "7 jours d'entraînement d'affilée", stat: "bestStreak", target: 7 },
+    { icon: "🌋", name: "Inarrêtable", desc: "30 jours d'entraînement d'affilée", stat: "bestStreak", target: 30 },
+    { icon: "🚚", name: "10 tonnes", desc: "Soulever 10 000 kg au total", stat: "volume", target: 10000 },
+    { icon: "🚂", name: "100 tonnes", desc: "Soulever 100 000 kg au total", stat: "volume", target: 100000 },
+    { icon: "🚀", name: "1 000 tonnes", desc: "Soulever 1 000 000 kg au total", stat: "volume", target: 1000000 },
+    { icon: "🏆", name: "Record battu", desc: "Battre 1 record personnel", stat: "records", target: 1 },
+    { icon: "🥇", name: "Chasseur de records", desc: "Battre 10 records personnels", stat: "records", target: 10 },
+    { icon: "🎖️", name: "Collectionneur", desc: "Battre 25 records personnels", stat: "records", target: 25 },
+    { icon: "🥗", name: "Assiette maîtrisée", desc: "Atteindre l'objectif calories 7 jours", stat: "calorieDays", target: 7 },
+    { icon: "🍽️", name: "Nutrition au top", desc: "Atteindre l'objectif calories 30 jours", stat: "calorieDays", target: 30 },
+    { icon: "💧", name: "Bien hydraté", desc: "Atteindre l'objectif d'eau 7 jours", stat: "waterDays", target: 7 },
+    { icon: "🌊", name: "Source intarissable", desc: "Atteindre l'objectif d'eau 30 jours", stat: "waterDays", target: 30 },
+    { icon: "⚖️", name: "Suivi du poids", desc: "Enregistrer 10 pesées", stat: "weighIns", target: 10 },
+    { icon: "📏", name: "Sur mesure", desc: "Enregistrer 5 mesures corporelles", stat: "measures", target: 5 },
+    { icon: "📸", name: "Avant / après", desc: "Ajouter 2 photos de progression", stat: "photos", target: 2 },
+    { icon: "⭐", name: "Niveau 10", desc: "Atteindre le niveau 10", stat: "level", target: 10 },
+    { icon: "🌟", name: "Niveau 25", desc: "Atteindre le niveau 25", stat: "level", target: 25 },
+    { icon: "💫", name: "Niveau 50", desc: "Atteindre le niveau 50", stat: "level", target: 50 },
+  ];
+
+  function longestStreak(dates){
+    const sorted = [...new Set(dates)].sort();
+    let best = 0, run = 0, prev = null;
+    sorted.forEach(d => {
+      const t = new Date(d + "T12:00:00").getTime();
+      run = (prev != null && Math.round((t - prev) / 86400000) === 1) ? run + 1 : 1;
+      if (run > best) best = run;
+      prev = t;
+    });
+    return best;
+  }
+
+  async function renderBadges(){
+    const bySource = {};
+    const { data: events } = await supabaseClient
+      .from("xp_events").select("source").eq("user_id", currentUser.id).limit(5000);
+    (events || []).forEach(e => { bySource[e.source] = (bySource[e.source] || 0) + 1; });
+
+    badgeStats = {
+      workouts: COMPLETED_WORKOUTS.length,
+      volume: Math.round(COMPLETED_WORKOUTS.reduce((s, w) => s + w.volume, 0)),
+      bestStreak: longestStreak(COMPLETED_WORKOUTS.map(w => w.date)),
+      records: bySource["personal_record"] || 0,
+      calorieDays: bySource["calorie_goal"] || 0,
+      waterDays: bySource["water_goal"] || 0,
+      weighIns: weightLogsCache.length,
+      measures: measureLogs.length,
+      photos: progressPhotos.length,
+      level: currentLevelInfo ? (parseInt(currentLevelInfo.level) || 0) : 0,
+    };
+    badgeResults = BADGES.map(b => {
+      const cur = badgeStats[b.stat] || 0;
+      return { ...b, cur, unlocked: cur >= b.target, pct: Math.min(100, Math.round((cur / b.target) * 100)) };
+    });
+    drawBadges();
+  }
+
+  function toggleAllBadges(){ showAllBadges = !showAllBadges; drawBadges(); }
+
+  function drawBadges(){
+    const unlocked = badgeResults.filter(b => b.unlocked);
+    document.getElementById("badge-count").textContent = `${unlocked.length} / ${badgeResults.length} débloqués`;
+
+    // Par défaut : les succès débloqués + le prochain à débloquer de chaque catégorie
+    let list = badgeResults;
+    if (!showAllBadges){
+      const seen = {};
+      list = badgeResults.filter(b => {
+        if (b.unlocked) return true;
+        if (seen[b.stat]) return false;
+        seen[b.stat] = true;
+        return true;
+      });
+    }
+    const fmt = n => n.toLocaleString("fr-FR");
+    document.getElementById("badge-grid").innerHTML = list.map(b => `
+      <div class="badge-tile ${b.unlocked ? "unlocked" : "locked"}">
+        <div class="ico">${b.icon}</div>
+        <div class="n">${b.name}</div>
+        <div class="d">${b.desc}</div>
+        ${b.unlocked
+          ? '<div class="ok">✓ Débloqué</div>'
+          : `<div class="bar"><div style="width:${b.pct}%"></div></div><div class="d">${fmt(b.cur)} / ${fmt(b.target)}</div>`}
+      </div>`).join("");
+
+    const more = document.getElementById("badge-more");
+    more.style.display = list.length < badgeResults.length || showAllBadges ? "block" : "none";
+    more.textContent = showAllBadges ? "Réduire" : `Voir tous les succès (${badgeResults.length})`;
+  }
+
+  // ---------- image de progression à partager ----------
+  function canvasRoundRect(ctx, x, y, w, h, r){
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+
+  async function shareProgressImage(){
+    if (!badgeStats){ alert("Tes statistiques sont encore en cours de chargement, réessaie dans un instant."); return; }
+    try { await document.fonts.ready; } catch (e) {}
+    const W = 1080, H = 1350;
+    const canvas = document.createElement("canvas");
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext("2d");
+    const lvlColor = (currentLevelInfo && currentLevelInfo.color) || "#D4F252";
+
+    ctx.fillStyle = "#12161B"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#D4F252"; ctx.fillRect(0, 0, W, 14);
+
+    ctx.fillStyle = "#D4F252"; ctx.font = "700 34px Unbounded, sans-serif"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("CALOSPORT", 80, 120);
+    ctx.fillStyle = "#8A93A0"; ctx.font = "500 28px Inter, sans-serif";
+    ctx.fillText(new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }), 80, 166);
+
+    ctx.fillStyle = "#F2F0EA"; ctx.font = "700 76px Unbounded, sans-serif";
+    ctx.fillText("Ma progression", 80, 300);
+
+    // Niveau
+    canvasRoundRect(ctx, 80, 350, 920, 170, 36); ctx.fillStyle = "#1B2128"; ctx.fill();
+    canvasRoundRect(ctx, 110, 380, 110, 110, 28); ctx.fillStyle = lvlColor; ctx.fill();
+    ctx.fillStyle = "#12161B"; ctx.font = "800 44px Unbounded, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(String(badgeStats.level || "—"), 165, 452);
+    ctx.textAlign = "left"; ctx.fillStyle = "#8A93A0"; ctx.font = "600 26px Inter, sans-serif";
+    ctx.fillText("Niveau", 252, 420);
+    ctx.fillStyle = "#F2F0EA"; ctx.font = "700 42px Unbounded, sans-serif";
+    ctx.fillText((currentLevelInfo && currentLevelInfo.name) || "—", 252, 474);
+
+    // 4 statistiques
+    const tonnes = badgeStats.volume / 1000;
+    const tiles = [
+      [badgeStats.workouts.toLocaleString("fr-FR"), "séances terminées", "#6FA8FF"],
+      [(tonnes >= 100 ? Math.round(tonnes) : Math.round(tonnes * 10) / 10).toLocaleString("fr-FR") + " t", "soulevées au total", "#D4F252"],
+      [badgeStats.bestStreak + " j", "meilleure série", "#FF7A59"],
+      [badgeStats.records.toLocaleString("fr-FR"), "records battus", "#C892FF"],
+    ];
+    tiles.forEach((t, i) => {
+      const x = 80 + (i % 2) * 470, y = 560 + Math.floor(i / 2) * 250;
+      canvasRoundRect(ctx, x, y, 450, 220, 36); ctx.fillStyle = "#1B2128"; ctx.fill();
+      ctx.fillStyle = t[2]; ctx.font = "700 72px Unbounded, sans-serif"; ctx.fillText(t[0], x + 40, y + 115);
+      ctx.fillStyle = "#8A93A0"; ctx.font = "600 30px Inter, sans-serif"; ctx.fillText(t[1], x + 40, y + 170);
+    });
+
+    // Succès
+    const unlocked = badgeResults.filter(b => b.unlocked);
+    canvasRoundRect(ctx, 80, 1070, 920, 170, 36); ctx.fillStyle = "#1B2128"; ctx.fill();
+    ctx.fillStyle = "#F2F0EA"; ctx.font = "700 34px Inter, sans-serif";
+    ctx.fillText(`${unlocked.length} / ${badgeResults.length} succès débloqués`, 120, 1130);
+    ctx.font = "52px sans-serif";
+    unlocked.slice(-10).forEach((b, i) => ctx.fillText(b.icon, 120 + i * 84, 1205));
+
+    ctx.fillStyle = "#8A93A0"; ctx.font = "500 26px Inter, sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("Suivi calories & sport — Calosport", W / 2, 1300);
+    ctx.textAlign = "left";
+
+    canvas.toBlob(async blob => {
+      if (!blob){ alert("Impossible de créer l'image sur cet appareil."); return; }
+      const file = new File([blob], "calosport-progression.png", { type: "image/png" });
+      if (navigator.canShare && navigator.canShare({ files: [file] })){
+        try { await navigator.share({ files: [file], title: "Ma progression Calosport" }); return; }
+        catch (e) { if (e && e.name === "AbortError") return; }
+      }
+      // Pas de partage natif (ordinateur) : on télécharge l'image
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = file.name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+    }, "image/png");
+  }
+
   (async function init(){
     const user = await requireAuth();
     if (!user) return;
@@ -1029,10 +1720,14 @@
     await renderLevel();
     await renderQuests();
     await renderStreak();
+    await loadTargetWeight();
     await loadWeightChart();
+    await loadMeasures();
+    await loadProgressPhotos(false);
     await loadCalChart();
     await loadExerciseProgress();
     await loadMuscleProgress();
+    await renderBadges();
   })();
 </script>
 </body>

@@ -370,12 +370,12 @@
   .ecp-toggle-visibility{ background:none; border:none; color: var(--volt); font-weight:700; font-size:11.5px; cursor:pointer; font-family:'Inter'; }
 
   .ecp-table-head{
-    display:grid; grid-template-columns: 44px 1fr 1fr 26px; gap:8px;
+    display:grid; grid-template-columns: 44px 1fr 1fr 26px 26px; gap:8px;
     font-size:10px; color:var(--text-muted); font-weight:700; text-transform:uppercase; letter-spacing:0.05em;
     padding:0 2px; margin-bottom:6px;
   }
   .ecp-set-row{
-    display:grid; grid-template-columns: 44px 1fr 1fr 26px; gap:8px; align-items:center; margin-bottom:6px;
+    display:grid; grid-template-columns: 44px 1fr 1fr 26px 26px; gap:8px; align-items:center; margin-bottom:6px;
   }
   .ecp-set-num{
     width:44px; height:34px; border-radius:10px; background: var(--bg); border:1px solid var(--line);
@@ -389,6 +389,86 @@
   .ecp-add-set{
     width:100%; background:none; border:1.5px dashed var(--line); border-radius:12px;
     color: var(--lime); font-family:'Inter'; font-weight:700; font-size:12px; padding:9px; cursor:pointer;
+  }
+  .ecp-hint{ font-size:10.5px; color: var(--text-muted); margin: 2px 2px 8px; }
+
+  /* ---------- superset / circuit / dropset ---------- */
+  .exo-row input.exo-select-check{ width:18px; height:18px; padding:0; flex-shrink:0; accent-color: var(--volt); }
+  .exo-row.in-block{ border-color: var(--volt); }
+  .block-badge{
+    display:none; align-items:center; justify-content:space-between; gap:8px;
+    font-size:11px; font-weight:700; border-radius:10px; padding:6px 10px;
+  }
+  .block-badge.show{ display:flex; }
+  .block-badge.superset, .block-live-banner.superset{ background: rgba(111,168,255,.14); color: var(--volt); }
+  .block-badge.circuit, .block-live-banner.circuit{ background: rgba(255,122,89,.14); color: var(--flame); }
+  .block-badge button{
+    background:none; border:none; color:inherit; font-family:'Inter'; font-weight:700; font-size:11px;
+    cursor:pointer; text-decoration:underline; flex-shrink:0;
+  }
+  .group-block-btn{ color: var(--volt); }
+  .block-config-panel{
+    display:none; background: var(--surface); border:1px solid var(--volt); border-radius:14px;
+    padding:12px; margin-bottom:8px;
+  }
+  .block-config-panel.open{ display:block; }
+  .bcp-title{ font-weight:700; font-size:12.5px; margin-bottom:10px; }
+  .bcp-title span{ color: var(--text-muted); font-weight:600; }
+  .bcp-grid{ display:flex; gap:8px; }
+  .bcp-grid > div{ flex:1; min-width:0; }
+  .bcp-grid select, .bcp-grid input{
+    width:100%; background: var(--bg); border:1px solid var(--line); border-radius:10px;
+    padding:9px; font-size:12.5px; color: var(--text); font-family:'Inter';
+  }
+  .bcp-hint{ font-size:11px; color: var(--text-muted); margin:10px 0; line-height:1.45; }
+  .bcp-actions{ display:flex; gap:8px; }
+  .bcp-btn{
+    flex:1; border:1px solid var(--line); background: var(--bg); color: var(--text);
+    border-radius:10px; padding:9px; font-family:'Inter'; font-weight:700; font-size:12px; cursor:pointer;
+  }
+  .bcp-btn.primary{ background: var(--volt); border-color: var(--volt); color:#12161B; }
+  .dropset-toggle{
+    width:26px; height:26px; border-radius:8px; border:1px solid var(--line); background: var(--bg);
+    font-size:12px; cursor:pointer; padding:0; opacity:.45; filter: grayscale(1);
+  }
+  .dropset-toggle.active{ opacity:1; filter:none; border-color: var(--flame); background: rgba(255,122,89,.16); }
+  .exo-block-tag{ font-weight:700; }
+  .exo-block-tag.superset{ color: var(--volt); }
+  .exo-block-tag.circuit{ color: var(--flame); }
+  .block-live-banner{ border-radius:14px; padding:10px 12px; font-size:12.5px; font-weight:700; margin-bottom:12px; }
+  .block-live-banner span{ display:block; font-weight:500; font-size:11.5px; color: var(--text-muted); margin-top:3px; line-height:1.4; }
+  .set-row.current{ border-color: var(--lime); }
+  .drop-tag{ flex-basis:100%; font-size:10.5px; font-weight:700; color: var(--flame); }
+
+  /* ---------- programmes préconstruits ---------- */
+  .programs-btn{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background: var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px 16px;
+    color: var(--text); font-family:'Inter'; font-weight:700; font-size:13px; cursor:pointer;
+    margin-bottom:16px; text-align:left;
+  }
+  .programs-btn small{ display:block; font-weight:500; font-size:11.5px; color: var(--text-muted); margin-top:3px; }
+  .programs-btn svg{ flex-shrink:0; color: var(--text-muted); }
+  .prog-card, .prog-day{
+    background: var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:10px;
+  }
+  .prog-card{ cursor:pointer; }
+  .prog-name, .prog-day-name{ font-weight:700; font-size:13.5px; }
+  .prog-meta{ font-size:11.5px; color: var(--text-muted); margin-top:4px; line-height:1.45; }
+  .prog-tag{
+    display:inline-block; font-size:10px; font-weight:700; border-radius:999px; padding:2px 8px;
+    background: rgba(111,168,255,.14); color: var(--volt); margin: 6px 6px 0 0;
+  }
+  .prog-day-head{ display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px; }
+  .prog-day-add{
+    background: var(--volt); color:#12161B; border:none; border-radius:10px; padding:7px 11px;
+    font-family:'Inter'; font-weight:700; font-size:11.5px; cursor:pointer; flex-shrink:0;
+  }
+  .prog-exo{ display:flex; justify-content:space-between; gap:10px; font-size:12px; padding:5px 0; border-top:1px solid var(--line); }
+  .prog-exo span:last-child{ color: var(--text-muted); flex-shrink:0; }
+  .prog-back{
+    background:none; border:none; color: var(--volt); font-family:'Inter'; font-weight:700; font-size:12px;
+    cursor:pointer; padding:0; margin-bottom:10px;
   }
 
   /* ---------- mode live ---------- */
@@ -640,6 +720,11 @@
       </button>
     </div>
 
+    <button class="programs-btn" onclick="openProgramsOverlay()">
+      <div>📋 Programmes préconstruits<small>PPL, 5×5, Full body, Upper / Lower — une séance prête en un clic</small></div>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6"/></svg>
+    </button>
+
     <div class="dashboard-grid">
       <div class="week-card">
         <div class="week-top">
@@ -742,6 +827,28 @@
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
             Ajouter un exercice
           </button>
+          <button type="button" class="add-exo-btn group-block-btn" onclick="openBlockGrouping()">
+            🔗 Grouper les exercices cochés (superset / circuit)
+          </button>
+          <div class="block-config-panel" id="block-config-panel">
+            <div class="bcp-title">Nouveau groupe · <span id="block-count-lbl"></span></div>
+            <div class="bcp-grid">
+              <div>
+                <label>Type</label>
+                <select id="block-type">
+                  <option value="superset">Superset</option>
+                  <option value="circuit">Circuit</option>
+                </select>
+              </div>
+              <div><label>Tours</label><input type="number" id="block-rounds" min="1" value="3"></div>
+              <div><label>Repos / tour (s)</label><input type="number" id="block-rest" min="0" step="5" value="90"></div>
+            </div>
+            <div class="bcp-hint">À chaque tour : 1 série de chaque exercice du groupe, enchaînées sans repos, puis le repos indiqué avant le tour suivant.</div>
+            <div class="bcp-actions">
+              <button type="button" class="bcp-btn" onclick="cancelBlockGrouping()">Annuler</button>
+              <button type="button" class="bcp-btn primary" onclick="confirmBlockGrouping()">Créer le groupe</button>
+            </div>
+          </div>
         </div>
 
         <div class="modal-actions">
@@ -749,6 +856,16 @@
           <button type="submit" class="modal-btn save" id="workout-modal-submit">Créer la séance</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="programs-overlay">
+    <div class="modal-sheet" style="max-width:520px;">
+      <div class="modal-title" id="programs-title">Programmes préconstruits</div>
+      <div id="programs-body"></div>
+      <div class="modal-actions">
+        <button type="button" class="modal-btn cancel" style="width:100%;" onclick="closeProgramsOverlay()">Fermer</button>
+      </div>
     </div>
   </div>
 
@@ -837,6 +954,9 @@
     document.getElementById("exo-rows").innerHTML = "";
     exoRowCount = 0;
     plannedSetsByRow = {};
+    plannedBlocks = {};
+    blockCounter = 0;
+    cancelBlockGrouping();
   }
 
   async function editWorkout(workoutId){
@@ -864,9 +984,13 @@
 
     document.getElementById("exo-rows").innerHTML = "";
     exoRowCount = 0;
+    plannedBlocks = {};
+    blockCounter = 0;
+    const rowIdByExId = {};
     for (const ex of (exercises || [])){
       addExoRow();
       const id = "exo-row-" + (exoRowCount - 1);
+      rowIdByExId[ex.id] = id;
       const row = document.getElementById(id);
       const select = row.querySelector(".exo-select");
       const customInput = row.querySelector(".exo-custom-input");
@@ -886,7 +1010,7 @@
       const warmupSets = (existingSets || []).filter(s => s.is_warmup);
       const workingSets = (existingSets || []).filter(s => !s.is_warmup);
       if (warmupSets.length) plan.warmup = warmupSets.map(s => ({ reps: s.reps ?? "", weight: s.weight_kg ?? "" }));
-      if (workingSets.length) plan.working = workingSets.map(s => ({ reps: s.reps ?? "", weight: s.weight_kg ?? "" }));
+      if (workingSets.length) plan.working = workingSets.map((s, i) => ({ reps: s.reps ?? "", weight: s.weight_kg ?? "", noRestBefore: i > 0 && !!s.no_rest_before }));
 
       const restInput = row.querySelector(".ecp-rest-row input");
       if (restInput) restInput.value = plan.rest;
@@ -899,6 +1023,22 @@
       }
     }
     if (!(exercises || []).length){ addExoRow(); addExoRow(); }
+
+    // Reconstruction des groupes superset / circuit
+    if ((exercises || []).some(e => e.block_id)){
+      const { data: blocks } = await supabaseClient
+        .from("workout_blocks").select("*").eq("workout_id", workoutId).order("position", { ascending: true });
+      (blocks || []).forEach(b => {
+        const rowIds = exercises
+          .filter(e => e.block_id === b.id)
+          .sort((x, y) => (x.block_order ?? 0) - (y.block_order ?? 0))
+          .map(e => rowIdByExId[e.id]);
+        if (rowIds.length >= 2){
+          plannedBlocks["blk-" + (blockCounter++)] = { type: b.block_type, rest: b.rest_between_rounds ?? 90, rowIds };
+        }
+      });
+    }
+    renderAllBlockBadges();
 
     document.getElementById("workout-modal-overlay").classList.add("open");
   }
@@ -927,6 +1067,7 @@
 
   function onExoSelectChange(selectEl){
     const row = selectEl.closest(".exo-row");
+    delete row.dataset.muscle; // choix manuel : on oublie le groupe musculaire proposé par un programme
     const customInput = row.querySelector(".exo-custom-input");
     customInput.style.display = selectEl.value === "__custom__" ? "block" : "none";
   }
@@ -938,10 +1079,12 @@
     row.className = "exo-row";
     row.id = id;
     row.innerHTML = `
+      <div class="block-badge" id="block-badge-${id}"></div>
       <div class="exo-row-top">
+        <input type="checkbox" class="exo-select-check" title="Cocher pour grouper en superset / circuit">
         <select class="exo-select" onchange="onExoSelectChange(this)">${exerciseSelectOptionsHtml()}</select>
         <input type="text" class="exo-custom-input" placeholder="Nom du nouvel exercice">
-        <button type="button" class="exo-remove" onclick="delete plannedSetsByRow['${id}']; document.getElementById('${id}').remove()">
+        <button type="button" class="exo-remove" onclick="removeExoRow('${id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
@@ -962,7 +1105,7 @@
             <button type="button" class="ecp-toggle-visibility" onclick="toggleWarmupVisibility('${id}')" id="warmup-toggle-${id}">Afficher</button>
           </div>
           <div id="warmup-table-${id}" style="display:none;">
-            <div class="ecp-table-head"><div>Série</div><div>Répétitions</div><div>Kg</div><div></div></div>
+            <div class="ecp-table-head"><div>Série</div><div>Répétitions</div><div>Kg</div><div></div><div></div></div>
             <div id="warmup-rows-${id}"></div>
             <button type="button" class="ecp-add-set" onclick="addPlannedSet('${id}', true)">+ Ajouter une série d'échauffement</button>
           </div>
@@ -970,8 +1113,9 @@
 
         <div class="ecp-section">
           <div class="ecp-section-head"><div class="ecp-section-title">Séries efficaces</div></div>
-          <div class="ecp-table-head"><div>Série</div><div>Répétitions</div><div>Kg</div><div></div></div>
+          <div class="ecp-table-head"><div>Série</div><div>Répétitions</div><div>Kg</div><div></div><div></div></div>
           <div id="working-rows-${id}"></div>
+          <div class="ecp-hint">⚡ = dropset : la série s'enchaîne sans repos après la précédente</div>
           <button type="button" class="ecp-add-set" onclick="addPlannedSet('${id}', false)">+ Ajouter une série</button>
         </div>
       </div>`;
@@ -1007,13 +1151,134 @@
     }
     renderPlannedSetRows(id, isWarmup);
     updateExoSummary(id);
+    renderAllBlockBadges();
   }
 
   function removePlannedSet(id, isWarmup, index){
     const plan = plannedSetsByRow[id];
     (isWarmup ? plan.warmup : plan.working).splice(index, 1);
+    if (!isWarmup && plan.working[0]) plan.working[0].noRestBefore = false;
     renderPlannedSetRows(id, isWarmup);
     updateExoSummary(id);
+    renderAllBlockBadges();
+  }
+
+  // ---------- SUPERSET / CIRCUIT / DROPSET (planification) ----------
+  let plannedBlocks = {}; // { bid: { type: 'superset'|'circuit', rest: 90, rowIds: [...] } }
+  let blockCounter = 0;
+
+  function blockLabel(b){ return (b.type === "circuit" ? "Circuit " : "Superset ") + (b.letter || ""); }
+  function rowBlockId(rowId){
+    return Object.keys(plannedBlocks).find(bid => plannedBlocks[bid].rowIds.includes(rowId)) || null;
+  }
+  // Un "tour" = une série efficace + ses éventuels dropsets enchaînés
+  function plannedRoundCount(rowId){
+    const p = plannedSetsByRow[rowId];
+    return p ? p.working.filter(s => !s.noRestBefore).length : 0;
+  }
+
+  function removeExoRow(id){
+    const bid = rowBlockId(id);
+    if (bid){
+      const b = plannedBlocks[bid];
+      b.rowIds = b.rowIds.filter(r => r !== id);
+      if (b.rowIds.length < 2) delete plannedBlocks[bid];
+    }
+    delete plannedSetsByRow[id];
+    document.getElementById(id).remove();
+    renderAllBlockBadges();
+  }
+
+  function toggleDropset(id, index){
+    const s = plannedSetsByRow[id].working[index];
+    if (!s || index === 0) return;
+    s.noRestBefore = !s.noRestBefore;
+    renderPlannedSetRows(id, false);
+    renderAllBlockBadges();
+  }
+
+  function selectedRowsForGrouping(){
+    return Array.from(document.querySelectorAll("#exo-rows .exo-row"))
+      .filter(r => r.querySelector(".exo-select-check").checked);
+  }
+
+  function openBlockGrouping(){
+    const rows = selectedRowsForGrouping();
+    if (rows.length < 2){
+      alert("Coche au moins 2 exercices (case à gauche de chaque exercice) pour les grouper.");
+      return;
+    }
+    if (rows.some(r => rowBlockId(r.id))){
+      alert("Un des exercices cochés fait déjà partie d'un groupe. Dissocie-le d'abord.");
+      return;
+    }
+    document.getElementById("block-type").value = rows.length === 2 ? "superset" : "circuit";
+    document.getElementById("block-rounds").value = Math.max(1, ...rows.map(r => plannedRoundCount(r.id)));
+    document.getElementById("block-count-lbl").textContent = `${rows.length} exercices cochés`;
+    document.getElementById("block-config-panel").classList.add("open");
+  }
+
+  function cancelBlockGrouping(){
+    document.getElementById("block-config-panel").classList.remove("open");
+  }
+
+  function confirmBlockGrouping(){
+    const rows = selectedRowsForGrouping().filter(r => !rowBlockId(r.id));
+    if (rows.length < 2){ cancelBlockGrouping(); return; }
+    const type = document.getElementById("block-type").value === "circuit" ? "circuit" : "superset";
+    const rounds = Math.max(1, parseInt(document.getElementById("block-rounds").value) || 3);
+    const restVal = parseInt(document.getElementById("block-rest").value);
+    const rest = isNaN(restVal) ? 90 : Math.max(0, restVal);
+
+    // Les exercices d'un groupe se suivent dans la séance
+    let anchor = rows[0];
+    rows.slice(1).forEach(r => { anchor.after(r); anchor = r; });
+
+    rows.forEach(r => {
+      const plan = plannedSetsByRow[r.id];
+      // On aligne le nombre de séries efficaces sur le nombre de tours
+      while (plannedRoundCount(r.id) < rounds){
+        const last = plan.working[plan.working.length - 1] || { reps: "", weight: "" };
+        plan.working.push({ reps: last.reps, weight: last.weight });
+      }
+      while (plannedRoundCount(r.id) > rounds && plan.working.length > 1){
+        const last = plan.working[plan.working.length - 1];
+        if (last.reps !== "" || last.weight !== "") break; // on ne supprime jamais une série déjà remplie
+        plan.working.pop();
+      }
+      renderPlannedSetRows(r.id, false);
+      r.querySelector(".exo-select-check").checked = false;
+    });
+
+    plannedBlocks["blk-" + (blockCounter++)] = { type, rest, rowIds: rows.map(r => r.id) };
+    cancelBlockGrouping();
+    renderAllBlockBadges();
+  }
+
+  function ungroupBlock(bid){
+    delete plannedBlocks[bid];
+    renderAllBlockBadges();
+  }
+
+  function renderAllBlockBadges(){
+    const rows = Array.from(document.querySelectorAll("#exo-rows .exo-row"));
+    const firstIdx = bid => rows.findIndex(r => plannedBlocks[bid].rowIds.includes(r.id));
+    Object.keys(plannedBlocks)
+      .sort((a, b) => firstIdx(a) - firstIdx(b))
+      .forEach((bid, i) => { plannedBlocks[bid].letter = String.fromCharCode(65 + i); });
+
+    rows.forEach(r => {
+      const badge = document.getElementById("block-badge-" + r.id);
+      if (!badge) return;
+      const bid = rowBlockId(r.id);
+      r.classList.toggle("in-block", !!bid);
+      if (!bid){ badge.className = "block-badge"; badge.innerHTML = ""; return; }
+      const b = plannedBlocks[bid];
+      const rounds = Math.max(1, ...b.rowIds.map(id => plannedRoundCount(id)));
+      badge.className = "block-badge show " + b.type;
+      badge.innerHTML = `<span>🔗 ${blockLabel(b)} · ${b.rowIds.indexOf(r.id) + 1}/${b.rowIds.length} · ${rounds} tour${rounds > 1 ? "s" : ""} · ${b.rest}s entre les tours</span>
+        <button type="button" onclick="ungroupBlock('${bid}')">Dissocier</button>`;
+    });
   }
 
   function updatePlannedSetField(id, isWarmup, index, field, value){
@@ -1035,6 +1300,9 @@
                onchange="updatePlannedSetField('${id}', ${isWarmup}, ${i}, 'reps', this.value)">
         <input type="number" min="0" step="0.1" placeholder="0" value="${s.weight}"
                onchange="updatePlannedSetField('${id}', ${isWarmup}, ${i}, 'weight', this.value)">
+        ${(!isWarmup && i > 0)
+          ? `<button type="button" class="dropset-toggle ${s.noRestBefore ? "active" : ""}" title="Dropset : enchaîner cette série sans repos après la précédente" onclick="toggleDropset('${id}', ${i})">⚡</button>`
+          : `<div></div>`}
         <button type="button" class="ecp-set-remove" onclick="removePlannedSet('${id}', ${isWarmup}, ${i})">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>`;
@@ -1048,7 +1316,8 @@
     if (!el) return;
     const plan = plannedSetsByRow[id];
     const warmupTxt = plan.warmup.length ? `${plan.warmup.length} échauffement + ` : "";
-    el.textContent = `${warmupTxt}${plan.working.length} série${plan.working.length > 1 ? "s" : ""} efficace${plan.working.length > 1 ? "s" : ""} · ${plan.rest}s repos`;
+    const drops = plan.working.filter(s => s.noRestBefore).length;
+    el.textContent = `${warmupTxt}${plan.working.length} série${plan.working.length > 1 ? "s" : ""} efficace${plan.working.length > 1 ? "s" : ""} · ${plan.rest}s repos${drops ? ` · ⚡ ${drops} dropset` : ""}`;
   }
 
   async function submitWorkout(e){
@@ -1077,6 +1346,7 @@
       // On repart des exercices actuels du formulaire : on supprime les anciens puis on réinsère
       // (les séries déjà loggées sur cette séance seront donc réinitialisées)
       await supabaseClient.from("exercises").delete().eq("workout_id", editId);
+      await supabaseClient.from("workout_blocks").delete().eq("workout_id", editId);
     } else {
       const { data, error } = await supabaseClient
         .from("workouts")
@@ -1109,7 +1379,7 @@
         if (!exName) continue;
         const { data: newLib, error: libErr } = await supabaseClient
           .from("exercise_library")
-          .insert({ user_id: currentUser.id, name: exName, muscle_group: "Perso" })
+          .insert({ user_id: currentUser.id, name: exName, muscle_group: row.dataset.muscle || "Perso" })
           .select().single();
         if (libErr){ alert("Erreur création exercice : " + libErr.message); continue; }
         libraryId = newLib.id;
@@ -1138,6 +1408,35 @@
       rowIdByIndex.push(rowId);
     }
 
+    // Groupes superset / circuit : on crée d'abord les blocs, puis on y rattache les exercices
+    let anyBlock = false;
+    const blockDefs = Object.values(plannedBlocks)
+      .map(b => ({ b, idxs: b.rowIds.map(r => rowIdByIndex.indexOf(r)).filter(i => i >= 0).sort((x, y) => x - y) }))
+      .filter(x => x.idxs.length >= 2)
+      .sort((x, y) => x.idxs[0] - y.idxs[0]);
+    for (let bi = 0; bi < blockDefs.length; bi++){
+      const { b, idxs } = blockDefs[bi];
+      const rounds = Math.max(1, ...b.rowIds.map(r => plannedRoundCount(r)));
+      const { data: blockRow, error: blockErr } = await supabaseClient
+        .from("workout_blocks")
+        .insert({ workout_id: workout.id, block_type: b.type, rounds, rest_between_rounds: b.rest, position: bi })
+        .select().single();
+      if (blockErr){
+        alert("Groupe superset/circuit non enregistré (schema_v21.sql a-t-il bien été exécuté dans Supabase ?) : " + blockErr.message);
+        break;
+      }
+      anyBlock = true;
+      idxs.forEach((exIdx, order) => {
+        exercisesToInsert[exIdx].block_id = blockRow.id;
+        exercisesToInsert[exIdx].block_order = order;
+      });
+    }
+    if (anyBlock){
+      exercisesToInsert.forEach(ex => {
+        if (!("block_id" in ex)){ ex.block_id = null; ex.block_order = null; }
+      });
+    }
+
     if (exercisesToInsert.length){
       const { data: insertedExercises, error: exoError } = await supabaseClient
         .from("exercises").insert(exercisesToInsert).select();
@@ -1154,7 +1453,8 @@
               weight_kg: s.weight !== "" ? parseFloat(s.weight) : null,
               reps: s.reps !== "" ? parseInt(s.reps) : null,
               completed: isCompleted,
-              completed_at: isCompleted ? scheduledAt : null
+              completed_at: isCompleted ? scheduledAt : null,
+              no_rest_before: false
             });
           });
           plan.working.forEach((s, i) => {
@@ -1163,10 +1463,13 @@
               weight_kg: s.weight !== "" ? parseFloat(s.weight) : null,
               reps: s.reps !== "" ? parseInt(s.reps) : null,
               completed: isCompleted,
-              completed_at: isCompleted ? scheduledAt : null
+              completed_at: isCompleted ? scheduledAt : null,
+              no_rest_before: i > 0 && !!s.noRestBefore
             });
           });
         });
+        // Sans dropset, on n'envoie pas la colonne (la séance reste compatible même sans schema_v21)
+        if (!setsToInsert.some(s => s.no_rest_before)) setsToInsert.forEach(s => { delete s.no_rest_before; });
         if (setsToInsert.length){
           const { error: setsError } = await supabaseClient.from("workout_sets").insert(setsToInsert);
           if (setsError) alert("Séance créée, mais erreur sur les séries planifiées : " + setsError.message);
@@ -1182,6 +1485,170 @@
     loadSport();
   }
 
+  // ---------- PROGRAMMES PRÉCONSTRUITS ----------
+  // Catalogue : nom affiché, groupe musculaire, autres noms possibles dans la bibliothèque
+  const PROGRAM_EXERCISES = {
+    bench:      { name: "Développé couché", group: "Pectoraux", alt: ["Développé couché barre", "Bench press"] },
+    inclineDb:  { name: "Développé incliné haltères", group: "Pectoraux", alt: ["Développé incliné", "Incline dumbbell press"] },
+    dips:       { name: "Dips", group: "Pectoraux", alt: ["Dips pectoraux", "Dips triceps"] },
+    ohp:        { name: "Développé militaire", group: "Épaules", alt: ["Développé militaire barre", "Overhead press", "Développé épaules"] },
+    lateral:    { name: "Élévations latérales", group: "Épaules", alt: ["Élévation latérale", "Élévations latérales haltères", "Lateral raise"] },
+    facePull:   { name: "Face pull", group: "Épaules", alt: ["Face pull poulie"] },
+    pullup:     { name: "Tractions", group: "Dos", alt: ["Traction", "Tractions pronation", "Pull-up"] },
+    row:        { name: "Rowing barre", group: "Dos", alt: ["Rowing barre buste penché", "Barbell row"] },
+    dbRow:      { name: "Rowing haltère", group: "Dos", alt: ["Rowing haltère un bras", "Rowing haltères"] },
+    latPull:    { name: "Tirage vertical", group: "Dos", alt: ["Tirage vertical poulie haute", "Tirage poitrine", "Lat pulldown"] },
+    deadlift:   { name: "Soulevé de terre", group: "Dos", alt: ["Deadlift"] },
+    curl:       { name: "Curl barre", group: "Biceps", alt: ["Curl barre EZ", "Curl biceps barre", "Curl biceps"] },
+    hammer:     { name: "Curl marteau", group: "Biceps", alt: ["Curl marteau haltères", "Hammer curl"] },
+    pushdown:   { name: "Extension triceps poulie", group: "Triceps", alt: ["Extension triceps à la poulie", "Extensions triceps poulie haute", "Triceps pushdown"] },
+    squat:      { name: "Squat", group: "Jambes", alt: ["Squat barre", "Back squat"] },
+    legPress:   { name: "Presse à cuisses", group: "Jambes", alt: ["Presse à cuisse", "Presse", "Leg press"] },
+    rdl:        { name: "Soulevé de terre roumain", group: "Jambes", alt: ["Soulevé de terre jambes tendues", "Romanian deadlift"] },
+    lunge:      { name: "Fentes", group: "Jambes", alt: ["Fentes haltères", "Fentes avant", "Fentes marchées"] },
+    legExt:     { name: "Leg extension", group: "Jambes", alt: ["Extension de jambes", "Extensions jambes"] },
+    legCurl:    { name: "Leg curl", group: "Jambes", alt: ["Leg curl allongé", "Leg curl assis", "Flexion des jambes"] },
+    calf:       { name: "Mollets debout", group: "Jambes", alt: ["Extension mollets debout", "Extensions mollets", "Mollets"] },
+    crunch:     { name: "Crunch", group: "Abdos", alt: ["Crunchs", "Crunch au sol"] },
+  };
+
+  // Chaque exercice : [clé, séries, répétitions, repos en secondes]
+  const PROGRAMS = [
+    {
+      name: "Push / Pull / Legs", short: "PPL", level: "Intermédiaire", freq: "3 ou 6 séances / semaine", goal: "Prise de muscle",
+      desc: "Un jour pour pousser, un pour tirer, un pour les jambes. Enchaîne les 3 séances une fois (3 j) ou deux fois (6 j) dans la semaine.",
+      days: [
+        { name: "Push — pectoraux, épaules, triceps", exercises: [["bench",4,8,120],["inclineDb",3,10,90],["ohp",3,8,120],["lateral",4,15,60],["dips",3,10,90],["pushdown",3,12,60]] },
+        { name: "Pull — dos, biceps", exercises: [["deadlift",3,5,180],["pullup",4,8,120],["row",3,8,120],["latPull",3,10,90],["facePull",3,15,60],["curl",3,10,60],["hammer",3,12,60]] },
+        { name: "Legs — jambes", exercises: [["squat",4,6,180],["legPress",3,10,120],["rdl",3,8,120],["legExt",3,12,60],["legCurl",3,12,60],["calf",4,15,60]] },
+      ]
+    },
+    {
+      name: "5×5 (StrongLifts)", short: "5×5", level: "Débutant", freq: "3 séances / semaine", goal: "Force",
+      desc: "Alterne les séances A et B avec un jour de repos entre chaque (A-B-A, puis B-A-B). Ajoute 2,5 kg à chaque séance réussie.",
+      days: [
+        { name: "Séance A", exercises: [["squat",5,5,180],["bench",5,5,180],["row",5,5,180]] },
+        { name: "Séance B", exercises: [["squat",5,5,180],["ohp",5,5,180],["deadlift",1,5,180]] },
+      ]
+    },
+    {
+      name: "Full body", short: "Full body", level: "Débutant", freq: "3 séances / semaine", goal: "Remise en forme / prise de muscle",
+      desc: "Tout le corps à chaque séance. Alterne A et B avec au moins un jour de repos entre deux séances.",
+      days: [
+        { name: "Séance A", exercises: [["squat",3,8,120],["bench",3,8,120],["row",3,8,120],["ohp",2,10,90],["curl",2,12,60],["crunch",3,15,45]] },
+        { name: "Séance B", exercises: [["deadlift",3,5,180],["inclineDb",3,10,90],["latPull",3,10,90],["lunge",3,10,90],["pushdown",2,12,60],["crunch",3,15,45]] },
+      ]
+    },
+    {
+      name: "Upper / Lower", short: "Upper/Lower", level: "Intermédiaire", freq: "4 séances / semaine", goal: "Force + prise de muscle",
+      desc: "Haut du corps / bas du corps, deux fois par semaine : une séance orientée force (A), une orientée volume (B).",
+      days: [
+        { name: "Upper A — haut du corps (force)", exercises: [["bench",4,5,150],["row",4,5,150],["ohp",3,8,120],["pullup",3,8,120],["curl",3,10,60],["pushdown",3,10,60]] },
+        { name: "Lower A — bas du corps (force)", exercises: [["squat",4,5,180],["rdl",3,8,120],["legPress",3,10,120],["legCurl",3,12,60],["calf",4,12,60]] },
+        { name: "Upper B — haut du corps (volume)", exercises: [["inclineDb",4,10,90],["latPull",4,10,90],["lateral",4,15,60],["dbRow",3,10,90],["dips",3,10,90],["hammer",3,12,60]] },
+        { name: "Lower B — bas du corps (volume)", exercises: [["deadlift",3,5,180],["lunge",3,10,90],["legExt",3,15,60],["legCurl",3,15,60],["calf",4,15,60]] },
+      ]
+    },
+  ];
+
+  function normalizeExoName(s){
+    return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  }
+
+  // Cherche l'exercice dans la bibliothèque : nom exact d'abord, puis nom qui commence pareil
+  function findLibraryExercise(def){
+    const wanted = [def.name, ...(def.alt || [])].map(normalizeExoName);
+    const lib = EXERCISE_LIBRARY.map(e => ({ e, n: normalizeExoName(e.name) }));
+    for (const w of wanted){
+      const exact = lib.find(x => x.n === w);
+      if (exact) return exact.e;
+    }
+    const main = wanted[0];
+    const starts = lib.filter(x => x.n.startsWith(main + " ")).sort((a, b) => a.n.length - b.n.length);
+    return starts.length ? starts[0].e : null;
+  }
+
+  function programDayDuration(day){
+    const sec = day.exercises.reduce((t, [, sets, , rest]) => t + sets * (rest + 45), 0);
+    return Math.max(15, Math.round(sec / 60 / 5) * 5);
+  }
+
+  function openProgramsOverlay(){
+    renderProgramList();
+    document.getElementById("programs-overlay").classList.add("open");
+  }
+  function closeProgramsOverlay(){
+    document.getElementById("programs-overlay").classList.remove("open");
+  }
+
+  function renderProgramList(){
+    document.getElementById("programs-title").textContent = "Programmes préconstruits";
+    document.getElementById("programs-body").innerHTML = PROGRAMS.map((p, pi) => `
+      <div class="prog-card" onclick="renderProgramDetail(${pi})">
+        <div class="prog-name">${p.name}</div>
+        <div class="prog-meta">${p.desc}</div>
+        <span class="prog-tag">${p.level}</span><span class="prog-tag">${p.freq}</span><span class="prog-tag">${p.goal}</span>
+      </div>`).join("");
+  }
+
+  function renderProgramDetail(pi){
+    const p = PROGRAMS[pi];
+    document.getElementById("programs-title").textContent = p.name;
+    document.getElementById("programs-body").innerHTML = `
+      <button type="button" class="prog-back" onclick="renderProgramList()">← Tous les programmes</button>
+      <div class="prog-meta" style="margin:0 0 12px;">${p.desc}<br>Choisis une séance : elle s'ouvre déjà remplie, tu n'as plus qu'à régler la date et tes charges.</div>
+      ${p.days.map((d, di) => `
+        <div class="prog-day">
+          <div class="prog-day-head">
+            <div class="prog-day-name">${d.name}<div class="prog-meta" style="margin-top:2px;">${d.exercises.length} exercices · environ ${programDayDuration(d)} min</div></div>
+            <button type="button" class="prog-day-add" onclick="applyProgramDay(${pi}, ${di})">Utiliser</button>
+          </div>
+          ${d.exercises.map(([key, sets, reps, rest]) => `
+            <div class="prog-exo"><span>${PROGRAM_EXERCISES[key].name}</span><span>${sets} × ${reps} · ${rest}s</span></div>`).join("")}
+        </div>`).join("")}`;
+  }
+
+  // Ouvre le formulaire "Nouvelle séance" pré-rempli avec la séance du programme
+  function applyProgramDay(pi, di){
+    const p = PROGRAMS[pi];
+    const day = p.days[di];
+    closeProgramsOverlay();
+    closeWorkoutModal();
+    openWorkoutModal();
+    document.getElementById("exo-rows").innerHTML = "";
+    exoRowCount = 0;
+    plannedSetsByRow = {};
+
+    document.getElementById("w-name").value = `${p.short} — ${day.name.split(" — ")[0]}`;
+    document.getElementById("w-type").value = "Force";
+    document.getElementById("w-duration").value = programDayDuration(day);
+
+    day.exercises.forEach(([key, sets, reps, rest]) => {
+      const def = PROGRAM_EXERCISES[key];
+      addExoRow();
+      const id = "exo-row-" + (exoRowCount - 1);
+      const row = document.getElementById(id);
+      const select = row.querySelector(".exo-select");
+      const customInput = row.querySelector(".exo-custom-input");
+      const lib = findLibraryExercise(def);
+      if (lib){
+        select.value = lib.id;
+      } else {
+        // Absent de la bibliothèque : il y sera ajouté à l'enregistrement de la séance
+        select.value = "__custom__";
+        customInput.style.display = "block";
+        customInput.value = def.name;
+        row.dataset.muscle = def.group;
+      }
+      const plan = plannedSetsByRow[id];
+      plan.rest = rest;
+      plan.working = Array.from({ length: sets }, () => ({ reps: reps, weight: "" }));
+      const restInput = row.querySelector(".ecp-rest-row input");
+      if (restInput) restInput.value = rest;
+      renderPlannedSetRows(id, false);
+    });
+  }
+
   function endOfWeek(){
     const d = startOfWeek();
     d.setDate(d.getDate() + 7);
@@ -1191,6 +1658,7 @@
 
   let currentWorkout = null;
   let currentWorkoutExercises = [];
+  let currentWorkoutBlocks = {}; // { blockId: { type, rounds, rest, letter } }
 
   async function deleteWorkout(workoutId){
     if (!confirm("Supprimer cette séance et tout ce qu'elle contient (exercices, séries loggées) ?")) return;
@@ -1241,6 +1709,16 @@
 
     currentWorkout = todays;
     currentWorkoutExercises = exercises || [];
+    currentWorkoutBlocks = {};
+    if (currentWorkoutExercises.some(e => e.block_id)){
+      const { data: blocks } = await supabaseClient
+        .from("workout_blocks").select("*").eq("workout_id", todays.id).order("position", { ascending: true });
+      (blocks || []).forEach((b, i) => {
+        currentWorkoutBlocks[b.id] = {
+          type: b.block_type, rounds: b.rounds, rest: b.rest_between_rounds ?? 90, letter: String.fromCharCode(65 + i)
+        };
+      });
+    }
 
     heroContainer.innerHTML = `
       <div class="workout-hero">
@@ -1266,11 +1744,15 @@
     currentWorkoutExercises.forEach((ex, i) => {
       const el = document.createElement("div");
       el.className = "exo-item";
+      const blk = ex.block_id ? currentWorkoutBlocks[ex.block_id] : null;
+      const detail = blk
+        ? `<span class="exo-block-tag ${blk.type}">🔗 ${blockLabel(blk)}</span> · ${blk.rounds} tour${blk.rounds > 1 ? "s" : ""} × ${ex.reps || "?"} reps · ${blk.rest}s entre les tours`
+        : `${ex.sets || "?"} séries × ${ex.reps || "?"} reps · ${ex.rest_seconds || 90}s repos`;
       el.innerHTML = `
         <div class="exo-num">${String(i + 1).padStart(2, "0")}</div>
         <div class="exo-meta">
           <div class="exo-name">${ex.name}</div>
-          <div class="exo-detail">${ex.sets || "?"} séries × ${ex.reps || "?"} reps · ${ex.rest_seconds || 90}s repos</div>
+          <div class="exo-detail">${detail}</div>
         </div>
         <button class="exo-delete" onclick="deleteExercise('${ex.id}')" title="Supprimer l'exercice">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
@@ -1305,14 +1787,19 @@
       if (existingSets && existingSets.length){
         loggedSets = existingSets.map(s => ({
           set_number: s.set_number, weight_kg: s.weight_kg, reps: s.reps,
-          completed: !!s.completed, dbId: s.id, isWarmup: !!s.is_warmup
+          completed: !!s.completed, dbId: s.id, isWarmup: !!s.is_warmup,
+          noRestBefore: !s.is_warmup && !!s.no_rest_before, rpe: s.rpe ?? null
         }));
       } else {
         loggedSets = Array.from({ length: Math.max(ex.sets || 1, 1) }, (_, i) => ({
           set_number: i + 1, weight_kg: null, reps: ex.reps || null, completed: false, dbId: null, isWarmup: false
         }));
       }
-      exercisesData.push({ id: ex.id, name: ex.name, rest_seconds: ex.rest_seconds || 90, loggedSets });
+      exercisesData.push({
+        id: ex.id, name: ex.name, rest_seconds: ex.rest_seconds || 90, loggedSets,
+        blockId: (ex.block_id && currentWorkoutBlocks[ex.block_id]) ? ex.block_id : null,
+        blockOrder: ex.block_order ?? 0
+      });
     }
 
     const exoNames = exercisesData.map(e => e.name);
@@ -1343,7 +1830,8 @@
       phase: "log",
       startTime: new Date(),
       timer: null, restRemaining: 0, restTotal: 0,
-      priorRecords, newRecordAwarded: {}
+      priorRecords, newRecordAwarded: {},
+      blocks: currentWorkoutBlocks, nextExoIdx: 0, restLabel: ""
     };
     document.getElementById("live-overlay").classList.add("open");
     renderLiveBody();
@@ -1386,15 +1874,71 @@
       }
     }
 
-    const isLastSetOfLastExo =
-      (live.currentExoIndex === live.exercises.length - 1) &&
-      (setIdx === exo.loggedSets.length - 1);
-
-    if (isLastSetOfLastExo){
-      goToSummary();
+    const next = computeNextStep(live.currentExoIndex, setIdx);
+    if (next.exoIdx == null){ goToSummary(); return; }
+    live.nextExoIdx = next.exoIdx;
+    live.restLabel = next.label || "Repos avant la série suivante";
+    if (next.rest > 0){
+      startRest(next.rest, setIdx);
     } else {
-      startRest(exo.rest_seconds || 90, setIdx);
+      // Enchaînement sans repos (dropset, ou exercice suivant du superset/circuit)
+      live.currentExoIndex = next.exoIdx;
+      live.phase = "log";
+      renderLiveBody();
     }
+  }
+
+  // Un "tour" d'un exercice = une série efficace + ses éventuels dropsets enchaînés
+  function liveRoundOf(exo, setIdx){
+    let r = 0;
+    for (let j = 0; j <= setIdx; j++){
+      const s = exo.loggedSets[j];
+      if (!s.isWarmup && !s.noRestBefore) r++;
+    }
+    return r;
+  }
+  function liveRoundCount(exo){
+    return exo.loggedSets.filter(s => !s.isWarmup && !s.noRestBefore).length;
+  }
+  function liveBlockMembers(blockId){
+    return live.exercises
+      .map((e, idx) => ({ e, idx }))
+      .filter(m => m.e.blockId === blockId)
+      .sort((a, b) => a.e.blockOrder - b.e.blockOrder);
+  }
+
+  // Décide de la suite après validation d'une série : durée du repos (0 = aucun) et exercice suivant (null = résumé)
+  function computeNextStep(exoIdx, setIdx){
+    const exo = live.exercises[exoIdx];
+    const cur = exo.loggedSets[setIdx];
+    const nextSet = exo.loggedSets[setIdx + 1];
+
+    // Dropset : la série suivante s'enchaîne immédiatement
+    if (nextSet && nextSet.noRestBefore) return { rest: 0, exoIdx, label: "" };
+
+    const block = exo.blockId ? live.blocks[exo.blockId] : null;
+    if (block && !cur.isWarmup){
+      const r = liveRoundOf(exo, setIdx);
+      const members = liveBlockMembers(exo.blockId);
+      const pos = members.findIndex(m => m.idx === exoIdx);
+      const totalRounds = Math.max(...members.map(m => liveRoundCount(m.e)));
+
+      const nextInRound = members.slice(pos + 1).find(m => liveRoundCount(m.e) >= r);
+      if (nextInRound) return { rest: 0, exoIdx: nextInRound.idx, label: "" };
+
+      const nextRoundFirst = members.find(m => liveRoundCount(m.e) >= r + 1);
+      if (nextRoundFirst){
+        return { rest: block.rest, exoIdx: nextRoundFirst.idx, label: `Tour ${r}/${totalRounds} terminé · ensuite : ${nextRoundFirst.e.name}` };
+      }
+
+      const after = Math.max(...members.map(m => m.idx)) + 1;
+      if (after >= live.exercises.length) return { rest: 0, exoIdx: null };
+      return { rest: block.rest, exoIdx: after, label: `${blockLabel(block)} terminé · ensuite : ${live.exercises[after].name}` };
+    }
+
+    if (nextSet) return { rest: exo.rest_seconds || 90, exoIdx, label: "Repos avant la série suivante" };
+    if (exoIdx >= live.exercises.length - 1) return { rest: 0, exoIdx: null };
+    return { rest: exo.rest_seconds || 90, exoIdx: exoIdx + 1, label: `Ensuite : ${live.exercises[exoIdx + 1].name}` };
   }
 
   function showPRToast(message){
@@ -1445,18 +1989,10 @@
   }
 
   function finishRest(){
-    const exo = live.exercises[live.currentExoIndex];
-    const nextSetIdx = live.pendingSetIdx + 1;
-    if (nextSetIdx < exo.loggedSets.length){
-      live.phase = "log";
-      renderLiveBody();
-    } else if (live.currentExoIndex < live.exercises.length - 1){
-      live.currentExoIndex++;
-      live.phase = "log";
-      renderLiveBody();
-    } else {
-      goToSummary();
-    }
+    if (live.nextExoIdx == null){ goToSummary(); return; }
+    live.currentExoIndex = live.nextExoIdx;
+    live.phase = "log";
+    renderLiveBody();
   }
 
   function skipToNextExercise(){
@@ -1521,7 +2057,7 @@
     if (live.phase === "rest"){
       body.innerHTML = `
         <div class="live-exo-name">${exo.name}</div>
-        <div class="live-exo-meta">Repos avant la série suivante</div>
+        <div class="live-exo-meta">${live.restLabel || "Repos avant la série suivante"}</div>
         <div class="rest-card">
           <div class="rest-label">Temps de repos</div>
           <div class="rest-time" id="rest-time-display">${formatTime(live.restRemaining)}</div>
@@ -1535,8 +2071,22 @@
       return;
     }
 
+    const block = exo.blockId ? live.blocks[exo.blockId] : null;
+    let blockBanner = "";
+    if (block){
+      const members = liveBlockMembers(exo.blockId).map(m => m.e);
+      const totalRounds = Math.max(...members.map(e => liveRoundCount(e)));
+      const doneRounds = exo.loggedSets.filter(s => s.completed && !s.isWarmup && !s.noRestBefore).length;
+      const round = Math.min(totalRounds, doneRounds + 1);
+      const others = members.filter(e => e !== exo).map(e => e.name).join(", ");
+      blockBanner = `<div class="block-live-banner ${block.type}">🔗 ${blockLabel(block)} · Tour ${round}/${totalRounds}
+        <span>Une série ici, puis enchaîne sans repos avec : ${others}. Repos de ${block.rest}s à la fin de chaque tour.</span></div>`;
+    }
+    const currentSetIdx = exo.loggedSets.findIndex(s => !s.completed);
+
     const setsHtml = exo.loggedSets.map((s, i) => `
-      <div class="set-row ${s.completed ? "done" : ""}" id="set-row-${i}" data-rpe="${s.rpe ?? ""}">
+      <div class="set-row ${s.completed ? "done" : (i === currentSetIdx ? "current" : "")}" id="set-row-${i}" data-rpe="${s.rpe ?? ""}">
+        ${s.noRestBefore ? '<div class="drop-tag">⚡ Dropset — enchaîne sans repos</div>' : ""}
         <div class="set-num">${s.isWarmup ? "É" + (s.set_number ?? i + 1) : (s.set_number ?? i + 1)}</div>
         <div class="set-input-group">
           <div class="grp"><span class="u">${weightUnitLabel()}</span><input type="number" class="set-weight" step="0.1" value="${s.weight_kg != null ? kgToDisplayWeight(s.weight_kg).toFixed(1) : ""}" ${s.completed ? "disabled" : ""}></div>
@@ -1556,8 +2106,9 @@
 
     body.innerHTML = `
       ${live.workout.is_deload ? '<div class="deload-banner">🔵 Semaine de décharge — vise environ 40% de charge en moins que d\'habitude</div>' : ""}
+      ${blockBanner}
       <div class="live-exo-name">${exo.name}</div>
-      <div class="live-exo-meta">${exo.loggedSets.length} séries cibles · ${exo.rest_seconds}s de repos</div>
+      <div class="live-exo-meta">${exo.loggedSets.length} séries cibles · ${block ? `${block.rest}s de repos entre les tours` : `${exo.rest_seconds}s de repos`}</div>
       ${setsHtml}`;
 
     const isLast = live.currentExoIndex === live.exercises.length - 1;

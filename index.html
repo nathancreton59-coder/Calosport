@@ -290,6 +290,25 @@
     .main-inner{ max-width:none; }
     .bottom-nav{ display:flex; }
   }
+
+  /* ---------- rappels ---------- */
+  .reminders-card{
+    background: var(--surface); border:1px solid var(--line); border-radius:18px; padding:14px 16px; margin: -12px 0 24px;
+  }
+  .reminders-title{
+    font-size:11px; font-weight:700; color: var(--text-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:4px;
+  }
+  .reminder-row{ display:flex; align-items:center; gap:10px; padding:9px 0; border-top:1px solid var(--line); font-size:13px; }
+  .reminders-title + .reminder-row{ border-top:none; }
+  .reminder-row .ri{ flex-shrink:0; font-size:16px; }
+  .reminder-row .rt{ flex:1; min-width:0; line-height:1.4; }
+  .reminder-row .rc{
+    flex-shrink:0; background: var(--lime); color:#12161B; text-decoration:none; font-weight:700; font-size:11.5px;
+    border-radius:9px; padding:6px 10px;
+  }
+  .reminder-row .rx{
+    flex-shrink:0; background:none; border:none; color: var(--text-muted); font-size:18px; cursor:pointer; padding:0 2px; line-height:1;
+  }
 </style>
 </head>
 <body>
@@ -390,6 +409,8 @@
         <div class="greeting">Bonjour, <span id="greet-name">👋</span></div>
       </div>
     </div>
+
+    <div id="reminders"></div>
 
     <div class="score-card">
       <div class="score-ring">
@@ -614,6 +635,115 @@
     }
 
     computeDailyScore();
+    renderReminders(user, profile, { consumed, calorieGoal, next });
+  }
+
+  // ---------- rappels intelligents ----------
+  // Affichés selon le moment de la journée et tes données ; ils respectent les réglages de notifications.
+  function reminderDismissKey(code){
+    return `calosport-reminder:${code}:${new Date().toISOString().slice(0, 10)}`;
+  }
+  function dismissReminder(code){
+    try { localStorage.setItem(reminderDismissKey(code), "1"); } catch (e) {}
+    const el = document.getElementById("reminder-" + code);
+    if (el) el.remove();
+    const box = document.getElementById("reminders");
+    if (box && !box.querySelector(".reminder-row")) box.innerHTML = "";
+  }
+  function escapeReminderText(s){
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function renderReminders(user, profile, ctx){
+    const box = document.getElementById("reminders");
+    if (!box) return;
+    box.innerHTML = "";
+    if (profile && profile.notifications_enabled === false) return;
+    const on = key => !profile || profile[key] !== false;
+    const now = new Date();
+    const hour = now.getHours();
+    const items = [];
+    const plural = n => n > 1 ? "s" : "";
+
+    try {
+      // Séances
+      if (on("notif_workouts")){
+        const plannedToday = ctx.next && ctx.next.scheduled_at && new Date(ctx.next.scheduled_at) <= endOfToday();
+        if (plannedToday){
+          items.push({ code: "workout_today", icon: "🏋️", text: `Séance prévue aujourd'hui : ${escapeReminderText(ctx.next.name)}`, href: "sport.html", cta: "Y aller" });
+        } else {
+          const { data: lastDone } = await supabaseClient
+            .from("workouts").select("scheduled_at").eq("user_id", user.id).eq("completed", true)
+            .order("scheduled_at", { ascending: false }).limit(1).maybeSingle();
+          if (lastDone && lastDone.scheduled_at){
+            const days = Math.floor((now - new Date(lastDone.scheduled_at)) / 86400000);
+            if (days >= 4) items.push({ code: "workout_gap", icon: "🏋️", text: `${days} jours sans séance. Une reprise aujourd'hui ?`, href: "sport.html", cta: "Planifier" });
+          }
+        }
+
+        const goal = (profile && profile.weekly_workout_goal) || 0;
+        const dow = (now.getDay() + 6) % 7; // lundi = 0
+        if (goal && dow >= 2){
+          const { data: weekDone } = await supabaseClient
+            .from("workouts").select("id").eq("user_id", user.id).eq("completed", true)
+            .gte("scheduled_at", startOfWeek().toISOString());
+          const left = goal - (weekDone || []).length;
+          const daysLeft = 7 - dow; // aujourd'hui compris
+          if (left > 0 && left >= daysLeft - 1){
+            items.push({ code: "weekly_goal", icon: "🎯", text: `Encore ${left} séance${plural(left)} pour ton objectif de la semaine, il reste ${daysLeft} jour${plural(daysLeft)}.`, href: "sport.html", cta: "Voir" });
+          }
+        }
+      }
+
+      // Repas
+      if (on("notif_meals")){
+        if (ctx.consumed === 0 && hour >= 11){
+          items.push({ code: "meals_none", icon: "🍽️", text: "Aucun repas enregistré aujourd'hui.", href: "calories.html", cta: "Ajouter" });
+        } else if (hour >= 20 && ctx.calorieGoal && ctx.consumed < ctx.calorieGoal * 0.6){
+          items.push({ code: "meals_low", icon: "🍽️", text: `Tu es à ${Math.round((ctx.consumed / ctx.calorieGoal) * 100)} % de ton objectif calorique. As-tu tout enregistré ?`, href: "calories.html", cta: "Compléter" });
+        }
+      }
+
+      // Hydratation : on compare à ce qui est attendu à cette heure de la journée
+      if (on("notif_water")){
+        const expected = hour >= 20 ? 0.8 : hour >= 15 ? 0.5 : hour >= 11 ? 0.25 : 0;
+        if (expected){
+          const { data: water } = await supabaseClient
+            .from("water_logs").select("amount_ml").eq("user_id", user.id)
+            .gte("logged_at", startOfToday().toISOString()).lte("logged_at", endOfToday().toISOString());
+          const total = (water || []).reduce((s, w) => s + (w.amount_ml || 0), 0);
+          const goalMl = window.waterGoalMl || 2000;
+          if (total < goalMl * expected){
+            items.push({ code: "water", icon: "💧", text: `Hydratation : ${(total / 1000).toFixed(1)} L sur ${(goalMl / 1000).toFixed(1)} L. Pense à boire.` });
+          }
+        }
+      }
+
+      // Pesée
+      if (on("notif_weighin")){
+        const { data: lastWeight } = await supabaseClient
+          .from("weight_logs").select("logged_at").eq("user_id", user.id)
+          .order("logged_at", { ascending: false }).limit(1).maybeSingle();
+        if (!lastWeight){
+          items.push({ code: "weighin", icon: "⚖️", text: "Enregistre ta première pesée pour suivre ton évolution.", href: "progress.html", cta: "Me peser" });
+        } else {
+          const days = Math.floor((now - new Date(lastWeight.logged_at)) / 86400000);
+          if (days >= 7) items.push({ code: "weighin", icon: "⚖️", text: `Dernière pesée il y a ${days} jours.`, href: "progress.html", cta: "Me peser" });
+        }
+      }
+    } catch (e) { /* un rappel ne doit jamais bloquer l'accueil */ }
+
+    const visible = items.filter(i => {
+      try { return !localStorage.getItem(reminderDismissKey(i.code)); } catch (e) { return true; }
+    });
+    if (!visible.length) return;
+    box.innerHTML = `<div class="reminders-card"><div class="reminders-title">Rappels</div>` + visible.map(i => `
+      <div class="reminder-row" id="reminder-${i.code}">
+        <span class="ri">${i.icon}</span>
+        <span class="rt">${i.text}</span>
+        ${i.href ? `<a class="rc" href="${i.href}">${i.cta}</a>` : ""}
+        <button class="rx" onclick="dismissReminder('${i.code}')" title="Masquer pour aujourd'hui">×</button>
+      </div>`).join("") + `</div>`;
   }
 
   const SCORE_RING_CIRC = 314; // 2 * PI * 50

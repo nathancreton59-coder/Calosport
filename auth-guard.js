@@ -200,6 +200,34 @@ const QUEST_DEFS = [
   { code: "weekly_5_water", type: "weekly", title: "Bois ton eau 5 jours", xp: 50, source: "water_goal", target: 5 },
 ];
 
+// Défis de la semaine : 2 défis tirés de cette liste, différents chaque semaine.
+// "source" = compté à partir des événements d'XP ; "table" = compté à partir d'une table.
+// target / title peuvent dépendre de l'objectif hebdomadaire de séances (g).
+const CHALLENGE_POOL = [
+  { code: "ch_workouts_plus", title: g => `Dépasse ton objectif : ${g + 1} séances`, xp: 120, source: "workout_completed", target: g => g + 1 },
+  { code: "ch_2_pr", title: "Bats 2 records personnels", xp: 90, source: "personal_record", target: 2 },
+  { code: "ch_7_water", title: "Atteins ton objectif d'eau 7 jours sur 7", xp: 90, source: "water_goal", target: 7 },
+  { code: "ch_7_calorie", title: "7 jours sur 7 dans ton objectif calorique", xp: 100, source: "calorie_goal", target: 7 },
+  { code: "ch_weighins", title: "Pèse-toi 2 fois cette semaine", xp: 40, table: "weight_logs", dateCol: "logged_at", target: 2 },
+  { code: "ch_meal_days", title: "Enregistre tes repas 6 jours", xp: 70, table: "meals", dateCol: "logged_at", distinctDays: true, target: 6 },
+];
+
+function weeklyChallengeDefs(weekKey, workoutGoal){
+  const n = CHALLENGE_POOL.length;
+  const weekNum = Math.floor(new Date(weekKey + "T12:00:00").getTime() / (7 * 86400000));
+  const first = weekNum % n;
+  const second = (first + 1 + (Math.floor(weekNum / n) % (n - 1))) % n; // toujours différent du premier
+  return [first, second].map(i => {
+    const c = CHALLENGE_POOL[i];
+    return {
+      ...c,
+      type: "challenge",
+      title: typeof c.title === "function" ? c.title(workoutGoal) : c.title,
+      target: typeof c.target === "function" ? c.target(workoutGoal) : c.target,
+    };
+  });
+}
+
 // Date (lundi) du début de la semaine en cours, utilisée comme clé de période.
 function getWeekKey(){
   const d = new Date();
@@ -242,6 +270,35 @@ async function evaluateQuests(){
     }
     results.push({ ...q, current: Math.min(uniqueCount, q.target), completed });
   }
+
+  // Défis de la semaine
+  try {
+    const { data: goalProfile } = await supabaseClient
+      .from("profiles").select("weekly_workout_goal").eq("id", currentUser.id).single();
+    const workoutGoal = (goalProfile && goalProfile.weekly_workout_goal) || 3;
+    for (const c of weeklyChallengeDefs(weekKey, workoutGoal)){
+      let count = 0;
+      if (c.table){
+        const { data: rows } = await supabaseClient
+          .from(c.table).select(c.dateCol)
+          .eq("user_id", currentUser.id)
+          .gte(c.dateCol, weekKey + "T00:00:00");
+        const list = rows || [];
+        count = c.distinctDays ? new Set(list.map(r => String(r[c.dateCol]).slice(0, 10))).size : list.length;
+      } else {
+        const matching = (weekEvents || []).filter(e => e.source === c.source);
+        count = new Set(matching.map(e => e.related_key)).size;
+      }
+      const questKey = `${c.code}:${weekKey}`;
+      let completed = (weekEvents || []).some(e => e.source === "quest" && e.related_key === questKey);
+      if (!completed && count >= c.target){
+        await awardXp("quest", questKey, c.xp);
+        completed = true;
+      }
+      results.push({ code: c.code, type: "challenge", title: c.title, xp: c.xp, target: c.target, current: Math.min(count, c.target), completed });
+    }
+  } catch (e) { /* les défis sont un bonus : ils ne doivent jamais bloquer les quêtes */ }
+
   return results;
 }
 
