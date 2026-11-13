@@ -366,13 +366,55 @@
   </div>
 </div>
 
-<!-- ===== Modale : conditions d'utilisation (texte a personnaliser) ===== -->
+<!-- ===== Modale : conditions d'utilisation ===== -->
 <div class="modal-overlay" id="terms-overlay">
   <div class="modal-sheet">
     <div class="modal-title">Conditions d'utilisation</div>
-    <p class="modal-text">
-      Texte à personnaliser : décris ici les règles d'usage de l'application, les responsabilités de l'utilisateur, et les limites de garantie.
-    </p>
+    <div class="legal-text">
+      <p class="legal-date">Dernière mise à jour : 13 novembre 2026</p>
+
+      <h4>1. Ce qu'est Calosport</h4>
+      <p>Calosport est une application de suivi de l'alimentation, des séances de sport et de la progression physique. Elle est proposée gratuitement, à titre non professionnel, par son créateur (« l'éditeur »). En créant un compte, tu acceptes les présentes conditions.</p>
+
+      <h4>2. Ton compte</h4>
+      <p>Tu dois avoir au moins 15 ans pour créer un compte. Tu t'engages à fournir une adresse e-mail valide, à garder ton mot de passe confidentiel et à ne pas partager ton compte. Tu es responsable de ce qui est fait depuis ton compte. Préviens l'éditeur si tu penses que quelqu'un d'autre y a eu accès.</p>
+
+      <h4>3. Calosport n'est pas un avis médical</h4>
+      <p>Les objectifs caloriques, les estimations de dépense, les suggestions de charge, les programmes et les prévisions de poids sont des calculs automatiques à titre indicatif. Ils ne remplacent pas l'avis d'un médecin, d'un diététicien ou d'un professionnel du sport. Demande un avis médical avant de commencer un régime ou un programme d'entraînement, en particulier si tu as un problème de santé, si tu es enceinte ou si tu es mineur. Tu pratiques ton activité physique sous ta seule responsabilité.</p>
+
+      <h4>4. Ce que tu peux et ne peux pas faire</h4>
+      <p>L'application est réservée à un usage personnel. Tu t'engages à ne pas :</p>
+      <ul>
+        <li>tenter d'accéder aux données d'un autre utilisateur ou de contourner les protections de l'application ;</li>
+        <li>perturber son fonctionnement, l'utiliser de façon automatisée ou en extraire les données en masse ;</li>
+        <li>publier, dans ton pseudo, ton nom ou tes commentaires, un contenu insultant, haineux, à caractère sexuel, trompeur ou contraire à la loi ;</li>
+        <li>harceler d'autres utilisateurs ou usurper l'identité de quelqu'un.</li>
+      </ul>
+
+      <h4>5. Fonctions sociales</h4>
+      <p>Si tu choisis un pseudo, les autres utilisateurs peuvent te trouver en le recherchant et voient alors ton pseudo et ton nom. Quand tu acceptes une demande d'ami, cette personne voit tes séances terminées (exercices, volume, durée, calories brûlées, records), ton niveau et tes points, et peut y réagir ou les commenter. Tes repas, ton poids, tes mensurations, ton sommeil et tes photos ne sont jamais visibles par les autres. Tu peux retirer un ami à tout moment.</p>
+
+      <h4>6. Tes contenus</h4>
+      <p>Les données que tu saisis et les photos que tu ajoutes restent les tiennes. Tu autorises seulement l'éditeur à les stocker et à les afficher dans l'application pour te fournir le service. L'éditeur peut supprimer un contenu qui ne respecte pas ces conditions.</p>
+
+      <h4>7. Disponibilité du service</h4>
+      <p>Calosport est fourni « en l'état », sans garantie de disponibilité ni d'absence d'erreur. L'application peut évoluer, être interrompue pour maintenance ou être arrêtée. Les valeurs nutritionnelles viennent en partie de sources extérieures (Open Food Facts) et de tes propres saisies : elles peuvent être inexactes. Pense à exporter tes données si tu veux en garder une copie.</p>
+
+      <h4>8. Responsabilité</h4>
+      <p>Dans les limites permises par la loi, l'éditeur ne peut pas être tenu responsable d'une blessure, d'un problème de santé ou d'une perte de données liés à l'utilisation de l'application ou aux indications qu'elle fournit. Rien dans ces conditions ne limite les droits que la loi te reconnaît en tant que consommateur.</p>
+
+      <h4>9. Données personnelles</h4>
+      <p>L'utilisation de tes données est décrite dans la rubrique « Politique de confidentialité » des réglages. Tu peux exporter tes repas et tes séances, et supprimer ton compte, depuis la rubrique « Confidentialité ».</p>
+
+      <h4>10. Fin du compte</h4>
+      <p>Tu peux supprimer ton compte à tout moment depuis les réglages : tes données sont alors effacées de façon définitive. L'éditeur peut suspendre ou supprimer un compte qui ne respecte pas ces conditions.</p>
+
+      <h4>11. Évolution de ces conditions</h4>
+      <p>Ces conditions peuvent être modifiées. La date en haut de cette page indique la dernière version en vigueur.</p>
+
+      <h4>12. Droit applicable et contact</h4>
+      <p>Ces conditions sont soumises au droit français. Pour toute question ou réclamation, contacte l'éditeur par le moyen qui t'a permis d'obtenir l'accès à l'application.</p>
+    </div>
     <button type="button" class="modal-btn confirm" style="width:100%;" onclick="closeModal('terms-overlay')">Fermer</button>
   </div>
 </div>
@@ -424,8 +466,8 @@
     const pass = document.getElementById("new-password-input").value;
     const confirm = document.getElementById("confirm-password-input").value;
     const msg = document.getElementById("password-msg");
-    if (pass.length < 6){
-      msg.textContent = "6 caractères minimum.";
+    if (pass.length < 12 || !/[A-Za-zÀ-ÿ]/.test(pass) || !/[0-9]/.test(pass)){
+      msg.textContent = "12 caractères minimum, avec au moins une lettre et un chiffre.";
       msg.className = "modal-msg";
       return;
     }

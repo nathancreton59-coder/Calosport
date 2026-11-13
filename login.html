@@ -71,6 +71,10 @@
 
     try{
       if (mode === "signup"){
+        // Mot de passe plus solide exigé à la création du compte (les comptes existants ne changent pas)
+        if (password.length < 12 || !/[A-Za-zÀ-ÿ]/.test(password) || !/[0-9]/.test(password)){
+          throw new Error("Choisis un mot de passe d'au moins 12 caractères, avec au moins une lettre et un chiffre.");
+        }
         const full_name = document.getElementById("full_name").value.trim();
         const { error } = await supabaseClient.auth.signUp({
           email, password,
