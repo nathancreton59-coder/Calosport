@@ -488,6 +488,49 @@
   }
   .eh-note{ font-size:11px; color: var(--text-muted); line-height:1.5; margin-top:10px; }
 
+  /* ---------- séance : chrono, suggestion de charge, ressenti ---------- */
+  .live-clock{
+    min-width:34px; text-align:right; font-weight:700; font-size:13px; color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .live-exo-clock{ font-variant-numeric: tabular-nums; color: var(--text); font-weight:600; }
+  .live-last .prefill{ display:block; margin-top:3px; font-size:11.5px; }
+  .live-suggest{
+    background: var(--surface); border:1px solid var(--line); border-left:3px solid var(--volt); border-radius:14px;
+    padding:11px 13px; margin-bottom:16px; font-size:12.5px; color: var(--text-muted); line-height:1.5;
+  }
+  .live-suggest.up{ border-left-color: var(--lime); }
+  .live-suggest b{ color: var(--text); }
+  .live-suggest button{
+    display:block; margin-top:9px; background: var(--lime); color:#12161B; border:none; border-radius:10px;
+    padding:9px 14px; font-family:'Inter'; font-weight:700; font-size:12.5px; cursor:pointer;
+  }
+  .live-suggest .applied{ display:block; margin-top:6px; color: var(--lime); font-weight:700; font-size:11.5px; }
+  .rpe-prompt{
+    background: var(--surface); border:1px solid var(--flame); border-radius:16px;
+    padding:13px; margin: 6px 0 16px; text-align:left;
+  }
+  .rpe-prompt .rp-title{ font-size:13px; color: var(--text-muted); margin-bottom:10px; }
+  .rpe-prompt .rp-title b{ color: var(--text); }
+  .rpe-prompt .rp-choices{ display:grid; grid-template-columns:repeat(5, 1fr); gap:6px; }
+  .rpe-prompt .rp-choices button{
+    background: var(--bg); border:1px solid var(--line); border-radius:11px; padding:8px 2px;
+    color: var(--text-muted); font-family:'Inter'; font-size:10px; font-weight:600; cursor:pointer; line-height:1.3;
+  }
+  .rpe-prompt .rp-choices .n{ display:block; font-size:16px; font-weight:800; color: var(--text); }
+  .rpe-prompt .rp-skip{
+    display:block; margin:10px auto 0; background:none; border:none; padding:2px 8px; cursor:pointer;
+    color: var(--text-muted); font-family:'Inter'; font-size:11.5px; font-weight:600; text-decoration:underline;
+  }
+  .summary-times{
+    text-align:left; background: var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:12px 14px; margin-bottom:16px;
+  }
+  .summary-times .st-title{ font-size:11.5px; color: var(--text-muted); font-weight:600; margin-bottom:6px; }
+  .summary-times .st-row{ display:flex; justify-content:space-between; gap:12px; font-size:13px; padding:4px 0; }
+  .summary-times .st-row span:last-child{ font-variant-numeric: tabular-nums; font-weight:600; flex-shrink:0; }
+  .summary-times .st-row.total{ border-top:1px solid var(--line); margin-top:4px; padding-top:8px; font-weight:700; }
+
   /* ---------- favoris + reprise rapide ---------- */
   .exo-row .exo-fav{
     width:30px; height:30px; flex-shrink:0; border-radius:9px; border:1px solid var(--line);
@@ -952,7 +995,7 @@
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
       </div>
       <div class="live-progress-lbl" id="live-progress-lbl">Exercice 1/1</div>
-      <div style="width:34px;"></div>
+      <div class="live-clock" id="live-clock" title="Durée de la séance">0:00</div>
     </div>
     <div class="live-body" id="live-body"></div>
     <div class="live-footer" id="live-footer"></div>
@@ -2098,27 +2141,202 @@
       exercises: exercisesData,
       currentExoIndex: 0,
       phase: "log",
-      startTime: new Date(),
+      startTime: new Date(), endTime: null,
+      exoMs: {}, exoCur: null, exoSince: Date.now(),
       timer: null, restRemaining: 0, restTotal: 0,
       priorRecords, newRecordAwarded: {},
+      suggestions: {}, rpeQueue: [], rpeAsked: {},
       blocks: currentWorkoutBlocks, nextExoIdx: 0, restLabel: ""
     };
-    // Pré-remplissage : chaque série pas encore faite reprend la charge et les reps de la série
-    // de même rang lors de la dernière séance. Une série déjà enregistrée n'est jamais modifiée.
+
+    // Suggestion de charge + pré-remplissage à partir de la dernière séance de chaque exercice.
+    // Une série déjà validée, ou une charge que tu as saisie toi-même, n'est jamais modifiée.
+    const isDeload = !!live.workout.is_deload;
     live.exercises.forEach(exo => {
       const last = live.lastByName[exo.name];
-      if (!last) return;
-      exo.loggedSets.forEach((s, i) => {
-        if (s.dbId || s.isWarmup || s.completed || s.weight_kg != null || s.reps != null) return;
-        const ref = last.sets[i];
-        if (!ref) return;
-        s.weight_kg = ref.kg;
-        s.reps = ref.reps;
-        s.prefilled = true;
+      if (!last || !last.sets.length) return;
+
+      const plannedReps = exo.loggedSets.filter(s => !s.isWarmup && s.reps != null).map(s => s.reps);
+      // Si tu as déjà prévu plus lourd que la dernière fois, la suggestion n'a plus lieu d'être
+      const plannedTop = Math.max(0, ...exo.loggedSets.filter(s => !s.isWarmup && s.weight_kg != null).map(s => s.weight_kg));
+      if (!isDeload){
+        const sug = computeLoadSuggestion(last, plannedReps);
+        if (sug && plannedTop <= sug.topKg + 0.01) live.suggestions[exo.name] = sug;
+      }
+
+      let rank = 0; // rang parmi les séries efficaces
+      exo.loggedSets.forEach(s => {
+        if (s.isWarmup) return;
+        const ref = last.sets[Math.min(rank, last.sets.length - 1)];
+        rank++;
+        if (s.completed || !ref) return;
+        if (s.weight_kg == null && ref.kg != null){
+          // Semaine de décharge : 60 % de la dernière charge, arrondi au demi-kilo
+          s.weight_kg = isDeload ? Math.round(ref.kg * 0.6 * 2) / 2 : ref.kg;
+          exo.prefilled = true;
+        }
+        if (s.reps == null && ref.reps != null) s.reps = ref.reps;
       });
     });
+
     document.getElementById("live-overlay").classList.add("open");
     renderLiveBody();
+    startLiveClock();
+  }
+
+  // ---------- suggestion de charge ----------
+  // Pas d'augmentation en dessous de ces paliers : +2,5 kg dès 30 kg, +1 kg dès 12 kg, +0,5 kg en dessous.
+  function loadStepKg(kg){ return kg >= 30 ? 2.5 : kg >= 12 ? 1 : 0.5; }
+
+  // Compare la dernière séance à l'objectif de reps : si toutes les séries à la charge de travail
+  // ont atteint l'objectif, on propose de monter ; sinon de garder la charge.
+  function computeLoadSuggestion(last, plannedReps){
+    const work = last.sets.filter(s => s.kg > 0 && s.reps > 0);
+    if (!work.length) return null;
+    const topKg = Math.max(...work.map(s => s.kg));
+    const top = work.filter(s => Math.abs(s.kg - topKg) < 0.01);
+    const reps = top.map(s => s.reps);
+    const fromPlan = plannedReps.length > 0;
+    const target = fromPlan ? Math.max(...plannedReps) : Math.max(...reps);
+    const hit = reps.every(r => r >= target) && (fromPlan || top.length >= 2);
+    const rpes = top.map(s => s.rpe).filter(v => v != null);
+    const avgRpe = rpes.length ? rpes.reduce((t, v) => t + v, 0) / rpes.length : null;
+    const load = `${histWeight(topKg)} ${weightUnitLabel()}`;
+    const setsTxt = `${top.length > 1 ? "tes " + top.length + " séries" : "ta série"} à ${load}`;
+
+    if (hit && avgRpe != null && avgRpe >= 9.5){
+      return { type: "keep", topKg, kg: topKg,
+        text: `tu as tenu ${target} reps sur ${setsTxt}, mais au maximum (RPE ${avgRpe.toLocaleString("fr-FR", { maximumFractionDigits: 1 })}). Refais cette charge avant de monter.` };
+    }
+    if (hit){
+      const step = loadStepKg(topKg);
+      return { type: "up", topKg, kg: topKg + step, step, text: `tu as tenu ${target} reps sur ${setsTxt} la dernière fois.` };
+    }
+    if (!fromPlan && top.length < 2){
+      return { type: "keep", topKg, kg: topKg,
+        text: `une seule série à ${load} la dernière fois (${reps[0]} reps). Vise ${reps[0] + 1} reps, ou une série de plus à cette charge, avant de monter.` };
+    }
+    return { type: "keep", topKg, kg: topKg,
+      text: `dernière fois : ${reps.join(", ")} reps à ${load}. Vise ${target} reps sur chaque série avant de monter.` };
+  }
+
+  function liveSuggestHtml(exo){
+    const sug = live.suggestions ? live.suggestions[exo.name] : null;
+    if (!sug) return "";
+    const unit = weightUnitLabel();
+    if (sug.type === "up"){
+      return `<div class="live-suggest up" id="live-suggest">
+        <b>💡 Suggestion : ${histWeight(sug.kg)} ${unit}</b> (+${histWeight(sug.step)} ${unit}) — ${sug.text}
+        ${sug.applied
+          ? '<span class="applied">✓ Appliquée aux séries restantes</span>'
+          : `<button type="button" onclick="applyLoadSuggestion()">Appliquer ${histWeight(sug.kg)} ${unit}</button>`}
+      </div>`;
+    }
+    return `<div class="live-suggest" id="live-suggest"><b>💡 Garde ${histWeight(sug.kg)} ${unit}</b> — ${sug.text}</div>`;
+  }
+
+  // Remplace la charge de travail par la charge suggérée sur les séries pas encore validées
+  // (les séries plus légères de la dernière fois, montée en charge ou dropset, ne bougent pas).
+  function applyLoadSuggestion(){
+    const exo = live.exercises[live.currentExoIndex];
+    const sug = live.suggestions[exo.name];
+    const last = live.lastByName[exo.name];
+    if (!sug || sug.type !== "up" || !last) return;
+    let rank = 0;
+    exo.loggedSets.forEach((s, i) => {
+      if (s.isWarmup) return;
+      const ref = last.sets[Math.min(rank, last.sets.length - 1)];
+      rank++;
+      if (s.completed || !ref || ref.kg == null || Math.abs(ref.kg - sug.topKg) > 0.01) return;
+      s.weight_kg = sug.kg;
+      const input = document.querySelector(`#set-row-${i} .set-weight`);
+      if (input) input.value = kgToDisplayWeight(sug.kg).toFixed(1);
+    });
+    sug.applied = true;
+    const card = document.getElementById("live-suggest");
+    if (card) card.outerHTML = liveSuggestHtml(exo);
+  }
+
+  // ---------- ressenti (RPE) demandé à la fin de chaque exercice ----------
+  const RPE_CHOICES = [[6, "Facile"], [7, "Modéré"], [8, "Difficile"], [9, "Très dur"], [10, "Maximum"]];
+
+  function queueRpePrompt(exoIdx){
+    const exo = live.exercises[exoIdx];
+    if (live.rpeAsked[exoIdx] || !exo.loggedSets.every(s => s.completed)) return;
+    if (!exo.loggedSets.some(s => !s.isWarmup && s.rpe == null)) return; // RPE déjà saisi série par série
+    live.rpeAsked[exoIdx] = true;
+    live.rpeQueue.push(exoIdx);
+  }
+
+  function rpePromptHtml(){
+    if (!live.rpeQueue || !live.rpeQueue.length) return "";
+    const exo = live.exercises[live.rpeQueue[0]];
+    return `<div class="rpe-prompt" id="rpe-prompt">
+      <div class="rp-title">Comment était <b>${histEsc(exo.name)}</b> ?</div>
+      <div class="rp-choices">${RPE_CHOICES.map(([v, l]) => `<button type="button" onclick="answerRpePrompt(${v})"><span class="n">${v}</span>${l}</button>`).join("")}</div>
+      <button type="button" class="rp-skip" onclick="answerRpePrompt(null)">Passer</button>
+    </div>`;
+  }
+
+  // Le ressenti choisi est appliqué aux séries efficaces de l'exercice qui n'ont pas déjà un RPE
+  async function answerRpePrompt(value){
+    const exoIdx = live.rpeQueue.shift();
+    const el = document.getElementById("rpe-prompt");
+    if (el) el.outerHTML = rpePromptHtml();
+    if (value == null || exoIdx == null) return;
+    const exo = live.exercises[exoIdx];
+    const sets = exo.loggedSets.filter(s => !s.isWarmup && s.completed && s.rpe == null);
+    sets.forEach(s => { s.rpe = value; });
+    await Promise.all(sets.map(s => s.savePromise).filter(Boolean));
+    const ids = sets.map(s => s.dbId).filter(Boolean);
+    if (ids.length){
+      const { error } = await supabaseClient.from("workout_sets").update({ rpe: value }).in("id", ids);
+      if (error) console.error("Enregistrement du RPE", error);
+    }
+    delete exoHistoryCache[normalizeExoName(exo.name)];
+  }
+
+  // ---------- chronomètre de séance ----------
+  let liveClockInterval = null;
+
+  function liveClockFmt(ms){
+    const t = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(t / 3600), m = Math.floor((t % 3600) / 60), s = t % 60;
+    return h ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}` : `${m}:${String(s).padStart(2, "0")}`;
+  }
+
+  // Temps passé sur un exercice (repos compris), calculé sur l'horloge et non sur un compteur :
+  // il reste juste même si le téléphone se met en veille.
+  function liveExoMs(idx){
+    return (live.exoMs[idx] || 0) + (live.exoCur === idx ? Date.now() - live.exoSince : 0);
+  }
+
+  function liveClockSync(){
+    const target = live.phase === "summary" ? null : live.currentExoIndex;
+    if (live.exoCur === target) return;
+    if (live.exoCur != null) live.exoMs[live.exoCur] = (live.exoMs[live.exoCur] || 0) + (Date.now() - live.exoSince);
+    live.exoCur = target;
+    live.exoSince = Date.now();
+    if (target == null && !live.endTime) live.endTime = new Date();
+  }
+
+  function liveClockTick(){
+    if (!live) return;
+    const total = document.getElementById("live-clock");
+    if (total) total.textContent = liveClockFmt((live.endTime || new Date()) - live.startTime);
+    const ex = document.getElementById("live-exo-clock");
+    if (ex && live.exoCur != null) ex.textContent = liveClockFmt(liveExoMs(live.exoCur));
+  }
+
+  function startLiveClock(){
+    stopLiveClock();
+    liveClockInterval = setInterval(liveClockTick, 1000);
+    liveClockTick();
+  }
+
+  function stopLiveClock(){
+    if (liveClockInterval) clearInterval(liveClockInterval);
+    liveClockInterval = null;
   }
 
   async function saveSet(exo, setIdx){
@@ -2147,7 +2365,8 @@
     exo.loggedSets[setIdx].reps = reps;
     exo.loggedSets[setIdx].rpe = rpe;
     exo.loggedSets[setIdx].completed = true;
-    saveSet(exo, setIdx);
+    exo.loggedSets[setIdx].savePromise = saveSet(exo, setIdx);
+    queueRpePrompt(live.currentExoIndex);
 
     if (weight != null && weight > 0 && !exo.loggedSets[setIdx].isWarmup){
       const prior = live.priorRecords[exo.name] || 0;
@@ -2299,6 +2518,7 @@
   function confirmExitLive(){
     if (confirm("Quitter la séance ? Les séries déjà validées restent enregistrées.")){
       if (live.timer) clearInterval(live.timer);
+      stopLiveClock();
       document.getElementById("live-overlay").classList.remove("open");
       loadSport();
     }
@@ -2312,6 +2532,7 @@
       .update({ completed: true, duration_min: duration, calories_burned: calories })
       .eq("id", live.workout.id);
     awardXp("workout_completed", live.workout.id, 50);
+    stopLiveClock();
     document.getElementById("live-overlay").classList.remove("open");
     loadSport();
   }
@@ -2321,14 +2542,28 @@
     const body = document.getElementById("live-body");
     const footer = document.getElementById("live-footer");
 
+    liveClockSync();
+    liveClockTick();
+
     if (live.phase === "summary"){
       progressLbl.textContent = "Résumé";
-      const elapsedMin = Math.max(1, Math.round((new Date() - live.startTime) / 60000));
+      const totalMs = (live.endTime || new Date()) - live.startTime;
+      const elapsedMin = Math.max(1, Math.round(totalMs / 60000));
+      const timeRows = live.exercises
+        .map((e, i) => ({ name: e.name, ms: live.exoMs[i] || 0 }))
+        .filter(x => x.ms >= 1000)
+        .map(x => `<div class="st-row"><span>${histEsc(x.name)}</span><span>${liveClockFmt(x.ms)}</span></div>`).join("");
       body.innerHTML = `
+        ${rpePromptHtml()}
         <div class="live-summary">
           <div class="emoji">🎉</div>
           <h2>Séance terminée !</h2>
           <p>Beau travail. Vérifie les derniers détails avant d'enregistrer.</p>
+          <div class="summary-times">
+            <div class="st-title">Temps par exercice (repos compris)</div>
+            ${timeRows}
+            <div class="st-row total"><span>Durée totale</span><span>${liveClockFmt(totalMs)}</span></div>
+          </div>
           <div class="modal-field"><label>Durée (min)</label><input type="number" id="summary-duration" value="${elapsedMin}"></div>
           <div class="modal-field"><label>${energyUnitLabel()} brûlées (estimation)</label><input type="number" id="summary-calories" value="${live.workout.calories_burned ? Math.round(kcalToDisplayEnergy(live.workout.calories_burned)) : ""}" placeholder="300"></div>
         </div>`;
@@ -2341,6 +2576,7 @@
 
     if (live.phase === "rest"){
       body.innerHTML = `
+        ${rpePromptHtml()}
         <div class="live-exo-name">${exo.name}</div>
         <div class="live-exo-meta">${live.restLabel || "Repos avant la série suivante"}</div>
         <div class="rest-card">
@@ -2391,10 +2627,12 @@
 
     body.innerHTML = `
       ${live.workout.is_deload ? '<div class="deload-banner">🔵 Semaine de décharge — vise environ 40% de charge en moins que d\'habitude</div>' : ""}
+      ${rpePromptHtml()}
       ${blockBanner}
       <div class="live-exo-name">${exo.name}</div>
-      <div class="live-exo-meta" style="margin-bottom:12px;">${exo.loggedSets.length} séries cibles · ${block ? `${block.rest}s de repos entre les tours` : `${exo.rest_seconds}s de repos`}</div>
+      <div class="live-exo-meta" style="margin-bottom:12px;">${exo.loggedSets.length} séries cibles · ${block ? `${block.rest}s de repos entre les tours` : `${exo.rest_seconds}s de repos`} · ⏱ <span class="live-exo-clock" id="live-exo-clock">${liveClockFmt(liveExoMs(live.currentExoIndex))}</span></div>
       ${liveLastHtml(exo)}
+      ${liveSuggestHtml(exo)}
       ${setsHtml}`;
 
     const isLast = live.currentExoIndex === live.exercises.length - 1;
@@ -2541,8 +2779,10 @@
     const last = live && live.lastByName ? live.lastByName[exo.name] : null;
     const attr = `class="live-last" data-name="${histEsc(exo.name)}" onclick="openExerciseHistory(this.dataset.name)"`;
     if (!last) return `<div ${attr}>Première fois sur cet exercice : pas encore d'historique.</div>`;
+    const prefill = !exo.prefilled ? ""
+      : `<span class="prefill">${live.workout.is_deload ? "Charges pré-remplies à 60 % de cette séance (semaine de décharge)." : "Charges pré-remplies à partir de cette séance."}</span>`;
     return `<div ${attr}>Dernière fois (${histShortDate(last.date)}) : <b>${histSetsSummary(last)}</b>
-      <span class="more">Voir tout l'historique ›</span></div>`;
+      ${prefill}<span class="more">Voir tout l'historique ›</span></div>`;
   }
 
   async function openExerciseHistory(name){
