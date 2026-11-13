@@ -2103,6 +2103,20 @@
       priorRecords, newRecordAwarded: {},
       blocks: currentWorkoutBlocks, nextExoIdx: 0, restLabel: ""
     };
+    // Pré-remplissage : chaque série pas encore faite reprend la charge et les reps de la série
+    // de même rang lors de la dernière séance. Une série déjà enregistrée n'est jamais modifiée.
+    live.exercises.forEach(exo => {
+      const last = live.lastByName[exo.name];
+      if (!last) return;
+      exo.loggedSets.forEach((s, i) => {
+        if (s.dbId || s.isWarmup || s.completed || s.weight_kg != null || s.reps != null) return;
+        const ref = last.sets[i];
+        if (!ref) return;
+        s.weight_kg = ref.kg;
+        s.reps = ref.reps;
+        s.prefilled = true;
+      });
+    });
     document.getElementById("live-overlay").classList.add("open");
     renderLiveBody();
   }
