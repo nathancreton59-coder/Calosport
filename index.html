@@ -286,6 +286,7 @@
 
   @media (max-width: 768px){
     .sidebar{ display:none; }
+    .dashboard-grid{ grid-template-columns: 1fr; } /* une seule colonne sur téléphone, sinon la page déborde */
     .main{ padding: 24px 16px 90px; }
     .main-inner{ max-width:none; }
     .bottom-nav{ display:flex; }
@@ -309,6 +310,26 @@
   .reminder-row .rx{
     flex-shrink:0; background:none; border:none; color: var(--text-muted); font-size:18px; cursor:pointer; padding:0 2px; line-height:1;
   }
+
+  /* ---------- récap de la semaine ---------- */
+  .week-recap{ background: var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; margin-bottom:24px; }
+  .wr-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:4px; }
+  .wr-title{ font-weight:700; font-size:15px; }
+  .wr-title span{ font-weight:500; font-size:12px; color: var(--text-muted); margin-left:6px; }
+  .wr-toggle{ display:flex; gap:6px; }
+  .wr-toggle button{
+    padding:6px 10px; border-radius:10px; border:1px solid var(--line); background: var(--bg);
+    color: var(--text-muted); font-family:'Inter'; font-weight:700; font-size:11px; cursor:pointer;
+  }
+  .wr-toggle button.active{ background: var(--lime); border-color: var(--lime); color:#12161B; }
+  .wr-verdict{ font-size:12.5px; color: var(--text-muted); margin-bottom:12px; line-height:1.45; }
+  .wr-grid{ display:grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap:8px; }
+  .wr-tile{ background: var(--bg); border:1px solid var(--line); border-radius:14px; padding:12px; }
+  .wr-tile .l{ font-size:10.5px; font-weight:600; color: var(--text-muted); }
+  .wr-tile .v{ font-family:'Unbounded'; font-weight:700; font-size:15px; margin-top:5px; }
+  .wr-tile .d{ font-size:10.5px; color: var(--text-muted); margin-top:4px; line-height:1.35; }
+  .wr-tile .d.up{ color: var(--lime); }
+  .wr-tile .d.down{ color: var(--flame); }
 </style>
 </head>
 <body>
@@ -411,6 +432,7 @@
     </div>
 
     <div id="reminders"></div>
+    <div id="week-recap"></div>
 
     <div class="score-card">
       <div class="score-ring">
@@ -636,6 +658,144 @@
 
     computeDailyScore();
     renderReminders(user, profile, { consumed, calorieGoal, next });
+    weekRecapCtx = { user, profile };
+    loadWeekRecap();
+  }
+
+  // ---------- récapitulatif de la semaine ----------
+  let weekRecapCtx = null;
+  let weekRecapOffset = 0; // 0 = cette semaine, 1 = semaine dernière
+
+  function setWeekRecap(offset){ weekRecapOffset = offset; loadWeekRecap(); }
+
+  async function loadWeekRecap(){
+    const box = document.getElementById("week-recap");
+    if (!box || !weekRecapCtx) return;
+    const { user, profile } = weekRecapCtx;
+
+    const start = new Date(startOfWeek()); start.setDate(start.getDate() - 7 * weekRecapOffset);
+    const end = new Date(start); end.setDate(end.getDate() + 7);
+    const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - 7);
+    const inCur = iso => { const t = new Date(iso); return t >= start && t < end; };
+    const inPrev = iso => { const t = new Date(iso); return t >= prevStart && t < start; };
+    const sum = (list, f) => list.reduce((s, x) => s + f(x), 0);
+
+    try {
+      const [{ data: workouts }, { data: meals }, { data: events }, { data: weights }] = await Promise.all([
+        supabaseClient.from("workouts").select("id, scheduled_at, duration_min")
+          .eq("user_id", user.id).eq("completed", true)
+          .gte("scheduled_at", prevStart.toISOString()).lt("scheduled_at", end.toISOString()),
+        supabaseClient.from("meals").select("calories, logged_at")
+          .eq("user_id", user.id).gte("logged_at", start.toISOString()).lt("logged_at", end.toISOString()),
+        supabaseClient.from("xp_events").select("source, amount, created_at")
+          .eq("user_id", user.id).gte("created_at", prevStart.toISOString()).lt("created_at", end.toISOString()),
+        supabaseClient.from("weight_logs").select("weight_kg, logged_at")
+          .eq("user_id", user.id).gte("logged_at", start.toISOString()).lt("logged_at", end.toISOString())
+          .order("logged_at", { ascending: true }),
+      ]);
+
+      // Volume soulevé par séance (séries efficaces terminées)
+      const done = workouts || [];
+      const volumeByWorkout = {};
+      const ids = done.map(w => w.id);
+      if (ids.length){
+        const { data: exos } = await supabaseClient.from("exercises").select("id, workout_id").in("workout_id", ids);
+        const exoToWorkout = {};
+        (exos || []).forEach(e => { exoToWorkout[e.id] = e.workout_id; });
+        const exoIds = Object.keys(exoToWorkout);
+        if (exoIds.length){
+          const { data: sets } = await supabaseClient
+            .from("workout_sets").select("exercise_id, weight_kg, reps, is_warmup, completed").in("exercise_id", exoIds);
+          (sets || []).forEach(s => {
+            if (s.is_warmup || !s.completed || s.weight_kg == null || s.reps == null) return;
+            const w = exoToWorkout[s.exercise_id];
+            volumeByWorkout[w] = (volumeByWorkout[w] || 0) + parseFloat(s.weight_kg) * s.reps;
+          });
+        }
+      }
+
+      const cur = done.filter(w => inCur(w.scheduled_at));
+      const prev = done.filter(w => inPrev(w.scheduled_at));
+      const sessions = cur.length, prevSessions = prev.length;
+      const minutes = sum(cur, w => w.duration_min || 0);
+      const volume = sum(cur, w => volumeByWorkout[w.id] || 0);
+      const prevVolume = sum(prev, w => volumeByWorkout[w.id] || 0);
+
+      const ev = events || [];
+      const evCur = ev.filter(e => inCur(e.created_at)), evPrev = ev.filter(e => inPrev(e.created_at));
+      const xp = sum(evCur, e => e.amount || 0), prevXp = sum(evPrev, e => e.amount || 0);
+      const countSource = (list, s) => list.filter(e => e.source === s).length;
+      const records = countSource(evCur, "personal_record");
+      const calDays = countSource(evCur, "calorie_goal");
+      const waterDays = countSource(evCur, "water_goal");
+
+      const byDay = {};
+      (meals || []).forEach(m => {
+        const d = new Date(m.logged_at);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        byDay[key] = (byDay[key] || 0) + (m.calories || 0);
+      });
+      const loggedDays = Object.values(byDay);
+      const avgCal = loggedDays.length ? sum(loggedDays, v => v) / loggedDays.length : 0;
+
+      const wl = weights || [];
+      const weightDelta = wl.length >= 2 ? parseFloat(wl[wl.length - 1].weight_kg) - parseFloat(wl[0].weight_kg) : null;
+
+      // ---- affichage ----
+      const goal = (profile && profile.weekly_workout_goal) || 0;
+      const calorieGoal = (profile && profile.calorie_goal) || 0;
+      const plural = n => n > 1 ? "s" : "";
+      const num = n => Math.round(n).toLocaleString("fr-FR");
+      const lastDay = new Date(end); lastDay.setDate(lastDay.getDate() - 1);
+      const range = `${start.getDate()}${start.getMonth() !== lastDay.getMonth() ? " " + start.toLocaleDateString("fr-FR", { month: "short" }) : ""} – ${lastDay.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`;
+
+      let verdict;
+      if (!goal) verdict = `${sessions} séance${plural(sessions)} terminée${plural(sessions)}.`;
+      else if (sessions >= goal) verdict = `Objectif de ${goal} séance${plural(goal)} atteint 🎉`;
+      else if (weekRecapOffset === 0) verdict = `Encore ${goal - sessions} séance${plural(goal - sessions)} pour atteindre ton objectif de ${goal} cette semaine.`;
+      else verdict = `Objectif manqué de ${goal - sessions} séance${plural(goal - sessions)} (${sessions} sur ${goal}).`;
+
+      const delta = (now, before, suffix) => {
+        if (!before && !now) return { cls: "", txt: "—" };
+        const diff = now - before;
+        if (diff === 0) return { cls: "", txt: "comme la semaine précédente" };
+        return { cls: diff > 0 ? "up" : "down", txt: `${diff > 0 ? "+" : "−"}${num(Math.abs(diff))}${suffix} vs semaine précédente` };
+      };
+      const dSessions = delta(sessions, prevSessions, "");
+      const dVolume = delta(kgToDisplayWeight(volume), kgToDisplayWeight(prevVolume), " " + weightUnitLabel());
+      const dXp = delta(xp, prevXp, " XP");
+      const duration = minutes >= 60 ? `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")}` : `${minutes} min`;
+      const weightTxt = weightDelta == null ? "—"
+        : `${weightDelta > 0 ? "+" : weightDelta < 0 ? "−" : ""}${Math.abs(kgToDisplayWeight(weightDelta)).toFixed(1)} ${weightUnitLabel()}`;
+
+      const tile = (label, value, detail, cls) =>
+        `<div class="wr-tile"><div class="l">${label}</div><div class="v">${value}</div><div class="d ${cls || ""}">${detail}</div></div>`;
+
+      box.innerHTML = `<div class="week-recap">
+        <div class="wr-head">
+          <div class="wr-title">${weekRecapOffset === 0 ? "Ta semaine" : "Semaine dernière"}<span>${range}</span></div>
+          <div class="wr-toggle">
+            <button class="${weekRecapOffset === 0 ? "active" : ""}" onclick="setWeekRecap(0)">Cette semaine</button>
+            <button class="${weekRecapOffset === 1 ? "active" : ""}" onclick="setWeekRecap(1)">Semaine dernière</button>
+          </div>
+        </div>
+        <div class="wr-verdict">${verdict}</div>
+        <div class="wr-grid">
+          ${tile("Séances", goal ? `${sessions} / ${goal}` : sessions, dSessions.txt, dSessions.cls)}
+          ${tile("Temps d'entraînement", duration, sessions ? `${num(minutes / sessions)} min par séance` : "—")}
+          ${tile("Volume soulevé", `${num(kgToDisplayWeight(volume))} ${weightUnitLabel()}`, dVolume.txt, dVolume.cls)}
+          ${tile("Calories par jour", loggedDays.length ? `${num(kcalToDisplayEnergy(avgCal))} ${energyUnitLabel()}` : "—",
+              loggedDays.length ? `moyenne sur ${loggedDays.length} jour${plural(loggedDays.length)}${calorieGoal ? ` · objectif ${num(kcalToDisplayEnergy(calorieGoal))}` : ""}` : "aucun repas enregistré")}
+          ${tile("Objectif calories", `${calDays} jour${plural(calDays)}`, "dans la cible")}
+          ${tile("Objectif d'eau", `${waterDays} jour${plural(waterDays)}`, "atteint")}
+          ${tile("Poids", weightTxt, wl.length >= 2 ? `sur ${wl.length} pesées` : wl.length === 1 ? "une seule pesée" : "aucune pesée")}
+          ${tile("Records battus", records, records ? "bravo 💪" : "—")}
+          ${tile("XP gagnés", `+${num(xp)}`, dXp.txt, dXp.cls)}
+        </div>
+      </div>`;
+    } catch (e) {
+      box.innerHTML = ""; // le récap est un bonus : il ne doit jamais bloquer l'accueil
+    }
   }
 
   // ---------- rappels intelligents ----------

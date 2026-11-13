@@ -440,6 +440,24 @@
   .set-row.current{ border-color: var(--lime); }
   .drop-tag{ flex-basis:100%; font-size:10.5px; font-weight:700; color: var(--flame); }
 
+  /* ---------- favoris + reprise rapide ---------- */
+  .exo-row .exo-fav{
+    width:30px; height:30px; flex-shrink:0; border-radius:9px; border:1px solid var(--line);
+    background: var(--bg); color: var(--text-muted); font-size:15px; line-height:1; cursor:pointer; padding:0;
+  }
+  .exo-row .exo-fav.active{ color:#E0A800; border-color:#E0A800; }
+  .repeat-box{ margin-top:16px; }
+  .repeat-label{
+    font-size:11px; font-weight:700; color: var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:8px;
+  }
+  .repeat-chips{ display:flex; flex-wrap:wrap; gap:8px; }
+  .repeat-chip{
+    background: var(--bg); border:1px solid var(--line); color: var(--text); border-radius:12px; padding:9px 12px;
+    font-family:'Inter'; font-weight:700; font-size:12.5px; cursor:pointer; text-align:left;
+  }
+  .repeat-chip small{ display:block; font-weight:500; font-size:10.5px; color: var(--text-muted); margin-top:2px; }
+  .repeat-chip:hover{ border-color: var(--volt); }
+
   /* ---------- programmes préconstruits ---------- */
   .programs-btn{
     width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -582,6 +600,7 @@
 
   @media (max-width: 768px){
     .sidebar{ display:none; }
+    .dashboard-grid{ grid-template-columns: 1fr; } /* une seule colonne sur téléphone, sinon la page déborde */
     .main{ padding: 24px 16px 90px; }
     .main-inner{ max-width:none; }
     .bottom-nav{ display:flex; }
@@ -909,6 +928,50 @@
       .order("muscle_group", { ascending: true })
       .order("name", { ascending: true });
     EXERCISE_LIBRARY = data || [];
+
+    // Favoris (si la table n'existe pas encore, on continue simplement sans favoris)
+    const { data: favs } = await supabaseClient.from("favorite_exercises").select("exercise_library_id");
+    FAVORITE_EXERCISE_IDS = new Set((favs || []).map(f => f.exercise_library_id));
+  }
+
+  let FAVORITE_EXERCISE_IDS = new Set();
+
+  function refreshFavButtons(){
+    document.querySelectorAll("#exo-rows .exo-row").forEach(row => {
+      const btn = row.querySelector(".exo-fav");
+      if (!btn) return;
+      const isFav = FAVORITE_EXERCISE_IDS.has(row.querySelector(".exo-select").value);
+      btn.classList.toggle("active", isFav);
+      btn.textContent = isFav ? "★" : "☆";
+      btn.title = isFav ? "Retirer des favoris" : "Ajouter aux favoris";
+    });
+  }
+
+  async function toggleFavoriteExercise(btn){
+    const row = btn.closest(".exo-row");
+    const libId = row.querySelector(".exo-select").value;
+    if (!libId || libId === "__custom__"){
+      alert("Choisis d'abord un exercice dans la liste. Un nouvel exercice pourra être mis en favori une fois la séance enregistrée.");
+      return;
+    }
+    if (FAVORITE_EXERCISE_IDS.has(libId)){
+      const { error } = await supabaseClient.from("favorite_exercises").delete()
+        .eq("user_id", currentUser.id).eq("exercise_library_id", libId);
+      if (error){ alert("Erreur : " + error.message); return; }
+      FAVORITE_EXERCISE_IDS.delete(libId);
+    } else {
+      const { error } = await supabaseClient.from("favorite_exercises")
+        .insert({ user_id: currentUser.id, exercise_library_id: libId });
+      if (error){ alert("Impossible d'ajouter le favori : " + error.message); return; }
+      FAVORITE_EXERCISE_IDS.add(libId);
+    }
+    // Le groupe « Favoris » des listes déroulantes change : on les reconstruit en gardant les choix en cours
+    document.querySelectorAll("#exo-rows .exo-select").forEach(sel => {
+      const current = sel.value;
+      sel.innerHTML = exerciseSelectOptionsHtml();
+      sel.value = current;
+    });
+    refreshFavButtons();
   }
 
   function exerciseSelectOptionsHtml(){
@@ -919,6 +982,14 @@
       groups[g].push(ex);
     });
     let html = `<option value="" disabled selected>Choisir un exercice…</option>`;
+    const favorites = EXERCISE_LIBRARY
+      .filter(ex => FAVORITE_EXERCISE_IDS.has(ex.id))
+      .sort((a, b) => a.name.localeCompare(b.name, "fr"));
+    if (favorites.length){
+      html += `<optgroup label="⭐ Favoris">`;
+      favorites.forEach(ex => { html += `<option value="${ex.id}">${ex.name}</option>`; });
+      html += `</optgroup>`;
+    }
     Object.keys(groups).forEach(g => {
       html += `<optgroup label="${g}">`;
       groups[g].forEach(ex => { html += `<option value="${ex.id}">${ex.name}</option>`; });
@@ -1039,6 +1110,7 @@
       });
     }
     renderAllBlockBadges();
+    refreshFavButtons();
 
     document.getElementById("workout-modal-overlay").classList.add("open");
   }
@@ -1070,6 +1142,7 @@
     delete row.dataset.muscle; // choix manuel : on oublie le groupe musculaire proposé par un programme
     const customInput = row.querySelector(".exo-custom-input");
     customInput.style.display = selectEl.value === "__custom__" ? "block" : "none";
+    refreshFavButtons();
   }
 
   function addExoRow(){
@@ -1084,6 +1157,7 @@
         <input type="checkbox" class="exo-select-check" title="Cocher pour grouper en superset / circuit">
         <select class="exo-select" onchange="onExoSelectChange(this)">${exerciseSelectOptionsHtml()}</select>
         <input type="text" class="exo-custom-input" placeholder="Nom du nouvel exercice">
+        <button type="button" class="exo-fav" onclick="toggleFavoriteExercise(this)" title="Ajouter aux favoris">☆</button>
         <button type="button" class="exo-remove" onclick="removeExoRow('${id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
@@ -1647,6 +1721,133 @@
       if (restInput) restInput.value = rest;
       renderPlannedSetRows(id, false);
     });
+    refreshFavButtons();
+  }
+
+  // ---------- REPRISE D'UNE SÉANCE EN UN CLIC ----------
+  // Recrée la séance pour aujourd'hui, avec les mêmes exercices, groupes et charges que la dernière fois.
+  let repeatInProgress = false;
+
+  function escHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
+  async function repeatWorkout(workoutId){
+    if (repeatInProgress) return;
+    repeatInProgress = true;
+    try {
+      const { data: src } = await supabaseClient.from("workouts").select("*").eq("id", workoutId).single();
+      if (!src){ alert("Séance introuvable."); return; }
+      if (currentWorkout && !confirm(`Tu as déjà une séance prévue aujourd'hui (« ${currentWorkout.name} »). Ajouter quand même « ${src.name} » ?`)) return;
+
+      const { data: exercises } = await supabaseClient
+        .from("exercises").select("*").eq("workout_id", workoutId).order("position", { ascending: true });
+      const exoList = exercises || [];
+      const exoIds = exoList.map(e => e.id);
+
+      let sets = [];
+      if (exoIds.length){
+        const { data } = await supabaseClient
+          .from("workout_sets").select("*").in("exercise_id", exoIds).order("set_number", { ascending: true });
+        sets = data || [];
+      }
+      let blocks = [];
+      if (exoList.some(e => e.block_id)){
+        const { data } = await supabaseClient.from("workout_blocks").select("*").eq("workout_id", workoutId);
+        blocks = data || [];
+      }
+
+      const { data: created, error } = await supabaseClient
+        .from("workouts")
+        .insert({
+          user_id: currentUser.id, name: src.name, workout_type: src.workout_type,
+          duration_min: src.duration_min, calories_burned: src.calories_burned,
+          scheduled_at: new Date().toISOString(), completed: false, is_deload: false
+        })
+        .select().single();
+      if (error){ alert("Erreur : " + error.message); return; }
+
+      const blockIdMap = {};
+      for (const b of blocks){
+        const { data: nb, error: blockErr } = await supabaseClient
+          .from("workout_blocks")
+          .insert({ workout_id: created.id, block_type: b.block_type, rounds: b.rounds, rest_between_rounds: b.rest_between_rounds, position: b.position })
+          .select().single();
+        if (!blockErr && nb) blockIdMap[b.id] = nb.id;
+      }
+      const anyBlock = Object.keys(blockIdMap).length > 0;
+
+      if (exoList.length){
+        const exoRows = exoList.map((e, i) => {
+          const r = {
+            workout_id: created.id, name: e.name, exercise_library_id: e.exercise_library_id,
+            sets: e.sets, reps: e.reps, rest_seconds: e.rest_seconds, position: i
+          };
+          if (anyBlock){
+            r.block_id = blockIdMap[e.block_id] || null;
+            r.block_order = r.block_id ? e.block_order : null;
+          }
+          return r;
+        });
+        const { data: inserted, error: exErr } = await supabaseClient.from("exercises").insert(exoRows).select();
+        if (exErr){
+          alert("La séance a été créée, mais ses exercices n'ont pas pu être copiés : " + exErr.message);
+        } else {
+          const newIdByPos = {};
+          (inserted || []).forEach(x => { newIdByPos[x.position] = x.id; });
+          const setRows = [];
+          exoList.forEach((e, i) => {
+            sets.filter(s => s.exercise_id === e.id).forEach(s => {
+              setRows.push({
+                exercise_id: newIdByPos[i], set_number: s.set_number, is_warmup: !!s.is_warmup,
+                weight_kg: s.weight_kg, reps: s.reps, completed: false, completed_at: null,
+                no_rest_before: !!s.no_rest_before
+              });
+            });
+          });
+          if (!setRows.some(s => s.no_rest_before)) setRows.forEach(s => { delete s.no_rest_before; });
+          if (setRows.length){
+            const { error: setErr } = await supabaseClient.from("workout_sets").insert(setRows);
+            if (setErr) alert("Les séries n'ont pas pu être copiées : " + setErr.message);
+          }
+        }
+      }
+
+      showPRToast(`« ${src.name} » ajoutée à aujourd'hui`);
+      await loadSport();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } finally {
+      repeatInProgress = false;
+    }
+  }
+
+  // Sous « Aucune séance planifiée » : les dernières séances différentes, à relancer en un clic
+  async function renderRepeatSuggestions(){
+    const box = document.getElementById("repeat-suggestions");
+    if (!box || !currentUser) return;
+    const { data } = await supabaseClient
+      .from("workouts").select("id, name, scheduled_at")
+      .eq("user_id", currentUser.id).eq("completed", true)
+      .order("scheduled_at", { ascending: false }).limit(25);
+    const seen = new Set();
+    const picks = [];
+    (data || []).forEach(w => {
+      const key = (w.name || "").trim().toLowerCase();
+      if (!key || seen.has(key) || picks.length >= 4) return;
+      seen.add(key);
+      picks.push(w);
+    });
+    if (!picks.length){ box.innerHTML = ""; return; }
+    const ago = iso => {
+      const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
+      return d <= 0 ? "aujourd'hui" : d === 1 ? "hier" : `il y a ${d} jours`;
+    };
+    box.innerHTML = `<div class="repeat-box">
+      <div class="repeat-label">Refaire une séance en un clic</div>
+      <div class="repeat-chips">` + picks.map(w => `
+        <button type="button" class="repeat-chip" onclick="repeatWorkout('${w.id}')">↻ ${escHtml(w.name)}<small>Faite ${ago(w.scheduled_at)}</small></button>`).join("") + `
+      </div>
+    </div>`;
   }
 
   function endOfWeek(){
@@ -1694,9 +1895,11 @@
         <div class="workout-hero">
           <div class="eyebrow">Aujourd'hui</div>
           <div class="title">Aucune séance planifiée</div>
-          <div class="meta">Crée-en une avec le bouton + en bas de l'écran.</div>
+          <div class="meta">Crée-en une avec le bouton + en bas de l'écran, ou relance une séance récente.</div>
+          <div id="repeat-suggestions"></div>
         </div>`;
       exoContainer.innerHTML = "";
+      renderRepeatSuggestions();
       return;
     }
 
@@ -2239,7 +2442,10 @@
         </div>
         <div class="history-dur">${w.duration_min || "?"} min</div>
         <div class="history-actions">
-          <button class="history-duplicate" onclick="event.stopPropagation(); duplicateWorkout('${w.id}')" title="Dupliquer">
+          <button class="history-duplicate" onclick="event.stopPropagation(); repeatWorkout('${w.id}')" title="Refaire aujourd'hui en un clic">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v6h-6"/></svg>
+          </button>
+          <button class="history-duplicate" onclick="event.stopPropagation(); duplicateWorkout('${w.id}')" title="Dupliquer et modifier">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
           </button>
           <button class="history-edit" onclick="event.stopPropagation(); editWorkout('${w.id}')" title="Modifier">
