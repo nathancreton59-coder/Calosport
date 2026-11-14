@@ -41,9 +41,14 @@
       <label>Mot de passe</label>
       <input type="password" id="password" placeholder="••••••••" minlength="6" required>
     </div>
+    <label class="legal-check" id="legal-check" style="display:none;">
+      <input type="checkbox" id="accept-terms">
+      <span>J'ai au moins 15 ans et j'accepte les <a href="legal.html#conditions" target="_blank" rel="noopener">conditions d'utilisation</a>. J'ai lu la <a href="legal.html#confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span>
+    </label>
     <button class="submit-btn" id="submit-btn" type="submit">Se connecter</button>
     <div class="msg" id="msg"></div>
   </form>
+  <div class="legal-link"><a href="legal.html#confidentialite">Confidentialité</a> · <a href="legal.html#conditions">Conditions d'utilisation</a></div>
 </div>
 
 <script src="config.js"></script>
@@ -55,6 +60,7 @@
     document.getElementById("tab-login").classList.toggle("active", m === "login");
     document.getElementById("tab-signup").classList.toggle("active", m === "signup");
     document.getElementById("name-field").style.display = m === "signup" ? "block" : "none";
+    document.getElementById("legal-check").style.display = m === "signup" ? "flex" : "none";
     document.getElementById("submit-btn").textContent = m === "signup" ? "Créer mon compte" : "Se connecter";
     document.getElementById("msg").textContent = "";
   }
@@ -73,6 +79,9 @@
         // Mot de passe plus solide exigé à la création du compte (les comptes existants ne changent pas)
         if (password.length < 12 || !/[A-Za-zÀ-ÿ]/.test(password) || !/[0-9]/.test(password)){
           throw new Error("Choisis un mot de passe d'au moins 12 caractères, avec au moins une lettre et un chiffre.");
+        }
+        if (!document.getElementById("accept-terms").checked){
+          throw new Error("Coche la case pour accepter les conditions d'utilisation avant de créer ton compte.");
         }
         const full_name = document.getElementById("full_name").value.trim();
         const { error } = await supabaseClient.auth.signUp({

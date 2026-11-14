@@ -1,0 +1,60 @@
+/* Calosport — styles des pages légales (legal.html) et de l'écran d'accord (consent.html) */
+
+:root{
+  --bg: #12161B; --surface: #1B2128; --text: #F2F0EA; --text-muted: #8A93A0; --line: #2A323B;
+  --lime: #D4F252; --flame: #FF7A59;
+}
+:root[data-theme="light"]{
+  --bg: #EFF1EA; --surface: #FFFFFF;
+  --text: #14181D; --text-muted: #667085; --line: #E1E3DC;
+  --lime: #6F9A16; --flame: #D9522E;
+}
+*{ box-sizing:border-box; }
+html,body{ margin:0; padding:0; background:#0A0C0F; font-family:'Inter',sans-serif; color:var(--text); -webkit-font-smoothing:antialiased; }
+html[data-theme="light"], html[data-theme="light"] body{ background: var(--bg); }
+body{ padding:24px 12px 48px; }
+
+.legal-page{
+  max-width:640px; margin:0 auto; background:var(--bg); border:1px solid var(--line);
+  border-radius:24px; padding:30px 26px;
+}
+.legal-page h1{ font-family:'Unbounded'; font-size:22px; margin:0 0 14px; }
+.legal-page h2{ font-family:'Unbounded'; font-size:16px; margin:34px 0 10px; padding-top:22px; border-top:1px solid var(--line); }
+.legal-back{ display:inline-block; margin-bottom:18px; font-size:12.5px; color:var(--text-muted); text-decoration:none; }
+.legal-nav{ display:flex; flex-wrap:wrap; gap:8px; }
+.legal-nav a{
+  font-size:12px; font-weight:600; color:var(--text); text-decoration:none;
+  background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:7px 13px;
+}
+.legal-text{ font-size:13px; color:var(--text-muted); line-height:1.7; }
+.legal-text h4{ font-size:13.5px; font-weight:700; color:var(--text); margin:20px 0 6px; }
+.legal-text p{ margin:0 0 9px; }
+.legal-text ul{ margin:0 0 9px; padding-left:18px; }
+.legal-text li{ margin-bottom:5px; }
+.legal-text b{ color:var(--text); font-weight:600; }
+.legal-text .legal-date{ font-size:12px; font-style:italic; }
+
+/* ---------- écran d'accord ---------- */
+.legal-page.consent{ max-width:480px; }
+.consent-intro{ font-size:13.5px; color:var(--text-muted); line-height:1.6; margin:0 0 18px; }
+.consent-box{ background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 18px; margin-bottom:18px; font-size:12.5px; color:var(--text-muted); line-height:1.6; }
+.consent-box ul{ margin:0 0 12px; padding-left:18px; }
+.consent-box p{ margin:0 0 12px; }
+.consent-box p:last-child{ margin-bottom:0; }
+.consent-title{ font-weight:700; font-size:12.5px; color:var(--text); margin-bottom:5px; }
+.consent-check{ display:flex; gap:11px; align-items:flex-start; margin-bottom:13px; font-size:12.5px; line-height:1.55; cursor:pointer; }
+.consent-check input{ margin-top:2px; flex-shrink:0; width:18px; height:18px; accent-color:var(--lime); }
+.consent-check a{ color:var(--lime); }
+.consent-btn{
+  width:100%; margin-top:8px; background:var(--lime); color:#12161B; border:none; border-radius:14px;
+  padding:14px; font-family:'Inter'; font-weight:700; font-size:14px; cursor:pointer;
+}
+.consent-btn:disabled{ opacity:.4; cursor:not-allowed; }
+.consent-msg{ min-height:18px; margin-top:10px; font-size:12px; color:var(--flame); text-align:center; }
+.consent-refuse{ margin-top:22px; padding-top:18px; border-top:1px solid var(--line); font-size:12px; color:var(--text-muted); line-height:1.55; }
+.consent-refuse-actions{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.consent-refuse button{
+  background:var(--surface); border:1px solid var(--line); border-radius:11px; padding:9px 13px;
+  color:var(--text); font-family:'Inter'; font-weight:600; font-size:12px; cursor:pointer;
+}
+.consent-refuse button.danger{ color:var(--flame); border-color:var(--flame); }

@@ -231,6 +231,13 @@
           <div class="settings-row-body"><div class="settings-row-label">Gestion des données personnelles</div></div>
           <svg class="settings-row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </div>
+        <div class="settings-row clickable" onclick="exportAllData()">
+          <div class="settings-row-body">
+            <div class="settings-row-label">Exporter toutes mes données</div>
+            <div class="settings-row-sub" id="export-all-sub">Fichier JSON complet (profil, nutrition, sport, progression, social)</div>
+          </div>
+          <svg class="settings-row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-4-4m4 4 4-4M4 21h16"/></svg>
+        </div>
         <div class="settings-row clickable" onclick="exportMealsCsv()">
           <div class="settings-row-body">
             <div class="settings-row-label">Exporter mes repas</div>
@@ -244,6 +251,13 @@
             <div class="settings-row-sub">Fichier CSV</div>
           </div>
           <svg class="settings-row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v13m0 0-4-4m4 4 4-4M4 21h16"/></svg>
+        </div>
+        <div class="settings-row clickable" onclick="openModal('withdraw-consent-overlay')">
+          <div class="settings-row-body">
+            <div class="settings-row-label">Accord sur mes données de santé</div>
+            <div class="settings-row-sub">Voir ou retirer mon accord</div>
+          </div>
+          <svg class="settings-row-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </div>
         <div class="settings-row clickable danger" onclick="openDeleteAccountModal()">
           <div class="settings-row-body">
@@ -348,19 +362,33 @@
   <div class="modal-sheet">
     <div class="modal-title">Gestion des données personnelles</div>
     <p class="modal-text">
-      Tes données (profil, repas, séances, poids, sommeil) sont stockées de façon sécurisée et ne sont utilisées que pour faire fonctionner l'application. Tu peux à tout moment exporter tes repas et séances en CSV depuis cette page, ou supprimer définitivement ton compte et toutes tes données.
+      Tes données (profil, repas, séances, poids, sommeil) sont stockées de façon sécurisée et ne sont utilisées que pour faire fonctionner l'application. Le détail est dans la Politique de confidentialité. Tu peux à tout moment exporter toutes tes données depuis cette page, retirer ton accord sur tes données de santé, ou supprimer définitivement ton compte et toutes tes données, photos comprises.
     </p>
     <button type="button" class="modal-btn confirm" style="width:100%;" onclick="closeModal('privacy-info-overlay')">Fermer</button>
   </div>
 </div>
 
-<!-- ===== Modale : politique de confidentialite (texte a personnaliser) ===== -->
+<!-- ===== Modale : retrait de l'accord sur les données de santé ===== -->
+<div class="modal-overlay" id="withdraw-consent-overlay">
+  <div class="modal-sheet">
+    <div class="modal-title">Accord sur mes données de santé</div>
+    <p class="modal-text">
+      Calosport traite ton poids, tes mensurations, tes photos, ton sommeil, ton alimentation et ton activité uniquement avec ton accord.
+      Si tu le retires, l'application devient inaccessible jusqu'à ce que tu le redonnes. Tes données ne sont pas effacées par ce retrait :
+      pour les effacer, utilise « Supprimer mes données ».
+    </p>
+    <div class="modal-actions">
+      <button type="button" class="modal-btn cancel" onclick="closeModal('withdraw-consent-overlay')">Garder mon accord</button>
+      <button type="button" class="modal-btn danger-confirm" onclick="withdrawHealthConsent()">Retirer mon accord</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== Modale : politique de confidentialite (texte dans legal-texts.js) ===== -->
 <div class="modal-overlay" id="policy-overlay">
   <div class="modal-sheet">
     <div class="modal-title">Politique de confidentialité</div>
-    <p class="modal-text">
-      Texte à personnaliser : décris ici quelles données tu collectes (profil, repas, séances, poids, sommeil), pourquoi, combien de temps elles sont conservées, et comment l'utilisateur peut les faire supprimer.
-    </p>
+    <div class="legal-text" id="policy-text"></div>
     <button type="button" class="modal-btn confirm" style="width:100%;" onclick="closeModal('policy-overlay')">Fermer</button>
   </div>
 </div>
@@ -369,56 +397,13 @@
 <div class="modal-overlay" id="terms-overlay">
   <div class="modal-sheet">
     <div class="modal-title">Conditions d'utilisation</div>
-    <div class="legal-text">
-      <p class="legal-date">Dernière mise à jour : 13 novembre 2026</p>
-
-      <h4>1. Ce qu'est Calosport</h4>
-      <p>Calosport est une application de suivi de l'alimentation, des séances de sport et de la progression physique. Elle est proposée gratuitement, à titre non professionnel, par son créateur (« l'éditeur »). En créant un compte, tu acceptes les présentes conditions.</p>
-
-      <h4>2. Ton compte</h4>
-      <p>Tu dois avoir au moins 15 ans pour créer un compte. Tu t'engages à fournir une adresse e-mail valide, à garder ton mot de passe confidentiel et à ne pas partager ton compte. Tu es responsable de ce qui est fait depuis ton compte. Préviens l'éditeur si tu penses que quelqu'un d'autre y a eu accès.</p>
-
-      <h4>3. Calosport n'est pas un avis médical</h4>
-      <p>Les objectifs caloriques, les estimations de dépense, les suggestions de charge, les programmes et les prévisions de poids sont des calculs automatiques à titre indicatif. Ils ne remplacent pas l'avis d'un médecin, d'un diététicien ou d'un professionnel du sport. Demande un avis médical avant de commencer un régime ou un programme d'entraînement, en particulier si tu as un problème de santé, si tu es enceinte ou si tu es mineur. Tu pratiques ton activité physique sous ta seule responsabilité.</p>
-
-      <h4>4. Ce que tu peux et ne peux pas faire</h4>
-      <p>L'application est réservée à un usage personnel. Tu t'engages à ne pas :</p>
-      <ul>
-        <li>tenter d'accéder aux données d'un autre utilisateur ou de contourner les protections de l'application ;</li>
-        <li>perturber son fonctionnement, l'utiliser de façon automatisée ou en extraire les données en masse ;</li>
-        <li>publier, dans ton pseudo, ton nom ou tes commentaires, un contenu insultant, haineux, à caractère sexuel, trompeur ou contraire à la loi ;</li>
-        <li>harceler d'autres utilisateurs ou usurper l'identité de quelqu'un.</li>
-      </ul>
-
-      <h4>5. Fonctions sociales</h4>
-      <p>Si tu choisis un pseudo, les autres utilisateurs peuvent te trouver en le recherchant et voient alors ton pseudo et ton nom. Quand tu acceptes une demande d'ami, cette personne voit tes séances terminées (exercices, volume, durée, calories brûlées, records), ton niveau et tes points, et peut y réagir ou les commenter. Tes repas, ton poids, tes mensurations, ton sommeil et tes photos ne sont jamais visibles par les autres. Tu peux retirer un ami à tout moment.</p>
-
-      <h4>6. Tes contenus</h4>
-      <p>Les données que tu saisis et les photos que tu ajoutes restent les tiennes. Tu autorises seulement l'éditeur à les stocker et à les afficher dans l'application pour te fournir le service. L'éditeur peut supprimer un contenu qui ne respecte pas ces conditions.</p>
-
-      <h4>7. Disponibilité du service</h4>
-      <p>Calosport est fourni « en l'état », sans garantie de disponibilité ni d'absence d'erreur. L'application peut évoluer, être interrompue pour maintenance ou être arrêtée. Les valeurs nutritionnelles viennent en partie de sources extérieures (Open Food Facts) et de tes propres saisies : elles peuvent être inexactes. Pense à exporter tes données si tu veux en garder une copie.</p>
-
-      <h4>8. Responsabilité</h4>
-      <p>Dans les limites permises par la loi, l'éditeur ne peut pas être tenu responsable d'une blessure, d'un problème de santé ou d'une perte de données liés à l'utilisation de l'application ou aux indications qu'elle fournit. Rien dans ces conditions ne limite les droits que la loi te reconnaît en tant que consommateur.</p>
-
-      <h4>9. Données personnelles</h4>
-      <p>L'utilisation de tes données est décrite dans la rubrique « Politique de confidentialité » des réglages. Tu peux exporter tes repas et tes séances, et supprimer ton compte, depuis la rubrique « Confidentialité ».</p>
-
-      <h4>10. Fin du compte</h4>
-      <p>Tu peux supprimer ton compte à tout moment depuis les réglages : tes données sont alors effacées de façon définitive. L'éditeur peut suspendre ou supprimer un compte qui ne respecte pas ces conditions.</p>
-
-      <h4>11. Évolution de ces conditions</h4>
-      <p>Ces conditions peuvent être modifiées. La date en haut de cette page indique la dernière version en vigueur.</p>
-
-      <h4>12. Droit applicable et contact</h4>
-      <p>Ces conditions sont soumises au droit français. Pour toute question ou réclamation, contacte l'éditeur par le moyen qui t'a permis d'obtenir l'accès à l'application.</p>
-    </div>
+    <div class="legal-text" id="terms-text"></div>
     <button type="button" class="modal-btn confirm" style="width:100%;" onclick="closeModal('terms-overlay')">Fermer</button>
   </div>
 </div>
 
 <script src="config.js"></script>
+<script src="legal-texts.js"></script>
 <script src="auth-guard.js"></script>
 <script>
   function openMoreMenu(){ document.getElementById("more-overlay").classList.add("open"); }
@@ -514,8 +499,86 @@
 
   // ---------- infos statiques ----------
   function openPrivacyInfoModal(){ openModal("privacy-info-overlay"); }
-  function openPolicyModal(){ openModal("policy-overlay"); }
-  function openTermsModal(){ openModal("terms-overlay"); }
+  function openPolicyModal(){
+    document.getElementById("policy-text").innerHTML = LEGAL_POLICY_HTML;
+    openModal("policy-overlay");
+  }
+  function openTermsModal(){
+    document.getElementById("terms-text").innerHTML = LEGAL_TERMS_HTML;
+    openModal("terms-overlay");
+  }
+
+  // ---------- accord sur les données de santé ----------
+  async function withdrawHealthConsent(){
+    const { error } = await supabaseClient.from("profiles").update({ health_consent_at: null }).eq("id", currentUser.id);
+    if (error){ alert("Erreur : " + error.message); return; }
+    window.location.href = "consent.html";
+  }
+
+  // ---------- export complet (droit à la portabilité) ----------
+  // Un seul fichier JSON avec tout ce que la base contient sur l'utilisateur.
+  async function exportAllData(){
+    const sub = document.getElementById("export-all-sub");
+    const initial = sub.textContent;
+    sub.textContent = "Préparation de l'export…";
+    const uid = currentUser.id;
+    const errors = [];
+    const all = async (label, query) => {
+      const rows = [];
+      for (let from = 0; ; from += 1000){            // la base renvoie 1 000 lignes au maximum par appel
+        const { data, error } = await query().range(from, from + 999);
+        if (error){ errors.push(`${label} : ${error.message}`); break; }
+        rows.push(...(data || []));
+        if (!data || data.length < 1000) break;
+      }
+      return rows;
+    };
+    const own = (table, col = "user_id") => all(table, () => supabaseClient.from(table).select("*").eq(col, uid));
+    const byIds = async (table, col, ids) => {
+      const rows = [];
+      for (let i = 0; i < ids.length; i += 100){
+        const chunk = ids.slice(i, i + 100);
+        rows.push(...await all(table, () => supabaseClient.from(table).select("*").in(col, chunk)));
+      }
+      return rows;
+    };
+
+    try {
+      const out = {
+        export: { application: "Calosport", date: new Date().toISOString(), format: "JSON", unites: "poids en kg, énergie en kcal, distances en km" },
+        compte: { id: uid, email: currentUser.email, cree_le: currentUser.created_at },
+      };
+      out.profil = (await own("profiles", "id"))[0] || null;
+      for (const t of ["meals", "favorite_meals", "food_library", "recipes", "water_logs", "user_supplements", "supplement_logs",
+                       "exercise_library", "favorite_exercises", "workouts", "weight_logs", "body_measurements", "progress_photos",
+                       "sleep_logs", "xp_events", "workout_comments", "workout_reactions"]){
+        out[t] = await own(t);
+      }
+      out.recipe_items = await byIds("recipe_items", "recipe_id", out.recipes.map(r => r.id));
+      out.workout_blocks = await byIds("workout_blocks", "workout_id", out.workouts.map(w => w.id));
+      out.exercises = await byIds("exercises", "workout_id", out.workouts.map(w => w.id));
+      out.workout_sets = await byIds("workout_sets", "exercise_id", out.exercises.map(e => e.id));
+      out.friendships = await all("friendships", () => supabaseClient.from("friendships").select("*").or(`user_a.eq.${uid},user_b.eq.${uid}`));
+
+      // Photos : lien de téléchargement temporaire (valable 24 h) pour chaque fichier
+      for (const ph of out.progress_photos){
+        const { data } = await supabaseClient.storage.from("progress-photos").createSignedUrl(ph.storage_path, 86400);
+        ph.lien_telechargement_24h = data ? data.signedUrl : null;
+      }
+      if (errors.length) out.export.erreurs = errors;
+
+      const blob = new Blob([JSON.stringify(out, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `calosport_mes_donnees_${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      sub.textContent = errors.length ? "Export incomplet : certaines données n'ont pas pu être lues (détail dans le fichier)." : "Export téléchargé ✓";
+    } catch (e){
+      sub.textContent = initial;
+      alert("Erreur pendant l'export : " + (e.message || e));
+    }
+  }
 
   // ---------- export CSV ----------
   function downloadCsv(filename, rows){
@@ -605,6 +668,22 @@
     const btn = document.getElementById("delete-confirm-btn");
     btn.disabled = true;
     btn.textContent = "Suppression en cours…";
+    // Les photos sont des fichiers à part : on les efface avant le compte, sinon elles resteraient stockées.
+    try {
+      const bucket = supabaseClient.storage.from("progress-photos");
+      for (;;){
+        const { data: files, error: listError } = await bucket.list(currentUser.id, { limit: 100 });
+        if (listError) throw listError;
+        if (!files || !files.length) break;
+        const { error: removeError } = await bucket.remove(files.map(f => `${currentUser.id}/${f.name}`));
+        if (removeError) throw removeError;
+      }
+    } catch (e){
+      alert("Impossible d'effacer tes photos, le compte n'a pas été supprimé : " + (e.message || e));
+      btn.disabled = false;
+      btn.textContent = "Supprimer définitivement";
+      return;
+    }
     const { error } = await supabaseClient.rpc("delete_user");
     if (error){
       alert("Erreur lors de la suppression : " + error.message);

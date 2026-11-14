@@ -26,6 +26,17 @@ async function requireAuth(opts = {}) {
     applyTheme(profile.theme_preference || "dark");
   }
 
+  // Accord explicite sur les données de santé (RGPD) : sans lui, on renvoie vers l'écran d'accord.
+  // Lecture séparée et tolérante : si la colonne n'existe pas encore en base, on ne bloque personne.
+  if (!opts.skipConsentCheck){
+    const { data: consent, error: consentError } = await supabaseClient
+      .from("profiles").select("health_consent_at").eq("id", session.user.id).single();
+    if (!consentError && consent && !consent.health_consent_at){
+      window.location.href = "consent.html";
+      return null;
+    }
+  }
+
   if (!opts.skipOnboardingCheck && profile && !profile.onboarding_completed){
     window.location.href = "onboarding.html";
     return null;

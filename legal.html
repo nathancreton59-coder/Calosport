@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem("calosport-theme-resolved")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<title>Confidentialité et conditions — Calosport</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="calosport-icon.svg">
+<link rel="alternate icon" href="calosport-icon-32.png">
+<link rel="apple-touch-icon" href="calosport-icon-192.png">
+<link rel="stylesheet" href="vendor/fonts.css">
+<link rel="stylesheet" href="legal.css">
+</head>
+<body>
+
+<div class="legal-page">
+  <a class="legal-back" href="login.html" id="legal-back">← Retour</a>
+  <h1>Calosport</h1>
+  <nav class="legal-nav"><a href="#confidentialite">Politique de confidentialité</a><a href="#conditions">Conditions d'utilisation</a></nav>
+
+  <section id="confidentialite">
+    <h2>Politique de confidentialité</h2>
+    <div class="legal-text" id="policy-text"></div>
+  </section>
+
+  <section id="conditions">
+    <h2>Conditions d'utilisation</h2>
+    <div class="legal-text" id="terms-text"></div>
+  </section>
+</div>
+
+<script src="legal-texts.js"></script>
+<script>
+  // Page publique : lisible sans compte, avant l'inscription.
+  document.getElementById("policy-text").innerHTML = LEGAL_POLICY_HTML;
+  document.getElementById("terms-text").innerHTML = LEGAL_TERMS_HTML;
+  if (document.referrer && history.length > 1){
+    document.getElementById("legal-back").addEventListener("click", e => { e.preventDefault(); history.back(); });
+  }
+  if (location.hash){ const el = document.querySelector(location.hash); if (el) el.scrollIntoView(); }
+</script>
+</body>
+</html>

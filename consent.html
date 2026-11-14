@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<script>(function(){try{var t=localStorage.getItem("calosport-theme-resolved")||"dark";document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+<title>Ton accord — Calosport</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/svg+xml" href="calosport-icon.svg">
+<link rel="alternate icon" href="calosport-icon-32.png">
+<link rel="apple-touch-icon" href="calosport-icon-192.png">
+<link rel="stylesheet" href="vendor/fonts.css">
+<script src="vendor/supabase.js"></script>
+<link rel="stylesheet" href="legal.css">
+</head>
+<body>
+
+<div class="legal-page consent">
+  <h1>Avant de continuer</h1>
+  <p class="consent-intro">Calosport enregistre des informations qui renseignent sur ta santé. La loi (RGPD) demande ton accord explicite avant de les utiliser.</p>
+
+  <div class="consent-box">
+    <div class="consent-title">Ce qui est enregistré</div>
+    <ul>
+      <li>ton poids, ta taille, ton âge, ton sexe et tes mensurations ;</li>
+      <li>tes repas, ton hydratation et tes compléments ;</li>
+      <li>tes séances de sport et ton ressenti ;</li>
+      <li>ton sommeil et tes photos de progression, si tu les ajoutes.</li>
+    </ul>
+    <div class="consent-title">À quoi ça sert</div>
+    <p>Uniquement à faire fonctionner l'application pour toi : calcul de tes objectifs, suivi et statistiques. Pas de publicité, pas de revente. Tes repas, ton poids, tes mensurations, ton sommeil et tes photos ne sont visibles que par toi.</p>
+    <div class="consent-title">Tu gardes la main</div>
+    <p>Tu peux retirer ton accord, exporter tes données ou tout supprimer à tout moment dans Réglages → Confidentialité.</p>
+  </div>
+
+  <label class="consent-check">
+    <input type="checkbox" id="consent-health">
+    <span>J'accepte que Calosport enregistre et utilise mes données de santé décrites ci-dessus pour me fournir le service.</span>
+  </label>
+  <label class="consent-check">
+    <input type="checkbox" id="consent-terms">
+    <span>J'ai au moins 15 ans, j'accepte les <a href="legal.html#conditions" target="_blank" rel="noopener">conditions d'utilisation</a> et j'ai lu la <a href="legal.html#confidentialite" target="_blank" rel="noopener">politique de confidentialité</a>.</span>
+  </label>
+
+  <button class="consent-btn" id="consent-accept" disabled onclick="acceptConsent()">Continuer</button>
+  <div class="consent-msg" id="consent-msg"></div>
+
+  <div class="consent-refuse">
+    Tu ne souhaites pas donner ton accord ? L'application ne peut pas fonctionner sans ces données.
+    <div class="consent-refuse-actions">
+      <button type="button" onclick="refuseConsent()">Me déconnecter</button>
+      <button type="button" class="danger" onclick="deleteAccountFromConsent()">Supprimer mon compte et mes données</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script>
+  let consentUser = null;
+  const healthBox = document.getElementById("consent-health");
+  const termsBox = document.getElementById("consent-terms");
+  const acceptBtn = document.getElementById("consent-accept");
+  const msg = document.getElementById("consent-msg");
+  [healthBox, termsBox].forEach(b => b.addEventListener("change", () => { acceptBtn.disabled = !(healthBox.checked && termsBox.checked); }));
+
+  async function acceptConsent(){
+    if (!consentUser || !(healthBox.checked && termsBox.checked)) return;
+    acceptBtn.disabled = true;
+    const now = new Date().toISOString();
+    const { error } = await supabaseClient.from("profiles")
+      .update({ health_consent_at: now, terms_accepted_at: now }).eq("id", consentUser.id);
+    if (error){
+      msg.textContent = "Ton accord n'a pas pu être enregistré : " + error.message;
+      acceptBtn.disabled = false;
+      return;
+    }
+    window.location.href = "index.html";
+  }
+
+  async function refuseConsent(){
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  }
+
+  async function deleteAccountFromConsent(){
+    if (!consentUser) return;
+    if (!confirm("Supprimer définitivement ton compte et toutes tes données ? Cette action est irréversible.")) return;
+    try {
+      const bucket = supabaseClient.storage.from("progress-photos");
+      for (;;){
+        const { data: files, error: listError } = await bucket.list(consentUser.id, { limit: 100 });
+        if (listError) throw listError;
+        if (!files || !files.length) break;
+        const { error: removeError } = await bucket.remove(files.map(f => `${consentUser.id}/${f.name}`));
+        if (removeError) throw removeError;
+      }
+      const { error } = await supabaseClient.rpc("delete_user");
+      if (error) throw error;
+    } catch (e){
+      msg.textContent = "La suppression a échoué : " + (e.message || e);
+      return;
+    }
+    await supabaseClient.auth.signOut();
+    window.location.href = "login.html";
+  }
+
+  (async function init(){
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (!session){ window.location.href = "login.html"; return; }
+    consentUser = session.user;
+    const { data: profile, error } = await supabaseClient.from("profiles").select("health_consent_at").eq("id", consentUser.id).single();
+    // Accord déjà donné (ou colonne absente) : rien à demander.
+    if (error || (profile && profile.health_consent_at)){ window.location.href = "index.html"; }
+  })();
+</script>
+</body>
+</html>
