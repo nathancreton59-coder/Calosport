@@ -244,6 +244,12 @@
       </div>
     </div>
 
+    <div class="card" id="best-week-card">
+      <div class="card-title">Ta meilleure semaine</div>
+      <div class="card-sub">Ta semaine en cours comparée à ton meilleur niveau sur chaque indicateur.</div>
+      <div id="best-week-body"><div class="best-week-empty">Chargement…</div></div>
+    </div>
+
     <div class="card">
       <div class="card-top">
         <div>
@@ -1067,6 +1073,81 @@
     }));
   }
 
+  // ---------- meilleure semaine ----------
+  function localDateKey(d){
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+
+  // Lundi de la semaine qui contient la date (AAAA-MM-JJ)
+  function weekStartKey(dateStr){
+    const d = new Date(dateStr + "T00:00:00");
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return localDateKey(d);
+  }
+
+  function formatWeekLabel(key){
+    return new Date(key + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  }
+
+  function renderBestWeek(){
+    const body = document.getElementById("best-week-body");
+    const weeks = {};
+    COMPLETED_WORKOUTS.forEach(w => {
+      const key = weekStartKey(w.date);
+      const wk = weeks[key] || (weeks[key] = { sessions: 0, minutes: 0, energy: 0 });
+      wk.sessions += 1;
+      wk.minutes += w.duration_min;
+      wk.energy += w.calories_burned;
+    });
+
+    const keys = Object.keys(weeks);
+    if (!keys.length){
+      body.innerHTML = `<div class="best-week-empty">Termine une séance pour voir ta meilleure semaine.</div>`;
+      return;
+    }
+
+    const currentKey = weekStartKey(localDateKey(new Date()));
+    const cur = weeks[currentKey] || { sessions: 0, minutes: 0, energy: 0 };
+    const metrics = [
+      { key: "sessions", label: "Séances", fmt: v => String(v) },
+      { key: "minutes", label: "Durée", fmt: v => v >= 60 ? `${Math.floor(v / 60)}h ${v % 60}min` : `${v} min` },
+      { key: "energy", label: "Énergie", fmt: v => `${Math.round(kcalToDisplayEnergy(v)).toLocaleString("fr-FR")} ${energyUnitLabel()}` },
+    ];
+
+    // Le record se compare aux autres semaines, pas à la semaine en cours elle-même
+    const others = keys.filter(k => k !== currentKey);
+    body.innerHTML = metrics.map(m => {
+      let bestKey = null, bestOther = 0;
+      others.forEach(k => {
+        if (weeks[k][m.key] > bestOther){ bestOther = weeks[k][m.key]; bestKey = k; }
+      });
+      const value = cur[m.key];
+      let best, sub, isRecord = false;
+      if (!bestKey){
+        best = value;
+        sub = value > 0 ? "Première semaine enregistrée : pas encore de record à battre" : "";
+      } else if (value > bestOther){
+        best = value; isRecord = true;
+        sub = "Nouveau record sur cette semaine";
+      } else if (value > 0 && value === bestOther){
+        best = bestOther;
+        sub = `Égal à ton record (semaine du ${formatWeekLabel(bestKey)})`;
+      } else {
+        best = bestOther;
+        sub = `Record : semaine du ${formatWeekLabel(bestKey)}`;
+      }
+      const pct = best > 0 ? Math.min(100, Math.round(value / best * 100)) : 0;
+      return `<div class="bw-row">
+        <div class="bw-head">
+          <span class="bw-label">${m.label}</span>
+          <span class="bw-values">${m.fmt(value)} <small>/ ${m.fmt(best)}</small></span>
+        </div>
+        <div class="bw-track"><div class="bw-fill${isRecord ? " record" : ""}" style="width:${pct}%"></div></div>
+        <div class="bw-sub">${sub}</div>
+      </div>`;
+    }).join("");
+  }
+
   // ---------- heatmap ----------
   function renderHeatmap(){
     const year = new Date().getFullYear();
@@ -1430,6 +1511,7 @@
     const user = await requireAuth();
     if (!user) return;
     await loadWorkoutStatsData();
+    renderBestWeek();
     renderHeatmap();
     renderTrends();
     await renderLevel();

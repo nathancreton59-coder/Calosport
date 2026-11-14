@@ -283,3 +283,15 @@ body{ display:flex; min-height:100vh; }
   .main-inner{ max-width:none; }
   .bottom-nav{ display:flex; }
 }
+
+/* ---------- meilleure semaine ---------- */
+.best-week-empty{ font-size:13px; color: var(--text-muted); margin-top:8px; }
+.bw-row{ margin-top:12px; }
+.bw-head{ display:flex; justify-content:space-between; align-items:baseline; gap:8px; font-size:13px; }
+.bw-label{ font-weight:600; }
+.bw-values{ font-weight:700; }
+.bw-values small{ color: var(--text-muted); font-weight:500; }
+.bw-track{ height:8px; background: var(--surface-2); border-radius:999px; overflow:hidden; margin-top:6px; }
+.bw-fill{ height:100%; background: var(--lime); border-radius:999px; transition: width .4s ease; }
+.bw-fill.record{ background: var(--flame); }
+.bw-sub{ font-size:11.5px; color: var(--text-muted); margin-top:4px; }

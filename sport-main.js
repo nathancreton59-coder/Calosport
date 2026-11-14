@@ -285,6 +285,69 @@ async function loadSport(){
   renderHistory(list);
 
   await renderTodayWorkout(user);
+  renderRecovery(user);
+}
+
+// ---------- récupération musculaire : quand chaque groupe a été travaillé pour la dernière fois ----------
+async function renderRecovery(user){
+  const container = document.getElementById("recovery-card");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const since = new Date();
+  since.setDate(since.getDate() - 14);
+  const { data: workouts } = await supabaseClient
+    .from("workouts").select("id, scheduled_at")
+    .eq("user_id", user.id).eq("completed", true)
+    .gte("scheduled_at", since.toISOString());
+  const list = workouts || [];
+  if (!list.length) return;
+
+  const { data: exercises } = await supabaseClient
+    .from("exercises").select("workout_id, exercise_library_id")
+    .in("workout_id", list.map(w => w.id));
+  const exo = (exercises || []).filter(e => e.exercise_library_id);
+  const libIds = [...new Set(exo.map(e => e.exercise_library_id))];
+  const muscleById = {};
+  if (libIds.length){
+    const { data: lib } = await supabaseClient
+      .from("exercise_library").select("id, muscle_group").in("id", libIds);
+    (lib || []).forEach(l => { if (l.muscle_group) muscleById[l.id] = l.muscle_group; });
+  }
+
+  const dateByWorkout = {};
+  list.forEach(w => { dateByWorkout[w.id] = new Date(w.scheduled_at); });
+  const lastByMuscle = {};
+  exo.forEach(e => {
+    const muscle = muscleById[e.exercise_library_id];
+    const d = dateByWorkout[e.workout_id];
+    if (!muscle || !d) return;
+    if (!lastByMuscle[muscle] || d > lastByMuscle[muscle]) lastByMuscle[muscle] = d;
+  });
+
+  const now = new Date();
+  const rows = Object.entries(lastByMuscle)
+    .map(([muscle, d]) => ({ muscle, hours: (now - d) / 3600000 }))
+    .sort((a, b) => a.hours - b.hours);
+  if (!rows.length) return;
+
+  const statusOf = h => h < 48
+    ? { label: "En récupération", cls: "flame" }
+    : h < 72 ? { label: "Presque prêt", cls: "volt" } : { label: "Prêt", cls: "lime" };
+
+  container.innerHTML = `
+    <div class="recovery-title">Récupération musculaire</div>
+    ${rows.map(r => {
+      const s = statusOf(r.hours);
+      const ago = r.hours < 24
+        ? `il y a ${Math.max(1, Math.round(r.hours))} h`
+        : `il y a ${Math.floor(r.hours / 24)} j`;
+      return `<div class="recovery-row">
+        <div class="recovery-name">${escHtml(r.muscle)}</div>
+        <div class="recovery-ago">${ago}</div>
+        <span class="recovery-badge ${s.cls}">${s.label}</span>
+      </div>`;
+    }).join("")}`;
 }
 
 (async function init(){

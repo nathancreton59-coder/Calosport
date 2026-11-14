@@ -712,3 +712,19 @@ body{ display:flex; min-height:100vh; }
   opacity:0; transition: opacity .3s ease, transform .3s ease; pointer-events:none; white-space:nowrap;
 }
 .pr-toast.show{ opacity:1; transform: translateX(-50%) translateY(0); }
+
+/* ---------- récupération musculaire ---------- */
+.recovery-card{ background: var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 16px; margin:0 0 16px; }
+.recovery-card:empty{ display:none; }
+.recovery-title{ font-family:'Unbounded'; font-weight:700; font-size:13px; margin-bottom:8px; }
+.recovery-row{ display:flex; align-items:center; gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:13px; }
+.recovery-name{ flex:1; font-weight:600; }
+.recovery-ago{ color:var(--text-muted); font-size:12px; }
+.recovery-badge{ font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px; white-space:nowrap; }
+.recovery-badge.flame{ background: var(--flame-dim); color: var(--flame); }
+.recovery-badge.volt{ background:#1F2D44; color: var(--volt); }
+.recovery-badge.lime{ background: var(--lime-dim); color: var(--lime); }
+
+/* ---------- créneau habituel ---------- */
+.usual-slot-btn{ width:100%; display:flex; justify-content:space-between; align-items:center; gap:8px; margin:0 0 12px; padding:10px 12px; border-radius:12px; border:1px dashed var(--volt); background:transparent; color:var(--text); font-size:13px; cursor:pointer; text-align:left; }
+.usual-slot-btn b{ color: var(--volt); font-weight:700; white-space:nowrap; }

@@ -92,11 +92,59 @@ function openWorkoutModal(){
   document.getElementById("w-deload").checked = false;
   document.getElementById("workout-modal-overlay").classList.add("open");
   const today = new Date();
-  document.getElementById("w-date").value = today.toISOString().slice(0,10);
+  document.getElementById("w-date").value = localDateKey(today);
   document.getElementById("w-time").value = today.toTimeString().slice(0,5);
   if (document.getElementById("exo-rows").children.length === 0){
     addExoRow(); addExoRow();
   }
+  renderUsualSlotHint();
+}
+
+// Date locale au format AAAA-MM-JJ (toISOString donnerait la date UTC, fausse après minuit en France)
+function localDateKey(d){
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+
+// ---------- créneau habituel : le jour et l'heure où l'utilisateur s'entraîne le plus souvent ----------
+const DAY_NAMES_FR = ["dimanche","lundi","mardi","mercredi","jeudi","vendredi","samedi"];
+
+async function renderUsualSlotHint(){
+  const hint = document.getElementById("usual-slot-hint");
+  if (!hint) return;
+  hint.innerHTML = "";
+  if (!currentUser) return;
+
+  const since = new Date();
+  since.setDate(since.getDate() - 90);
+  const { data } = await supabaseClient
+    .from("workouts").select("scheduled_at")
+    .eq("user_id", currentUser.id).eq("completed", true)
+    .gte("scheduled_at", since.toISOString());
+
+  const counts = {};
+  (data || []).forEach(w => {
+    if (!w.scheduled_at) return;
+    const d = new Date(w.scheduled_at);
+    const key = d.getDay() + "-" + d.getHours();
+    counts[key] = (counts[key] || 0) + 1;
+  });
+  const best = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  // Il faut au moins deux séances au même créneau pour que ce soit une habitude
+  if (!best || best[1] < 2) return;
+
+  const [day, hour] = best[0].split("-").map(Number);
+  const hh = String(hour).padStart(2, "0");
+  hint.innerHTML = `<button type="button" class="usual-slot-btn" onclick="applyUsualSlot(${day}, ${hour})">
+    <span>🕒 Ton créneau habituel : ${DAY_NAMES_FR[day]} vers ${hh}h</span><b>Utiliser</b>
+  </button>`;
+}
+
+function applyUsualSlot(day, hour){
+  // Prochaine date tombant sur ce jour de la semaine (aujourd'hui compris)
+  const target = new Date();
+  target.setDate(target.getDate() + ((day - target.getDay() + 7) % 7));
+  document.getElementById("w-date").value = localDateKey(target);
+  document.getElementById("w-time").value = String(hour).padStart(2, "0") + ":00";
 }
 function closeWorkoutModal(){
   document.getElementById("workout-modal-overlay").classList.remove("open");
@@ -116,6 +164,8 @@ function closeWorkoutModal(){
 }
 
 async function editWorkout(workoutId){
+  const hint = document.getElementById("usual-slot-hint");
+  if (hint) hint.innerHTML = ""; // le créneau habituel ne sert que pour une nouvelle séance
   const { data: workout, error } = await supabaseClient
     .from("workouts").select("*").eq("id", workoutId).single();
   if (error || !workout){ alert("Impossible de charger cette séance."); return; }
